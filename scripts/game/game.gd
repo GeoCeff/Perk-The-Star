@@ -466,8 +466,10 @@ func _draw() -> void:
 	_draw_prime_briefing(viewport_size)
 	if GameState.game_phase == GameState.GAME_OVER:
 		draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(0.0, 0.0, 0.0, 0.34), true)
+		_draw_end_state_overlay(viewport_size, false)
 	elif GameState.game_phase == GameState.VICTORY:
 		draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(1.0, 0.78, 0.18, 0.12), true)
+		_draw_end_state_overlay(viewport_size, true)
 
 
 func _draw_battle_background(viewport_size: Vector2) -> void:
@@ -697,6 +699,35 @@ func _draw_prime_briefing(viewport_size: Vector2) -> void:
 	draw_rect(button_rect, Color(0.020, 0.052, 0.078, 0.96), true)
 	draw_rect(button_rect, Color(1.0, 0.78, 0.24, 0.82), false, 1.5)
 	draw_string(end_title_font, button_rect.position + Vector2(0.0, 25.0), "BEGIN PRIME WAVE", HORIZONTAL_ALIGNMENT_CENTER, button_rect.size.x, 12, Color(0.96, 0.99, 1.0, 1.0))
+
+
+func _draw_end_state_overlay(viewport_size: Vector2, victory: bool) -> void:
+	if end_title_font == null or end_body_font == null:
+		return
+	var width: float = minf(viewport_size.x - 56.0, 680.0)
+	var height: float = 260.0
+	var rect: Rect2 = Rect2((viewport_size - Vector2(width, height)) * 0.5, Vector2(width, height))
+	var accent: Color = Color(1.0, 0.78, 0.24, 0.96) if victory else Color(1.0, 0.22, 0.16, 0.96)
+	var title: String = "SOL SAVED" if victory else "SUN EXTINGUISHED"
+	var subtitle: String = "Mission complete. The defense grid held." if victory else "The defense grid failed. The Sun went dark."
+	var stats: String = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+		GameState.waves_cleared,
+		MAX_WAVES,
+		GameState.enemies_killed_total,
+		GameState.performance_score,
+		GameState.get_luminosity_percent(),
+	]
+	var tip: String = "Press R to retry or M for main menu."
+
+	draw_rect(rect.grow(8.0), Color(0.0, 0.0, 0.0, 0.58), true)
+	draw_rect(rect, Color(0.004, 0.012, 0.022, 0.95), true)
+	draw_rect(rect, Color(accent.r, accent.g, accent.b, 0.86), false, 2.0)
+	draw_line(rect.position + Vector2(28.0, 66.0), rect.position + Vector2(rect.size.x - 28.0, 66.0), Color(accent.r, accent.g, accent.b, 0.44), 1.5)
+	draw_string(end_title_font, rect.position + Vector2(0.0, 42.0), title, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 25, accent)
+	draw_string(end_body_font, rect.position + Vector2(0.0, 92.0), subtitle, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 16, Color(0.90, 0.96, 1.0, 0.94))
+	draw_string(end_title_font, rect.position + Vector2(0.0, 136.0), "RANK  %s" % GameState.get_rank(), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 18, Color(1.0, 0.90, 0.52, 0.96))
+	draw_string(end_body_font, rect.position + Vector2(0.0, 176.0), stats, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 14, Color(0.82, 0.92, 1.0, 0.92))
+	draw_string(end_body_font, rect.position + Vector2(0.0, 218.0), tip, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 13, Color(0.98, 0.95, 0.84, 0.90))
 
 
 func _load_assets() -> void:
@@ -1770,6 +1801,9 @@ func _check_wave_clear() -> void:
 		_show_next_wave_banner()
 		_set_message("Wave %d cleared. Additional waves are locked for this scene." % GameState.current_wave, 999.0)
 	elif GameState.current_wave >= MAX_WAVES:
+		_clear_wave_preview()
+		_clear_auto_start_timer(false)
+		_clear_managed_tower(false)
 		GameState.trigger_victory()
 		_play_sfx("victory")
 		_play_ending_music()
@@ -3170,10 +3204,16 @@ func _update_ui() -> void:
 		return
 
 	var wave_data: Dictionary = current_wave_data if GameState.game_phase == GameState.WAVE_ACTIVE else next_wave_preview
+	if GameState.game_phase == GameState.GAME_OVER or GameState.game_phase == GameState.VICTORY:
+		wave_data = current_wave_data
 	var wave_index: int = int(wave_data.get("index", min(GameState.current_wave + 1, MAX_WAVES)))
 	var wave_name: String = str(wave_data.get("name", "First Contact"))
 	var title_text: String = "WAVE %02d/%02d | %s" % [wave_index, MAX_WAVES, wave_name.to_upper()]
-	if GameState.game_phase != GameState.WAVE_ACTIVE:
+	if GameState.game_phase == GameState.VICTORY:
+		title_text = "SOL DEFENSE COMPLETE | %s" % GameState.get_rank()
+	elif GameState.game_phase == GameState.GAME_OVER:
+		title_text = "SUN EXTINGUISHED | WAVE %02d/%02d" % [GameState.current_wave, MAX_WAVES]
+	elif GameState.game_phase != GameState.WAVE_ACTIVE:
 		title_text = "%s %02d/%02d" % [briefing_title.to_upper(), wave_index, MAX_WAVES]
 		if briefing_title.strip_edges().to_lower() != wave_name.strip_edges().to_lower():
 			title_text += " | %s" % wave_name.to_upper()
@@ -3183,6 +3223,12 @@ func _update_ui() -> void:
 	var start_disabled: bool = GameState.game_phase != GameState.BETWEEN_WAVE or next_wave > playable_wave_limit
 	var start_text: String = "START WAVE %d" % next_wave
 	var intel_status: String = "LIVE" if GameState.game_phase == GameState.WAVE_ACTIVE else "NEXT"
+	if GameState.game_phase == GameState.VICTORY:
+		start_text = "MISSION COMPLETE"
+		intel_status = "CLEARED"
+	elif GameState.game_phase == GameState.GAME_OVER:
+		start_text = "RUN ENDED"
+		intel_status = "FAILED"
 	if GameState.auto_start_waves_enabled and not start_disabled and auto_start_timer > 0.0:
 		start_text = "AUTO IN %d" % max(1, int(ceil(auto_start_timer)))
 		intel_status = "AUTO %d" % max(1, int(ceil(auto_start_timer)))
