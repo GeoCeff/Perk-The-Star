@@ -130,4 +130,4 @@ Active SFX lives in `assets/audio/sfx/`. Old backup audio is not kept in git.
 - HUD behavior is native and receives one state dictionary.
 - Temporary effects expire automatically through `GameEffectStoreNative`.
 - SFX players are pooled instead of creating audio nodes during combat.
-- Old assets are separated into old folders so active files are easy to find.
+- Backup-only assets and generated exports are kept out of git so active files are easy to find.

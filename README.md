@@ -1,6 +1,6 @@
 # Perk the Star
 
-Perk the Star is a Godot 4.6 orbital tower defense game. You defend the Sun by placing towers on rotating orbital rings, clearing JSON-authored Astrophage waves, and keeping luminosity above zero.
+Perk the Star is a Godot 4.6 orbital tower defense game. Defend the Sun by placing towers on rotating orbital rings, clearing JSON-authored Astrophage waves, and keeping luminosity above zero.
 
 The project now keeps most reusable systems in C++ GDExtension and leaves `scripts/game/game.gd` as the main Godot gameplay coordinator. That makes the code easier to explain: C++ handles reusable data, math, HUD, audio, and helper systems; GDScript connects the scene, input, drawing, and wave flow.
 
@@ -11,6 +11,10 @@ The project now keeps most reusable systems in C++ GDExtension and leaves `scrip
 3. Press Play from the main menu.
 
 The game targets a 1920x1080 canvas with expand stretching enabled.
+
+## Export
+
+Use the Windows Desktop preset in Godot. Generated `.exe`, `.pck`, video, PDF, and course-submission bundles are intentionally ignored; rebuild them from the project when needed.
 
 ## Controls
 
@@ -42,7 +46,7 @@ The game targets a 1920x1080 canvas with expand stretching enabled.
 - `assets/fonts/` contains UI fonts.
 - `assets/ui/` contains UI icons, bars, and cursor art.
 - `assets/licenses/` contains asset credits and license text.
-- `docs/` contains current explanation docs.
+- `docs/` contains current explanation and presentation source docs.
 - `docs/presentation/` contains presentation notes and the generator script.
 
 ## Native Extension
@@ -55,7 +59,7 @@ To rebuild on Windows:
 scons platform=windows target=template_debug arch=x86_64
 ```
 
-`godot-cpp`, `.godot/`, build intermediates, generated DLLs, generated PDFs, and SCons cache files are ignored because they can be regenerated.
+`godot-cpp`, `.godot/`, build intermediates, generated DLLs, exported game bundles, generated media/PDFs, and SCons cache files are ignored because they can be regenerated.
 
 ## Main Native Classes
 
@@ -72,4 +76,4 @@ scons platform=windows target=template_debug arch=x86_64
 
 ## Repo Cleanup
 
-Backup-only media, archived roadmap notes, generated PDFs, and built DLLs are not kept in git. If a generated file is needed again, rebuild it from source instead of committing it.
+Backup-only media, archived roadmap notes, generated PDFs, exported builds, and built DLLs are not kept in git. If a generated file is needed again, rebuild it from source instead of committing it.

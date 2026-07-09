@@ -42,6 +42,7 @@ Use this as the quick map when explaining the repository.
 - `.sconsign.dblite` is SCons cache.
 - `*.obj`, `*.lib`, and `*.exp` are build intermediates.
 - `game/bin/*.dll` is the generated native extension binary.
+- `*.exe`, `*.pck`, generated videos, generated PDFs, and course-submission bundles are exports.
 - presentation PDFs are generated from `docs/presentation/generate_presentation.py`.
 
 These can be regenerated and should not be explained as project source.

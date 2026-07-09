@@ -3,6 +3,13 @@
 /android/
 godot-cpp/
 
+# Generated exports and course-submission bundles.
+CMSC 21 Submission Requirements/
+docs/video/
+docs/*.pdf
+*.exe
+*.pck
+
 # Godot/Windows can leave a temporary DLL beside the active extension.
 game/bin/~*.dll
 game/bin/*.dll
