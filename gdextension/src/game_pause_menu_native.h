@@ -28,7 +28,6 @@ private:
     Label* subtitle_label = nullptr;
     Button* codex_button = nullptr;
     Button* settings_button = nullptr;
-    Button* controls_button = nullptr;
     Button* retry_button = nullptr;
     Button* main_menu_button = nullptr;
     Button* back_button = nullptr;
@@ -38,7 +37,6 @@ private:
     void apply_style();
     void open_codex();
     void open_settings();
-    void open_controls();
     void open_embedded_overlay(const String& scene_path);
     void return_to_main_menu();
     void retry_run();

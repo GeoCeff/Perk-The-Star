@@ -75,7 +75,7 @@ custom_minimum_size = Vector2(560, 10)
 layout_mode = 2
 
 [node name="ButtonBox" type="VBoxContainer" parent="OverlayRoot/PausePanel/PauseMargin/PauseBox"]
-custom_minimum_size = Vector2(420, 376)
+custom_minimum_size = Vector2(420, 308)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/separation = 12
@@ -91,12 +91,6 @@ custom_minimum_size = Vector2(420, 52)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Settings"
-
-[node name="ControlsButton" type="Button" parent="OverlayRoot/PausePanel/PauseMargin/PauseBox/ButtonBox"]
-custom_minimum_size = Vector2(420, 52)
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Controls"
 
 [node name="RetryButton" type="Button" parent="OverlayRoot/PausePanel/PauseMargin/PauseBox/ButtonBox"]
 custom_minimum_size = Vector2(420, 52)

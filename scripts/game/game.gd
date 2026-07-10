@@ -1417,7 +1417,7 @@ func _try_manual_flare() -> void:
 
 func _trigger_solar_flare() -> void:
 	var sun: Vector2 = _sun_pos()
-	var flare_damage: float = FLARE_DAMAGE + (10.0 if _has_tech("apex_master") else 0.0)
+	var flare_damage: float = FLARE_DAMAGE + (10.0 if _has_tech("helios_apex") or _has_tech("apex_master") else 0.0)
 	_add_visual_effect("flare", sun, Color(1.0, 0.78, 0.24, 0.96), 0.74, SUN_RADIUS + 36.0)
 	_play_sfx("flare", 0.45)
 	for i in range(enemies.size() - 1, -1, -1):
@@ -3089,12 +3089,10 @@ func _tower_level(tower: Dictionary) -> int:
 func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
 	var stats: Dictionary = tower_library.call("runtime_stats", tower) as Dictionary
 	var tower_type: String = str(tower.get("type", "photon_splitter"))
-	if _has_tech("apex_master"):
-		stats["damage"] = float(stats["damage"]) * 1.08
-		stats["rate"] = float(stats["rate"]) * 1.08
-		stats["range"] = float(stats["range"]) * 1.08
+	var apex_id := ""
 	match tower_type:
 		"photon_splitter":
+			apex_id = "photon_apex"
 			if _has_tech("solar_lens"):
 				stats["range"] = float(stats["range"]) * 1.10
 			if _has_tech("split_beam"):
@@ -3102,17 +3100,20 @@ func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
 			if _has_tech("plasma_core"):
 				stats["rate"] = float(stats["rate"]) * 1.10
 		"cryo_probe":
+			apex_id = "cryo_apex"
 			if _has_tech("long_orbit"):
 				stats["range"] = float(stats["range"]) * 1.05
 			if _has_tech("far_sight"):
 				stats["range"] = float(stats["range"]) * 1.12
 		"bio_lab":
+			apex_id = "bio_apex"
 			if _has_tech("bio_splice"):
 				stats["rate"] = float(stats["rate"]) * 1.12
 			if _has_tech("solar_choir"):
 				stats["damage"] = float(stats["damage"]) * 1.10
 				stats["range"] = float(stats["range"]) * 1.10
 		"magnetic_net":
+			apex_id = "magnetic_apex"
 			if _has_tech("rapid_charge"):
 				stats["rate"] = float(stats["rate"]) * 1.05
 			if _has_tech("magnetic_lattice"):
@@ -3120,15 +3121,21 @@ func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
 			if _has_tech("gravitic_payload"):
 				stats["range"] = float(stats["range"]) * 1.10
 		"helios_cannon":
+			apex_id = "helios_apex"
 			if _has_tech("stellar_lance"):
 				stats["damage"] = float(stats["damage"]) * 1.14
 		"tardigrade_bomb":
+			apex_id = "tardigrade_apex"
 			if _has_tech("pressure_hull"):
 				stats["range"] = float(stats["range"]) * 1.10
 			if _has_tech("spore_nests"):
 				stats["rate"] = float(stats["rate"]) * 1.08
 			if _has_tech("resilient_bloom"):
 				stats["damage"] = float(stats["damage"]) * 1.14
+	if _has_tech(apex_id) or _has_tech("apex_master"):
+		stats["damage"] = float(stats["damage"]) * 1.08
+		stats["rate"] = float(stats["rate"]) * 1.08
+		stats["range"] = float(stats["range"]) * 1.08
 	return stats
 
 
@@ -3142,7 +3149,7 @@ func _tech_slow_duration(source: String) -> float:
 		duration *= 1.25
 	elif source == "magnetic_net" and _has_tech("gravitic_payload"):
 		duration *= 1.25
-	if _has_tech("apex_master"):
+	if _has_tech("apex_master") or (source == "cryo_probe" and _has_tech("cryo_apex")) or (source == "magnetic_net" and _has_tech("magnetic_apex")):
 		duration += 0.4
 	return duration
 

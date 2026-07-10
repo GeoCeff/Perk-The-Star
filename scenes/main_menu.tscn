@@ -542,7 +542,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.94, 1, 1)
 theme_override_fonts/font = ExtResource("3_jk1qb")
 theme_override_font_sizes/font_size = 18
-text = "Command the Sol Defense Corps in a real-time orbital tower defense game. Protect the Sun from Astrophage, photosynthetic microorganisms feeding on stellar energy."
+text = "Command orbiting towers around the Sun, survive the 12-wave Prime campaign or an endless Astrophage swarm, then bank Tech XP into six tower paths with their own Apex versions."
 horizontal_alignment = 1
 autowrap_mode = 3
 

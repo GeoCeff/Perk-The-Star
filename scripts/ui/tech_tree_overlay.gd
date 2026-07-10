@@ -213,36 +213,86 @@ const UPGRADES: Array = [
 		"desc": "Tardigrade Bombs deal 14% more damage.",
 	},
 	{
-		"id": "apex_master",
-		"title": "Apex Plasma Master",
-		"row": 2.5,
+		"id": "photon_apex",
+		"title": "Apex Photon",
+		"row": 0,
 		"col": 3,
 		"tower": "photon_splitter",
-		"cost": 2500,
-		"req": ["plasma_core", "brittle_shells", "solar_choir", "gravitic_payload", "flare_battery", "resilient_bloom"],
-		"desc": "All towers gain 8% damage, rate, and range. Solar Flare deals +10 damage.",
+		"cost": 900,
+		"req": ["plasma_core"],
+		"desc": "Photon Splitters gain 8% damage, rate, and range.",
+	},
+	{
+		"id": "cryo_apex",
+		"title": "Apex Cryo",
+		"row": 1,
+		"col": 3,
+		"tower": "cryo_probe",
+		"cost": 1000,
+		"req": ["brittle_shells"],
+		"desc": "Cryo Probes gain 8% damage, rate, and range. Cryo slows last longer.",
+	},
+	{
+		"id": "bio_apex",
+		"title": "Apex Bio-Lab",
+		"row": 2,
+		"col": 3,
+		"tower": "bio_lab",
+		"cost": 1500,
+		"req": ["solar_choir"],
+		"desc": "Bio-Labs gain 8% damage, rate, and range.",
+	},
+	{
+		"id": "magnetic_apex",
+		"title": "Apex Magnetic",
+		"row": 3,
+		"col": 3,
+		"tower": "magnetic_net",
+		"cost": 1200,
+		"req": ["gravitic_payload"],
+		"desc": "Magnetic Nets gain 8% damage, rate, and range. Magnetic slows last longer.",
+	},
+	{
+		"id": "helios_apex",
+		"title": "Apex Helios",
+		"row": 4,
+		"col": 3,
+		"tower": "helios_cannon",
+		"cost": 1600,
+		"req": ["flare_battery"],
+		"desc": "Helios Cannons gain 8% damage, rate, and range. Solar Flare deals +10 damage.",
+	},
+	{
+		"id": "tardigrade_apex",
+		"title": "Apex Tardigrade",
+		"row": 5,
+		"col": 3,
+		"tower": "tardigrade_bomb",
+		"cost": 1000,
+		"req": ["resilient_bloom"],
+		"desc": "Tardigrade Bombs gain 8% damage, rate, and range.",
 	},
 ]
 
 const LINKS: Array = [
 	["solar_lens", "split_beam"],
 	["split_beam", "plasma_core"],
-	["plasma_core", "apex_master"],
+	["plasma_core", "photon_apex"],
 	["long_orbit", "far_sight"],
 	["far_sight", "brittle_shells"],
-	["brittle_shells", "apex_master"],
+	["brittle_shells", "cryo_apex"],
 	["bio_splice", "salvage_culture"],
 	["salvage_culture", "solar_choir"],
-	["solar_choir", "apex_master"],
+	["solar_choir", "bio_apex"],
 	["rapid_charge", "magnetic_lattice"],
 	["magnetic_lattice", "gravitic_payload"],
-	["gravitic_payload", "apex_master"],
+	["gravitic_payload", "magnetic_apex"],
 	["stellar_lance", "slingshot_coils"],
 	["slingshot_coils", "flare_battery"],
-	["flare_battery", "apex_master"],
+	["flare_battery", "helios_apex"],
 	["pressure_hull", "spore_nests"],
 	["spore_nests", "resilient_bloom"],
-	["resilient_bloom", "apex_master"],
+	["resilient_bloom", "tardigrade_apex"],
 ]
 
 const TOWER_ICONS: Dictionary = {
@@ -253,6 +303,8 @@ const TOWER_ICONS: Dictionary = {
 	"helios_cannon": "res://assets/sprites/clean/towers/helios_cannon.png",
 	"tardigrade_bomb": "res://assets/sprites/clean/towers/tardigrade_bomb.png",
 }
+
+const TECH_TIER_ICON_PATH := "res://assets/ui/tech_tiers/%s_tier_%d.png"
 
 const COLOR_DEEP := Color(0.006, 0.012, 0.024, 0.95)
 const COLOR_CYAN := Color(0.22, 0.84, 0.94, 0.88)
@@ -275,7 +327,6 @@ var title_panel: PanelContainer
 var main_panel: PanelContainer
 var selected_panel: Panel
 var tree_board: TechTreeBoard
-var mastery_panel: PanelContainer
 var selected_box: VBoxContainer
 var selected_title: Label
 var selected_icon: TextureRect
@@ -369,7 +420,7 @@ func _build_overlay() -> void:
 
 	subtitle_label = Label.new()
 	subtitle_label.name = "SubtitleLabel"
-	subtitle_label.text = "Permanent orbital research for campaign clears and endless runs."
+	subtitle_label.text = "Each tower has its own path and apex version."
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle_label.add_theme_font_size_override("font_size", 15)
 	subtitle_label.add_theme_color_override("font_color", Color(0.82, 0.90, 1.0, 0.94))
@@ -396,13 +447,6 @@ func _build_overlay() -> void:
 	root.add_child(tree_board)
 	_build_upgrade_nodes()
 
-	mastery_panel = PanelContainer.new()
-	mastery_panel.name = "MasteryPanel"
-	mastery_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	mastery_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.020, 0.018, 0.050, 0.98), COLOR_CYAN, 8.0, 16.0, 15.0))
-	root.add_child(mastery_panel)
-	_build_mastery_panel()
-
 	if SpaceTheme != null:
 		SpaceTheme.call("apply_fonts", root)
 		SpaceTheme.call("apply_secondary_button", close_button, SpaceTheme.get("ICON_BACK_PATH"))
@@ -412,21 +456,21 @@ func _build_overlay() -> void:
 func _build_selected_panel() -> void:
 	selected_box = VBoxContainer.new()
 	selected_box.name = "SelectedBox"
-	selected_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	selected_box.add_theme_constant_override("separation", 11)
+	selected_box.alignment = BoxContainer.ALIGNMENT_BEGIN
+	selected_box.add_theme_constant_override("separation", 8)
 	selected_panel.add_child(selected_box)
 
 	selected_title = Label.new()
 	selected_title.name = "SelectedTitle"
 	selected_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	selected_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	selected_title.add_theme_font_size_override("font_size", 22)
+	selected_title.add_theme_font_size_override("font_size", 19)
 	selected_title.add_theme_color_override("font_color", COLOR_GOLD)
 	selected_box.add_child(selected_title)
 
 	selected_icon = TextureRect.new()
 	selected_icon.name = "SelectedIcon"
-	selected_icon.custom_minimum_size = Vector2(138, 138)
+	selected_icon.custom_minimum_size = Vector2(104, 104)
 	selected_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 	selected_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	selected_box.add_child(selected_icon)
@@ -434,13 +478,13 @@ func _build_selected_panel() -> void:
 	selected_status = Label.new()
 	selected_status.name = "SelectedStatus"
 	selected_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	selected_status.add_theme_font_size_override("font_size", 21)
+	selected_status.add_theme_font_size_override("font_size", 17)
 	selected_box.add_child(selected_status)
 
 	selected_cost = Label.new()
 	selected_cost.name = "SelectedCost"
 	selected_cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	selected_cost.add_theme_font_size_override("font_size", 15)
+	selected_cost.add_theme_font_size_override("font_size", 13)
 	selected_box.add_child(selected_cost)
 
 	selected_requires = Label.new()
@@ -461,7 +505,7 @@ func _build_selected_panel() -> void:
 
 	unlock_button = Button.new()
 	unlock_button.name = "UnlockButton"
-	unlock_button.custom_minimum_size = Vector2(190, 54)
+	unlock_button.custom_minimum_size = Vector2(190, 48)
 	unlock_button.pressed.connect(_try_unlock_selected)
 	selected_box.add_child(unlock_button)
 	if SpaceTheme != null:
@@ -485,9 +529,9 @@ func _build_upgrade_nodes() -> void:
 		button.name = "IconButton"
 		button.text = ""
 		button.focus_mode = Control.FOCUS_ALL
-		button.tooltip_text = str(upgrade["title"])
+		button.tooltip_text = _upgrade_tooltip(upgrade)
 		button.expand_icon = true
-		button.set_button_icon(_load_icon(str(upgrade["tower"])))
+		button.set_button_icon(_load_upgrade_icon(upgrade))
 		button.pressed.connect(_select_upgrade.bind(id))
 		card.add_child(button)
 		_style_upgrade_button(button, state)
@@ -508,35 +552,6 @@ func _build_upgrade_nodes() -> void:
 		tag.add_theme_font_size_override("font_size", 9)
 		tag.add_theme_color_override("font_color", _state_color(state))
 		card.add_child(tag)
-
-
-func _build_mastery_panel() -> void:
-	var box := VBoxContainer.new()
-	box.name = "MasteryBox"
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 10)
-	mastery_panel.add_child(box)
-
-	var title := Label.new()
-	title.name = "MasteryTitle"
-	title.text = "APEX PROTOCOL"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 15)
-	box.add_child(title)
-
-	for item in [
-		{"text": "CORE", "state": "unlocked", "tower": "photon_splitter"},
-		{"text": "FUSION", "state": "ready", "tower": "helios_cannon"},
-		{"text": "MASTER", "state": "master", "tower": "bio_lab"},
-	]:
-		var slot := Button.new()
-		slot.text = str(item["text"])
-		slot.custom_minimum_size = Vector2(126, 92)
-		slot.expand_icon = true
-		slot.set_button_icon(_load_icon(str(item["tower"])))
-		slot.pressed.connect(_select_upgrade.bind("apex_master"))
-		box.add_child(slot)
-		_style_upgrade_button(slot, str(item["state"]))
 
 
 func _layout_overlay() -> void:
@@ -565,8 +580,7 @@ func _layout_overlay() -> void:
 	var content_h: float = content_bottom - content_top
 	var gap: float = 20.0
 	var left_w: float = clampf(panel_size.x * 0.24, 260.0, 320.0)
-	var right_w: float = clampf(panel_size.x * 0.12, 142.0, 170.0)
-	var tree_w: float = panel_size.x - left_w - right_w - gap * 4.0
+	var tree_w: float = panel_size.x - left_w - gap * 3.0
 	var x: float = panel_pos.x + gap
 
 	selected_panel.position = Vector2(x, content_top)
@@ -574,17 +588,13 @@ func _layout_overlay() -> void:
 	if selected_box != null:
 		selected_box.position = Vector2(18.0, 18.0)
 		selected_box.size = selected_panel.size - Vector2(36.0, 36.0)
-		selected_title.custom_minimum_size = Vector2(left_w - 48.0, 56.0)
-		selected_desc.custom_minimum_size = Vector2(left_w - 48.0, 78.0)
-		selected_requires.custom_minimum_size = Vector2(left_w - 48.0, 34.0)
+		selected_title.custom_minimum_size = Vector2(left_w - 48.0, 44.0)
+		selected_desc.custom_minimum_size = Vector2(left_w - 48.0, 62.0)
+		selected_requires.custom_minimum_size = Vector2(left_w - 48.0, 28.0)
 	x += left_w + gap
 
 	tree_board.position = Vector2(x, content_top + 18.0)
 	tree_board.size = Vector2(tree_w, content_h - 36.0)
-	x += tree_w + gap
-
-	mastery_panel.position = Vector2(x, content_top + 34.0)
-	mastery_panel.size = Vector2(right_w, content_h - 68.0)
 
 	_layout_upgrade_nodes()
 
@@ -632,13 +642,13 @@ func _select_upgrade(id: String) -> void:
 	var selected_data: Dictionary = upgrade_by_id[id]
 	var state: String = _upgrade_state(selected_data)
 	selected_title.text = str(selected_data["title"]).to_upper()
-	selected_icon.texture = _load_icon(str(selected_data["tower"]))
+	selected_icon.texture = _load_upgrade_icon(selected_data)
 	selected_status.text = _upgrade_tag(selected_data)
 	selected_status.add_theme_color_override("font_color", _state_color(state))
 	selected_cost.text = "Research cost  %s XP" % _format_number(int(selected_data["cost"]))
 	selected_cost.add_theme_color_override("font_color", COLOR_GOLD if state != "locked" else COLOR_MUTED)
 	selected_requires.text = _requirement_text(selected_data)
-	selected_desc.text = str(selected_data["desc"])
+	selected_desc.text = _upgrade_description(selected_data)
 	_update_unlock_button(selected_data)
 
 	for id_key in node_cards:
@@ -701,7 +711,7 @@ func _update_unlock_button(upgrade: Dictionary) -> void:
 func _upgrade_state(upgrade: Dictionary) -> String:
 	var id: String = str(upgrade["id"])
 	if bool(GameState.call("has_tech", id)):
-		return "master" if id == "apex_master" else "unlocked"
+		return "master" if id.ends_with("_apex") else "unlocked"
 	if not _requirements_met(upgrade):
 		return "locked"
 	return "ready" if _tech_xp() >= int(upgrade["cost"]) else "locked"
@@ -732,6 +742,18 @@ func _requirement_text(upgrade: Dictionary) -> String:
 	return "Requires  %s" % " + ".join(names)
 
 
+func _upgrade_description(upgrade: Dictionary) -> String:
+	return "Tier %d - %s" % [_upgrade_tier(upgrade), str(upgrade.get("desc", ""))]
+
+
+func _upgrade_tooltip(upgrade: Dictionary) -> String:
+	return "%s\n%s\n%s" % [
+		str(upgrade["title"]),
+		_upgrade_description(upgrade),
+		_requirement_text(upgrade),
+	]
+
+
 func _requirements_met(upgrade: Dictionary) -> bool:
 	for req in _requirements(upgrade):
 		if not bool(GameState.call("has_tech", str(req))):
@@ -744,6 +766,10 @@ func _requirements(upgrade: Dictionary) -> Array:
 	if req is Array:
 		return req
 	return []
+
+
+func _upgrade_tier(upgrade: Dictionary) -> int:
+	return clampi(int(float(upgrade.get("col", 0))) + 1, 1, 4)
 
 
 func _close() -> void:
@@ -766,8 +792,26 @@ func _format_number(value: int) -> String:
 	return out
 
 
+func _load_upgrade_icon(upgrade: Dictionary) -> Texture2D:
+	var tower := str(upgrade["tower"])
+	var fallback := str(TOWER_ICONS.get(tower, TOWER_ICONS["photon_splitter"]))
+	return _load_texture(TECH_TIER_ICON_PATH % [tower, _upgrade_tier(upgrade)], fallback)
+
+
 func _load_icon(tower: String) -> Texture2D:
-	return load(str(TOWER_ICONS.get(tower, TOWER_ICONS["photon_splitter"]))) as Texture2D
+	return _load_texture(str(TOWER_ICONS.get(tower, TOWER_ICONS["photon_splitter"])))
+
+
+func _load_texture(path: String, fallback_path: String = "") -> Texture2D:
+	var resource := load(path)
+	if resource is Texture2D:
+		return resource
+	var image := Image.new()
+	if image.load(path) == OK:
+		return ImageTexture.create_from_image(image)
+	if not fallback_path.is_empty() and fallback_path != path:
+		return _load_texture(fallback_path)
+	return null
 
 
 func _state_color(state: String) -> Color:

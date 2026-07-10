@@ -1,6 +1,6 @@
 # Perk the Star
 
-Perk the Star is a Godot 4.6 orbital tower defense game. Defend the Sun by placing towers on rotating orbital rings, clearing JSON-authored Astrophage waves, and keeping luminosity above zero.
+Perk the Star is a Godot 4.6 orbital tower defense game about defending the Sun with satellites that rotate on concentric rings. Campaign mode is a 12-wave Prime mission; Endless mode keeps scaling enemy mix, HP, speed, and pressure; Tech XP turns finished runs into permanent tower-path unlocks.
 
 The project now keeps most reusable systems in C++ GDExtension and leaves `scripts/game/game.gd` as the main Godot gameplay coordinator. That makes the code easier to explain: C++ handles reusable data, math, HUD, audio, and helper systems; GDScript connects the scene, input, drawing, and wave flow.
 

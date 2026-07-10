@@ -51,6 +51,7 @@ void CodexNative::_ready() {
     body_label = node_as<RichTextLabel>(this, "panel/margin/root_box/content_box/article_box/body_scroll/body_label");
 
     nav_buttons["briefing"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_briefing");
+    nav_buttons["controls"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_controls");
     nav_buttons["systems"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_systems");
     nav_buttons["towers"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_towers");
     nav_buttons["astrophage"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_astrophage");
@@ -164,35 +165,68 @@ void CodexNative::apply_style() {
 }
 
 void CodexNative::build_sections() {
-    sections["briefing"] = section("Mission Briefing", R"(Perk the Star is a single-player, real-time orbital tower defense game. You command the Sol Defense Corps and protect the Sun from Astrophage: photosynthetic microorganisms feeding on stellar energy.
+    sections["briefing"] = section("Mission Briefing", R"(Perk the Star is a single-player orbital tower defense game about protecting the Sun from Astrophage: photosynthetic microorganisms that feed on stellar energy and breach the core if the orbit grid fails.
 
 Objective
-- Keep luminosity above zero.
-- Clear all 12 JSON-authored waves.
-- Spend Sol Credits on orbiting defense satellites.
-- Build, upgrade, or sell towers even while a wave is active.
-- Survive through Astrophage Prime.
+- Keep luminosity above zero. Every breach costs light; Burrowers keep draining until Bio-Lab clears them.
+- Campaign clears 12 authored waves and ends with Astrophage Prime.
+- Endless keeps the same rules, then scales enemy count, mix, speed, HP, breach damage, and rewards.
+- Spend Sol Credits during the run on orbital towers, upgrades, and emergency rebuilds.
+- Bank Tech XP after runs for tower-specific research paths. Every tower line now has its own Apex version.
+- Read Wave Intel before launching. It lists enemy tags, ring pressure, rewards, and the cleanest counter plan.
+
+Field Doctrine
+- Coverage wins early waves: use cheap towers on fast rings before chasing heavy damage.
+- Control buys time: Cryo and Magnetic slows let Helios and Tardigrade finish targets.
+- Mixed damage prevents hard counters: Mimics ignore Photon, Farmers absorb Photon and Helios, and Prime needs Bio-Lab.
+- Sell stale placements when pressure moves. A refund is better than a tower watching empty space.
+- Fire Solar Flare when a wave is about to breach, not after the Sun has already paid for it.
 
 Command phrase
 Defend me, defend me! - Oa ka Perk!)");
 
+    sections["controls"] = section("Field Controls", R"(Build
+- Left click a tower in the Tower Bay, then click an open orbital slot.
+- Click a placed tower to upgrade, sell, or inspect it.
+- Number keys 1-6 select towers from the bay.
+- Press T to open the Tech Tree between decisions.
+
+Camera
+- Mouse wheel zooms around the cursor.
+- WASD, screen-edge hover, or right/middle drag pans around the star.
+- Home, 0, or Center Sun recenters the view.
+
+Wave Tools
+- Space or Enter starts the next ready wave.
+- Auto Start launches ready waves after a short countdown.
+- F fires Solar Flare when charged.
+- Esc opens or closes pause screens.
+
+Fast Read
+- Start Wave when the build plan matches Wave Intel.
+- Upgrade towers that are already firing before buying quiet coverage.
+- Pause to check this codex, retry, change settings, or return to menu.)");
+
     sections["systems"] = section("Core Systems", R"(GameState
-Central runtime data: luminosity, Sol Credits, wave phase, score, signals, flare charge, tutorial completion, screen shake, and Auto Start.
+Central runtime data for luminosity, Sol Credits, wave phase, score, flare charge, tutorial completion, screen shake, Auto Start, and persistent Tech XP.
 
 Sun
 Tracks luminosity, expression states, and death/victory state. The Sun changes expression as luminosity drops.
 
 OrbitalTower
-Orbiting defense satellites. Their value depends on orbital radius, period, firing cooldown, tower level, and engagement windows.
+Orbiting defense satellites. Their value depends on orbital radius, period, cooldown, level, line of sight, and how long their ring keeps targets in range.
 
 WaveManager
-Loads wave JSON and manages the 12-wave spawn loop.
+Loads campaign wave JSON and feeds generated Endless waves into the same spawn flow.
 
 SolarFlare
-Manual radial burst. The flare charges every 3 cleared waves and can be fired during an active wave to relieve pressure.
+Manual radial burst. It charges from cleared waves, punishes packed lanes, and improves through Helios research.
+
+TechTree
+Permanent run-to-run research. Each tower has three upgrades into its own Apex version; future tower merging can build on those separate apex endpoints.
 
 UIManager
-HUD, tower hover cards, tower management, wave intel, tutorial overlay, pause menu, settings, codex, and end-state buttons.
+HUD, tower hover cards, tower management, wave intel, tech tree, tutorial overlay, pause menu, settings, codex, and end-state buttons.
 
 Camera
 Mouse wheel zooms around the cursor. Right/middle drag, screen-edge hover, and WASD pan around the star. Center Sun snaps back.)");
@@ -251,9 +285,10 @@ Wave Plan
 - Wave 7: night-side ring pressure.
 - Wave 10: Bio-Lab boost.
 - Wave 12: Astrophage Prime.
+- Endless waves scale mix, count, HP, speed, breach damage, and rewards.
 
 Wave Intel
-The HUD previews enemy counts, warning tags, reward, and a quick counter hint before each wave. Auto Start can launch ready waves after a short countdown.)");
+The HUD previews enemy counts, warning tags, reward, and a quick counter hint before each wave. Auto Start can launch ready waves after a short countdown. Press T between decisions to spend Tech XP.)");
 
     sections["endings"] = section("Victory + Failure", R"(Full Shine
 Clear 12 waves with luminosity above 80%.

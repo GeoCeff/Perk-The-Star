@@ -97,6 +97,12 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Briefing"
 
+[node name="btn_controls" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
+custom_minimum_size = Vector2(250, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Field Controls"
+
 [node name="btn_systems" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
 custom_minimum_size = Vector2(250, 46)
 layout_mode = 2
