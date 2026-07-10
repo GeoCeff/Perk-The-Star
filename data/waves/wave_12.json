@@ -2,24 +2,23 @@
     "wave": 12,
     "name": "Astrophage Prime",
     "wave_type": "boss",
-    "spawn_interval": 0.5,
+    "spawn_interval": 0.6,
     "enemies": [
-        { "variant": "drifter", "count": 40 },
-        { "variant": "bloom", "count": 22 },
-        { "variant": "burrower", "count": 10 },
-        { "variant": "mimic", "count": 15 },
-        { "variant": "farmer", "count": 20 },
+        { "variant": "drifter", "count": 30 },
+        { "variant": "bloom", "count": 11 },
+        { "variant": "burrower", "count": 5 },
+        { "variant": "mimic", "count": 10 },
+        { "variant": "farmer", "count": 8 },
         { "variant": "prime", "count": 1 }
     ],
     "clash_groups": [
         {
             "variants": [
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "bloom", "bloom", "bloom", "bloom", "bloom",
-                "bloom", "bloom", "bloom", "bloom", "bloom"
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter", "drifter", "drifter",
+                "bloom", "bloom", "bloom", "bloom", "bloom", "bloom"
             ],
             "spawn_pattern": "ring",
             "delay_before": 0.0
@@ -27,38 +26,34 @@
         {
             "variants": [
                 "burrower", "burrower", "burrower", "burrower", "burrower",
-                "burrower", "burrower", "burrower", "burrower", "burrower",
-                "mimic", "mimic", "mimic", "mimic", "mimic",
-                "mimic", "mimic", "mimic", "mimic", "mimic"
+                "mimic", "mimic", "mimic", "mimic", "mimic", "mimic"
             ],
             "spawn_pattern": "v_shape",
-            "delay_before": 10.0
+            "spread_angle_deg": 58,
+            "delay_before": 11.0
         },
         {
             "variants": [
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "farmer", "farmer", "farmer", "farmer", "farmer",
-                "farmer", "farmer", "farmer", "farmer", "farmer",
-                "farmer", "farmer", "farmer", "farmer", "farmer",
-                "farmer", "farmer", "farmer", "farmer", "farmer",
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter",
+                "farmer", "farmer", "farmer", "farmer",
+                "farmer", "farmer", "farmer", "farmer",
                 "bloom", "bloom", "bloom", "bloom", "bloom",
-                "bloom", "bloom", "bloom", "bloom", "bloom", "bloom", "bloom",
-                "mimic", "mimic", "mimic", "mimic", "mimic"
+                "mimic", "mimic", "mimic", "mimic"
             ],
             "spawn_pattern": "ring",
-            "delay_before": 20.0
+            "delay_before": 23.0
         },
         {
             "variants": ["prime"],
             "spawn_pattern": "center_top",
-            "delay_before": 35.0
+            "delay_before": 34.0
         }
     ],
     "event": null,
-    "reward_base": 250,
+    "reward_base": 280,
     "escalation_threshold_seconds": null,
-    "tutorial_hint": "ASTROPHAGE PRIME IS COMING. Shell blocks normal fire, Active is vulnerable, Frenzy accelerates and spawns Drifters. Bio-Lab cracks the shell!"
+    "tutorial_hint": "ASTROPHAGE PRIME IS COMING. Bio-Lab cracks the shell; slows keep escorts controlled; Helios and Tardigrade finish the core."
 }

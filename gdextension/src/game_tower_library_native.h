@@ -16,9 +16,9 @@ protected:
 
 public:
     static constexpr int MAX_LEVEL = 3;
-    static constexpr double DAMAGE_LEVEL_BONUS = 0.28;
-    static constexpr double RATE_LEVEL_BONUS = 0.16;
-    static constexpr double RANGE_LEVEL_BONUS = 0.07;
+    static constexpr double DAMAGE_LEVEL_BONUS = 0.32;
+    static constexpr double RATE_LEVEL_BONUS = 0.18;
+    static constexpr double RANGE_LEVEL_BONUS = 0.08;
     static constexpr double SELL_REFUND_RATIO = 0.60;
 
     Array tower_order() const;

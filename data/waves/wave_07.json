@@ -4,24 +4,24 @@
     "wave_type": "formation",
     "spawn_interval": 1.8,
     "enemies": [
-        { "variant": "drifter", "count": 24 },
-        { "variant": "bloom", "count": 8 },
-        { "variant": "burrower", "count": 7 },
-        { "variant": "mimic", "count": 5 }
+        { "variant": "drifter", "count": 16 },
+        { "variant": "bloom", "count": 5 },
+        { "variant": "burrower", "count": 4 },
+        { "variant": "mimic", "count": 3 }
     ],
     "formation": {
         "type": "v_shape",
         "variants": ["burrower"],
-        "count": 7,
+        "count": 4,
         "spread_angle_deg": 45
     },
     "event": {
         "type": "ring_blind",
         "rings": [0, 1],
-        "duration": 20,
+        "duration": 14,
         "trigger_at_percent": 0.1
     },
-    "reward_base": 88,
-    "escalation_threshold_seconds": 40,
+    "reward_base": 105,
+    "escalation_threshold_seconds": 48,
     "tutorial_hint": "Burrowers arrive in formation! Inner rings go dark - rely on outer towers."
 }

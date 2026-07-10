@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://bc5265q8mnp70" path="res://assets/ui/icons/icon_settings.png" id="7_rcqid"]
 [ext_resource type="Texture2D" uid="uid://bbq21rshirdgk" path="res://assets/ui/icons/icon_back.png" id="8_1ajci"]
 [ext_resource type="Texture2D" uid="uid://dkwmyvmnmwvcr" path="res://assets/ui/icons/icon_credits.svg" id="9_credits"]
+[ext_resource type="Script" path="res://scripts/ui/main_menu_mode_router.gd" id="10_modes"]
 
 [sub_resource type="Shader" id="Shader_7b55j"]
 code = "
@@ -489,9 +490,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -430.0
-offset_top = -350.0
+offset_top = -380.0
 offset_right = 430.0
-offset_bottom = 350.0
+offset_bottom = 380.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -506,7 +507,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="menu_box" type="VBoxContainer" parent="CenterContainer" unique_id=2091086566]
-custom_minimum_size = Vector2(780, 640)
+custom_minimum_size = Vector2(780, 700)
 layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 1
@@ -550,7 +551,7 @@ custom_minimum_size = Vector2(560, 8)
 layout_mode = 2
 
 [node name="button_box" type="VBoxContainer" parent="CenterContainer/menu_box" unique_id=345631654]
-custom_minimum_size = Vector2(420, 270)
+custom_minimum_size = Vector2(420, 330)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/separation = 8
@@ -573,6 +574,27 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_8egab")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_gw5y6")
 theme_override_styles/focus = SubResource("StyleBoxFlat_svtp6")
 text = "Start Defense"
+icon = ExtResource("5_lgwnu")
+expand_icon = true
+
+[node name="btn_endless" type="MainMenuPlayButtonNative" parent="CenterContainer/menu_box/button_box"]
+custom_minimum_size = Vector2(420, 52)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.99, 1, 1)
+theme_override_colors/font_focus_color = Color(0.96, 0.99, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.96, 0.99, 1, 1)
+theme_override_colors/font_hover_color = Color(0.96, 0.99, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.44, 0.52, 0.6, 1)
+theme_override_constants/outline_size = 1
+theme_override_constants/h_separation = 10
+theme_override_fonts/font = ExtResource("4_5dd4i")
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_1a85y")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_hl5e0")
+theme_override_styles/hover = SubResource("StyleBoxFlat_engjn")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_6h3lr")
+theme_override_styles/focus = SubResource("StyleBoxFlat_dj67d")
+text = "Endless Defense"
 icon = ExtResource("5_lgwnu")
 expand_icon = true
 
@@ -717,3 +739,6 @@ theme_override_fonts/font = ExtResource("3_jk1qb")
 theme_override_font_sizes/font_size = 16
 text = "Geo Ceff Gabaisen & Dexter Juevesano"
 horizontal_alignment = 2
+
+[node name="ModeRouter" type="Node" parent="."]
+script = ExtResource("10_modes")

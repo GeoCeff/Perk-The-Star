@@ -30,39 +30,39 @@ Dictionary tower_config_raw(const String& tower_type) {
     Dictionary cfg;
     if (tower_type == "cryo_probe") {
         cfg["label"] = "Cryo Probe";
-        cfg["damage"] = 6.0;
-        cfg["rate"] = 0.62;
-        cfg["range"] = 245.0;
+        cfg["damage"] = 8.0;
+        cfg["rate"] = 0.72;
+        cfg["range"] = 265.0;
         cfg["color"] = Color(0.34, 0.86, 1.0);
     } else if (tower_type == "bio_lab") {
         cfg["label"] = "Bio-Lab Station";
-        cfg["damage"] = 12.0;
-        cfg["rate"] = 0.60;
-        cfg["range"] = 260.0;
+        cfg["damage"] = 16.0;
+        cfg["rate"] = 0.68;
+        cfg["range"] = 280.0;
         cfg["color"] = Color(0.46, 1.0, 0.52);
     } else if (tower_type == "magnetic_net") {
         cfg["label"] = "Magnetic Net";
-        cfg["damage"] = 5.0;
-        cfg["rate"] = 0.48;
-        cfg["range"] = 285.0;
+        cfg["damage"] = 7.0;
+        cfg["rate"] = 0.58;
+        cfg["range"] = 310.0;
         cfg["color"] = Color(0.76, 0.62, 1.0);
     } else if (tower_type == "helios_cannon") {
         cfg["label"] = "Helios Cannon";
-        cfg["damage"] = 84.0;
-        cfg["rate"] = 0.16;
-        cfg["range"] = 305.0;
+        cfg["damage"] = 92.0;
+        cfg["rate"] = 0.18;
+        cfg["range"] = 325.0;
         cfg["color"] = Color(1.0, 0.43, 0.22);
     } else if (tower_type == "tardigrade_bomb") {
         cfg["label"] = "Tardigrade Bomb";
-        cfg["damage"] = 24.0;
-        cfg["rate"] = 0.42;
-        cfg["range"] = 260.0;
+        cfg["damage"] = 32.0;
+        cfg["rate"] = 0.46;
+        cfg["range"] = 275.0;
         cfg["color"] = Color(1.0, 0.58, 0.76);
     } else {
         cfg["label"] = "Photon Splitter";
-        cfg["damage"] = 17.0;
+        cfg["damage"] = 19.0;
         cfg["rate"] = 0.95;
-        cfg["range"] = 235.0;
+        cfg["range"] = 245.0;
         cfg["color"] = Color(1.0, 0.86, 0.28);
     }
     return cfg;
@@ -167,12 +167,12 @@ Dictionary GameTowerLibraryNative::runtime_stats(const Dictionary& tower) const 
 }
 
 int GameTowerLibraryNative::tower_cost(const String& tower_type) const {
-    if (tower_type == "cryo_probe") return 32;
-    if (tower_type == "bio_lab") return 48;
-    if (tower_type == "magnetic_net") return 44;
-    if (tower_type == "helios_cannon") return 78;
-    if (tower_type == "tardigrade_bomb") return 68;
-    if (tower_type == "photon_splitter") return 25;
+    if (tower_type == "cryo_probe") return 28;
+    if (tower_type == "bio_lab") return 40;
+    if (tower_type == "magnetic_net") return 38;
+    if (tower_type == "helios_cannon") return 68;
+    if (tower_type == "tardigrade_bomb") return 58;
+    if (tower_type == "photon_splitter") return 22;
     return 30;
 }
 
@@ -182,12 +182,12 @@ int GameTowerLibraryNative::upgrade_cost(const Dictionary& tower) const {
         return 0;
     }
     const String tower_type = string_from_dict(tower, "type", "photon_splitter");
-    int base_cost = 35;
-    if (tower_type == "cryo_probe") base_cost = 42;
-    else if (tower_type == "bio_lab") base_cost = 65;
-    else if (tower_type == "magnetic_net") base_cost = 58;
-    else if (tower_type == "helios_cannon") base_cost = 105;
-    else if (tower_type == "tardigrade_bomb") base_cost = 92;
+    int base_cost = 28;
+    if (tower_type == "cryo_probe") base_cost = 36;
+    else if (tower_type == "bio_lab") base_cost = 52;
+    else if (tower_type == "magnetic_net") base_cost = 48;
+    else if (tower_type == "helios_cannon") base_cost = 88;
+    else if (tower_type == "tardigrade_bomb") base_cost = 74;
     return static_cast<int>(std::round(static_cast<double>(base_cost) * std::pow(1.45, static_cast<double>(tower_level - 1))));
 }
 

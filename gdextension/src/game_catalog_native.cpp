@@ -181,11 +181,11 @@ Array GameCatalogNative::rings() const {
 
 Dictionary GameCatalogNative::enemy_configs() const {
     Dictionary data;
-    data["drifter"] = enemy(0, "Drifter", 32.0, 47.0, 0.05, 6, 15.0, 46.0, Color(0.96, 0.42, 0.48));
-    data["bloom"] = enemy(1, "Bloom", 68.0, 42.0, 0.05, 12, 18.0, 54.0, Color(1.0, 0.62, 0.36));
-    data["burrower"] = enemy(2, "Coronal Burrower", 120.0, 31.0, 0.08, 24, 19.0, 58.0, Color(0.76, 0.50, 0.30));
-    data["mimic"] = enemy(3, "Photon Mimic", 58.0, 48.0, 0.05, 17, 16.0, 48.0, Color(0.70, 0.62, 0.98));
-    data["farmer"] = enemy(4, "Solar Farmer", 50.0, 44.0, 0.05, 15, 17.0, 50.0, Color(0.55, 0.92, 0.45));
-    data["prime"] = enemy(5, "Astrophage Prime", 560.0, 23.0, 0.12, 130, 34.0, 84.0, Color(1.0, 0.18, 0.15));
+    data["drifter"] = enemy(0, "Drifter", 30.0, 45.0, 0.045, 7, 15.0, 46.0, Color(0.96, 0.42, 0.48));
+    data["bloom"] = enemy(1, "Bloom", 62.0, 40.0, 0.045, 13, 18.0, 54.0, Color(1.0, 0.62, 0.36));
+    data["burrower"] = enemy(2, "Coronal Burrower", 105.0, 29.0, 0.065, 26, 19.0, 58.0, Color(0.76, 0.50, 0.30));
+    data["mimic"] = enemy(3, "Photon Mimic", 54.0, 46.0, 0.045, 18, 16.0, 48.0, Color(0.70, 0.62, 0.98));
+    data["farmer"] = enemy(4, "Solar Farmer", 48.0, 42.0, 0.045, 17, 17.0, 50.0, Color(0.55, 0.92, 0.45));
+    data["prime"] = enemy(5, "Astrophage Prime", 480.0, 22.0, 0.10, 150, 34.0, 84.0, Color(1.0, 0.18, 0.15));
     return data;
 }

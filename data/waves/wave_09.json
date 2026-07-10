@@ -2,50 +2,50 @@
     "wave": 9,
     "name": "Feeding Frenzy",
     "wave_type": "clash",
-    "spawn_interval": 1.3,
+    "spawn_interval": 1.4,
     "enemies": [
-        { "variant": "drifter", "count": 32 },
-        { "variant": "bloom", "count": 10 },
-        { "variant": "burrower", "count": 7 },
+        { "variant": "drifter", "count": 26 },
+        { "variant": "bloom", "count": 7 },
+        { "variant": "burrower", "count": 4 },
         { "variant": "mimic", "count": 7 },
-        { "variant": "farmer", "count": 7 }
+        { "variant": "farmer", "count": 6 }
     ],
     "clash_groups": [
         {
             "variants": [
                 "drifter", "drifter", "drifter", "drifter", "drifter",
                 "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "bloom", "bloom", "bloom", "bloom", "bloom"
+                "drifter", "drifter", "drifter", "drifter",
+                "bloom", "bloom", "bloom", "bloom"
             ],
             "spawn_pattern": "ring",
             "delay_before": 0.0
         },
         {
             "variants": [
-                "burrower", "burrower", "burrower", "burrower", "burrower", "burrower", "burrower",
+                "burrower", "burrower", "burrower", "burrower",
                 "mimic", "mimic", "mimic", "mimic",
                 "farmer", "farmer", "farmer"
             ],
             "spawn_pattern": "v_shape",
-            "delay_before": 10.0
+            "spread_angle_deg": 55,
+            "delay_before": 11.0
         },
         {
             "variants": [
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter",
-                "bloom", "bloom", "bloom", "bloom", "bloom",
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter", "drifter", "drifter",
+                "bloom", "bloom", "bloom",
                 "mimic", "mimic", "mimic",
-                "farmer", "farmer", "farmer", "farmer"
+                "farmer", "farmer", "farmer"
             ],
             "spawn_pattern": "ring",
-            "delay_before": 22.0
+            "delay_before": 24.0
         }
     ],
     "event": null,
-    "reward_base": 120,
-    "escalation_threshold_seconds": 50,
-    "tutorial_hint": "All enemy types at once. Prepare your whole defense before this one."
+    "reward_base": 145,
+    "escalation_threshold_seconds": 58,
+    "tutorial_hint": "All enemy types appear, but in separated pulses. Counter each pulse instead of panic-building everything."
 }

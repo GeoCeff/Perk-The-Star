@@ -4,12 +4,12 @@
     "wave_type": "normal",
     "spawn_interval": 2.5,
     "enemies": [
-        { "variant": "drifter", "count": 18 },
-        { "variant": "bloom", "count": 6 },
-        { "variant": "burrower", "count": 4 }
+        { "variant": "drifter", "count": 12 },
+        { "variant": "bloom", "count": 4 },
+        { "variant": "burrower", "count": 2 }
     ],
     "event": null,
-    "reward_base": 50,
+    "reward_base": 65,
     "escalation_threshold_seconds": null,
     "tutorial_hint": "Burrowers drain luminosity at the corona. Bio-Lab excavates them."
 }

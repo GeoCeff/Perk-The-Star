@@ -2,6 +2,7 @@
 
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/config_file.hpp>
+#include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 
 namespace godot {
@@ -34,6 +35,9 @@ public:
     void set_tutorial_completed(bool completed = true);
     void set_screen_shake_enabled(bool enabled);
     void set_auto_start_waves_enabled(bool enabled);
+    int add_tech_xp(int amount);
+    bool unlock_tech(const String& tech_id, int cost, const Array& requirements = Array());
+    bool has_tech(const String& tech_id) const;
     void enable_test_run(int start_wave);
     void clear_test_run();
     int consume_test_start_wave();
@@ -85,6 +89,8 @@ public:
     bool get_tutorial_completed() const;
     bool get_screen_shake_enabled() const;
     bool get_auto_start_waves_enabled() const;
+    int get_tech_xp() const;
+    Array get_unlocked_tech() const;
     bool get_test_unlimited_sol_enabled() const;
     bool get_music_changed_by_user_this_session() const;
     int get_game_phase() const;
@@ -109,12 +115,15 @@ private:
     bool tutorial_completed = false;
     bool screen_shake_enabled = true;
     bool auto_start_waves_enabled = false;
+    int tech_xp = 0;
+    Array unlocked_tech;
     bool test_unlimited_sol_enabled = false;
     int pending_test_start_wave = 0;
     bool music_changed_by_user_this_session = false;
     int game_phase = MENU;
 
     Ref<ConfigFile> settings_config() const;
+    void save_tech_progress();
     void trigger_game_over();
     Dictionary tower_costs() const;
     Dictionary tower_upgrade_costs() const;

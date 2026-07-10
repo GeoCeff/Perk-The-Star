@@ -4,44 +4,44 @@
     "wave_type": "clash",
     "spawn_interval": 2.0,
     "enemies": [
-        { "variant": "drifter", "count": 20 },
-        { "variant": "bloom", "count": 8 },
-        { "variant": "mimic", "count": 5 }
+        { "variant": "drifter", "count": 16 },
+        { "variant": "bloom", "count": 5 },
+        { "variant": "mimic", "count": 4 }
     ],
     "clash_groups": [
         {
             "variants": [
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter"
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter", "drifter", "drifter"
             ],
             "spawn_pattern": "ring",
             "delay_before": 0.0
         },
         {
             "variants": [
-                "bloom", "bloom", "bloom", "bloom",
-                "mimic", "mimic", "mimic"
+                "bloom", "bloom", "bloom",
+                "mimic", "mimic"
             ],
             "spawn_pattern": "random",
-            "delay_before": 5.0
+            "delay_before": 6.0
         },
         {
             "variants": [
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "bloom", "bloom", "bloom", "bloom",
+                "drifter", "drifter", "drifter", "drifter",
+                "drifter", "drifter", "drifter", "drifter",
+                "bloom", "bloom",
                 "mimic", "mimic"
             ],
             "spawn_pattern": "ring",
-            "delay_before": 14.0
+            "delay_before": 15.0
         }
     ],
     "event": {
         "type": "mid_wave_autoflare",
         "trigger_at_percent": 0.5,
-        "cryo_disruption_seconds": 8
+        "cryo_disruption_seconds": 5
     },
-    "reward_base": 75,
-    "escalation_threshold_seconds": 35,
-    "tutorial_hint": "MASSIVE WAVE - enemies arrive in rings! A mid-wave solar storm fires automatically."
+    "reward_base": 90,
+    "escalation_threshold_seconds": 42,
+    "tutorial_hint": "MASSIVE WAVE - enemies arrive in rings. A mid-wave solar storm fires automatically."
 }

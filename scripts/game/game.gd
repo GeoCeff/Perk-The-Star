@@ -21,6 +21,7 @@ const BOSS_BGM_PATH: String = "res://assets/audio/bgm/final/BOSS.ogg"
 const END_BGM_PATH: String = "res://assets/audio/bgm/end.ogg"
 const GAME_HUD_SCENE_PATH: String = "res://scenes/ui/game_hud.tscn"
 const GAME_PAUSE_MENU_SCENE_PATH: String = "res://scenes/ui/game_pause_menu.tscn"
+const TECH_TREE_OVERLAY_SCENE_PATH: String = "res://scenes/ui/tech_tree_overlay.tscn"
 const MAIN_MENU_SCENE_PATH: String = "res://scenes/main_menu.tscn"
 const BATTLE_BACKGROUND_PATH: String = "res://assets/sprites/backgrounds/battle_nebula_hq.png"
 const END_TITLE_FONT_PATH: String = "res://assets/fonts/Kenney Future.ttf"
@@ -31,6 +32,9 @@ const ENEMY_STATUS_FONT_SIZE: int = 10
 const ENEMY_HIT_FLASH_SECONDS: float = 0.24
 const HEALTH_BAR_HEIGHT: float = 6.0
 const AUTO_START_DELAY: float = 3.0
+const RUN_MODE_META: StringName = &"run_mode"
+const RUN_MODE_ENDLESS: String = "endless"
+const ENDLESS_WAVE_CAP: int = 999
 
 var ENEMY_ASSET_PATHS: Dictionary = game_catalog.call("enemy_asset_paths") as Dictionary
 var ENEMY_ANIMATION_PATHS: Dictionary = game_catalog.call("enemy_animation_paths") as Dictionary
@@ -97,6 +101,9 @@ var wave_library: RefCounted
 var selected_tower: String = "photon_splitter"
 var managed_tower_ring: int = -1
 var managed_tower_slot: int = -1
+var run_mode: String = "campaign"
+var endless_mode: bool = false
+var run_tech_xp_awarded: int = 0
 var pending_test_start_wave: int = 0
 var prime_briefing_visible: bool = false
 var prime_briefing_wave_data: Dictionary = {}
@@ -172,6 +179,12 @@ func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	SpaceTheme.apply_cursor()
 	GameState.reset_state()
+	run_mode = str(GameState.get_meta(RUN_MODE_META, "campaign"))
+	endless_mode = run_mode == RUN_MODE_ENDLESS
+	if endless_mode:
+		playable_wave_limit = ENDLESS_WAVE_CAP
+		briefing_title = "ENDLESS DEFENSE"
+		message_text = "Endless mode armed. Survive as many waves as possible."
 	GameState.load_audio_settings()
 	GameState.ensure_music_audible()
 	if GameState.has_method("consume_test_start_wave"):
@@ -348,17 +361,19 @@ func _try_slingshot_from_screen_position(screen_position: Vector2) -> bool:
 	var tower: Dictionary = towers[tower_index]
 	if str(tower.get("type", "")) != "helios_cannon" or _tower_level(tower) < 2:
 		return false
-	if not GameState.spend_credits(SLINGSHOT_COST):
+	var cost: int = _slingshot_cost()
+	if not GameState.spend_credits(cost):
 		_play_sfx("ui_insufficient_sol", 0.18)
 		_show_insufficient_sol_feedback()
-		_set_message("Need %d Sol Credits for Helios Slingshot Shot." % SLINGSHOT_COST, 2.0)
+		_set_message("Need %d Sol Credits for Helios Slingshot Shot." % cost, 2.0)
 		_update_ui()
 		return true
 
 	var tower_pos: Vector2 = _tower_position(tower)
-	_spawn_physics_projectile(tower, _sun_pos(), 160.0, "helios_cannon", true)
+	var slingshot_damage: float = 160.0 * (1.20 if _has_tech("slingshot_coils") else 1.0)
+	_spawn_physics_projectile(tower, _sun_pos(), slingshot_damage, "helios_cannon", true)
 	_add_visual_effect("flare", tower_pos, Color(1.0, 0.58, 0.22), 0.42, 34.0)
-	_add_text_effect("SLINGSHOT  -%d SOL" % SLINGSHOT_COST, tower_pos + Vector2(0.0, -42.0), Color(1.0, 0.84, 0.34, 0.98), 0.86)
+	_add_text_effect("SLINGSHOT  -%d SOL" % cost, tower_pos + Vector2(0.0, -42.0), Color(1.0, 0.84, 0.34, 0.98), 0.86)
 	_play_sfx("slingshot_fire", 0.4)
 	_set_message("Helios Slingshot fired. Gravity will bend it back inward.", 2.4)
 	_update_ui()
@@ -376,6 +391,9 @@ func _handle_keyboard_shortcut(keycode: int) -> bool:
 			return true
 		KEY_ESCAPE:
 			_on_menu_pressed()
+			return true
+		KEY_T:
+			_on_tech_tree_pressed()
 			return true
 		KEY_R:
 			if GameState.game_phase == GameState.GAME_OVER or GameState.game_phase == GameState.VICTORY:
@@ -710,13 +728,27 @@ func _draw_end_state_overlay(viewport_size: Vector2, victory: bool) -> void:
 	var accent: Color = Color(1.0, 0.78, 0.24, 0.96) if victory else Color(1.0, 0.22, 0.16, 0.96)
 	var title: String = "SOL SAVED" if victory else "SUN EXTINGUISHED"
 	var subtitle: String = "Mission complete. The defense grid held." if victory else "The defense grid failed. The Sun went dark."
-	var stats: String = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-		GameState.waves_cleared,
-		MAX_WAVES,
-		GameState.enemies_killed_total,
-		GameState.performance_score,
-		GameState.get_luminosity_percent(),
-	]
+	var rank_text: String = "RANK  %s" % GameState.get_rank()
+	var stats: String
+	if endless_mode:
+		title = "ENDLESS RUN ENDED"
+		subtitle = "The swarm finally broke through."
+		rank_text = "SURVIVED %d WAVES" % GameState.waves_cleared
+		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.enemies_killed_total,
+			GameState.performance_score,
+			GameState.get_luminosity_percent(),
+		]
+	else:
+		stats = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.waves_cleared,
+			MAX_WAVES,
+			GameState.enemies_killed_total,
+			GameState.performance_score,
+			GameState.get_luminosity_percent(),
+		]
+	if run_tech_xp_awarded > 0:
+		stats += "  |  TECH XP +%d" % run_tech_xp_awarded
 	var tip: String = "Press R to retry or M for main menu."
 
 	draw_rect(rect.grow(8.0), Color(0.0, 0.0, 0.0, 0.58), true)
@@ -725,7 +757,7 @@ func _draw_end_state_overlay(viewport_size: Vector2, victory: bool) -> void:
 	draw_line(rect.position + Vector2(28.0, 66.0), rect.position + Vector2(rect.size.x - 28.0, 66.0), Color(accent.r, accent.g, accent.b, 0.44), 1.5)
 	draw_string(end_title_font, rect.position + Vector2(0.0, 42.0), title, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 25, accent)
 	draw_string(end_body_font, rect.position + Vector2(0.0, 92.0), subtitle, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 16, Color(0.90, 0.96, 1.0, 0.94))
-	draw_string(end_title_font, rect.position + Vector2(0.0, 136.0), "RANK  %s" % GameState.get_rank(), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 18, Color(1.0, 0.90, 0.52, 0.96))
+	draw_string(end_title_font, rect.position + Vector2(0.0, 136.0), rank_text, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 18, Color(1.0, 0.90, 0.52, 0.96))
 	draw_string(end_body_font, rect.position + Vector2(0.0, 176.0), stats, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 14, Color(0.82, 0.92, 1.0, 0.92))
 	draw_string(end_body_font, rect.position + Vector2(0.0, 218.0), tip, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 13, Color(0.98, 0.95, 0.84, 0.90))
 
@@ -974,6 +1006,16 @@ func _build_ui() -> void:
 		var callback: Callable = hud_connections[signal_name]
 		if game_hud.has_signal(signal_name) and not game_hud.is_connected(signal_name, callback):
 			game_hud.connect(signal_name, callback)
+	var tech_button := game_hud.get_node_or_null("Hud/ActionsPanel/ActionRow/TechButton") as Button
+	if tech_button != null:
+		var tech_callback := Callable(self, "_on_tech_tree_pressed")
+		if not tech_button.pressed.is_connected(tech_callback):
+			tech_button.pressed.connect(tech_callback)
+		var hover_callback := Callable(self, "_on_ui_hovered")
+		if not tech_button.mouse_entered.is_connected(hover_callback):
+			tech_button.mouse_entered.connect(hover_callback)
+		SpaceTheme.call("apply_secondary_button", tech_button)
+		tech_button.add_theme_font_size_override("font_size", 12)
 
 
 func _maybe_show_tutorial() -> void:
@@ -1062,7 +1104,7 @@ func _on_start_wave_pressed() -> void:
 	if wave_number > playable_wave_limit:
 		_set_message("Wave %d is locked for this scene." % wave_number, 3.0)
 		return
-	if wave_number > MAX_WAVES:
+	if not endless_mode and wave_number > MAX_WAVES:
 		return
 
 	current_wave_data = _wave_load(wave_number)
@@ -1071,7 +1113,7 @@ func _on_start_wave_pressed() -> void:
 		_set_message("Could not load wave_%02d.json." % wave_number, 3.0)
 		return
 
-	if wave_number == 12 and not prime_briefing_visible and prime_briefing_wave_data.is_empty():
+	if not endless_mode and wave_number == 12 and not prime_briefing_visible and prime_briefing_wave_data.is_empty():
 		prime_briefing_visible = true
 		prime_briefing_wave_data = current_wave_data
 		_show_wave_banner("ASTROPHAGE PRIME IS COMING", "Read the phase briefing before committing.", Color(1.0, 0.14, 0.08), 4.0)
@@ -1149,6 +1191,23 @@ func _on_menu_pressed() -> void:
 		push_error("Game: pause menu scene root must be a CanvasLayer.")
 		return
 	add_child(pause_menu)
+
+
+func _on_tech_tree_pressed() -> void:
+	if tutorial_overlay != null or get_node_or_null("TechTreeOverlay") != null:
+		return
+	_play_sfx("button")
+
+	var overlay_scene: PackedScene = load(TECH_TREE_OVERLAY_SCENE_PATH) as PackedScene
+	if overlay_scene == null:
+		push_error("Game: could not load tech tree overlay at %s." % TECH_TREE_OVERLAY_SCENE_PATH)
+		return
+
+	var overlay: CanvasLayer = overlay_scene.instantiate() as CanvasLayer
+	if overlay == null:
+		push_error("Game: tech tree overlay scene root must be a CanvasLayer.")
+		return
+	add_child(overlay)
 
 
 func _on_retry_requested() -> void:
@@ -1358,6 +1417,7 @@ func _try_manual_flare() -> void:
 
 func _trigger_solar_flare() -> void:
 	var sun: Vector2 = _sun_pos()
+	var flare_damage: float = FLARE_DAMAGE + (10.0 if _has_tech("apex_master") else 0.0)
 	_add_visual_effect("flare", sun, Color(1.0, 0.78, 0.24, 0.96), 0.74, SUN_RADIUS + 36.0)
 	_play_sfx("flare", 0.45)
 	for i in range(enemies.size() - 1, -1, -1):
@@ -1365,7 +1425,7 @@ func _trigger_solar_flare() -> void:
 			continue
 		var enemy_pos: Vector2 = enemies[i]["pos"]
 		_add_shot(sun, enemy_pos, Color(1.0, 0.78, 0.24, 0.96), 0.30, 5.0, "flare")
-		_damage_enemy(i, FLARE_DAMAGE, "solar_flare")
+		_damage_enemy(i, flare_damage, "solar_flare")
 
 
 func _start_wave_spawning(wave_data: Dictionary) -> void:
@@ -1604,7 +1664,8 @@ func _process_enemies(delta: float) -> void:
 		spawn_queue.clear()
 		_play_sfx("failure", 6.0)
 		_play_ending_music()
-		_set_message("Game over. The Sun was extinguished.", 999.0)
+		var earned: int = _award_run_tech_xp_once(false)
+		_set_message("Game over. The Sun was extinguished. +%d Tech XP banked." % earned, 999.0)
 		_update_ui()
 
 
@@ -1627,7 +1688,8 @@ func _process_burrowers(delta: float) -> void:
 		spawn_queue.clear()
 		_play_sfx("failure", 6.0)
 		_play_ending_music()
-		_set_message("Game over. The Sun was hollowed out from within.", 999.0)
+		var earned: int = _award_run_tech_xp_once(false)
+		_set_message("Game over. The Sun was hollowed out from within. +%d Tech XP banked." % earned, 999.0)
 		_update_ui()
 
 
@@ -1761,7 +1823,9 @@ func _should_auto_start_wave() -> bool:
 	if GameState.game_phase != GameState.BETWEEN_WAVE:
 		return false
 	var wave_number: int = GameState.current_wave + 1
-	if wave_number > MAX_WAVES or wave_number > playable_wave_limit:
+	if wave_number > playable_wave_limit:
+		return false
+	if not endless_mode and wave_number > MAX_WAVES:
 		return false
 	return not next_wave_preview.is_empty()
 
@@ -1794,7 +1858,13 @@ func _check_wave_clear() -> void:
 	if reward > 0:
 		_add_text_effect("+%d SOL WAVE CLEAR" % reward, _sun_pos() + Vector2(0.0, -_outer_ring_radius() - 52.0), Color(1.0, 0.86, 0.34, 0.98), 0.95)
 
-	if GameState.current_wave >= playable_wave_limit and playable_wave_limit < MAX_WAVES:
+	if endless_mode:
+		_play_sfx("wave_clear")
+		GameState.set_phase(GameState.BETWEEN_WAVE)
+		_refresh_next_wave_preview()
+		_show_next_wave_banner()
+		_set_message("Endless Wave %d cleared. Corps reward: %d Sol Credits." % [GameState.current_wave, reward], 4.0)
+	elif GameState.current_wave >= playable_wave_limit and playable_wave_limit < MAX_WAVES:
 		_play_sfx("wave_clear")
 		GameState.set_phase(GameState.BETWEEN_WAVE)
 		_refresh_next_wave_preview()
@@ -1805,9 +1875,10 @@ func _check_wave_clear() -> void:
 		_clear_auto_start_timer(false)
 		_clear_managed_tower(false)
 		GameState.trigger_victory()
+		var earned: int = _award_run_tech_xp_once(true)
 		_play_sfx("victory")
 		_play_ending_music()
-		_set_message("Victory. Final rank: %s." % GameState.get_rank(), 999.0)
+		_set_message("Victory. Final rank: %s. +%d Tech XP banked." % [GameState.get_rank(), earned], 999.0)
 	else:
 		_play_sfx("wave_clear")
 		GameState.set_phase(GameState.BETWEEN_WAVE)
@@ -1866,7 +1937,9 @@ func _try_launch_counter_attack() -> bool:
 
 func _show_next_wave_banner() -> void:
 	var next_wave: int = GameState.current_wave + 1
-	if next_wave > MAX_WAVES or next_wave > playable_wave_limit:
+	if next_wave > playable_wave_limit:
+		return
+	if not endless_mode and next_wave > MAX_WAVES:
 		return
 	var next_data: Dictionary = _wave_load(next_wave)
 	if next_data.is_empty():
@@ -1904,7 +1977,14 @@ func _spawn_enemy(variant: String, spawn_pos = null) -> void:
 	var mass: float = float(ENEMY_MASSES.get(key, 1.0))
 	if gameplay_math != null:
 		mass = float(gameplay_math.call("get_enemy_mass", key))
-	var base_speed: float = float(cfg["speed"])
+	var hp_scale: float = float(current_wave_data.get("enemy_hp_scale", 1.0))
+	var speed_scale: float = float(current_wave_data.get("enemy_speed_scale", 1.0))
+	var damage_scale: float = float(current_wave_data.get("enemy_damage_scale", 1.0))
+	var reward_scale: float = float(current_wave_data.get("enemy_reward_scale", 1.0))
+	var base_hp: float = float(cfg["hp"]) * hp_scale
+	var base_speed: float = float(cfg["speed"]) * speed_scale
+	var breach_damage: float = float(cfg["damage"]) * damage_scale
+	var enemy_reward: int = max(1, int(round(float(cfg["reward"]) * reward_scale)))
 
 	var enemy_uid: int = next_enemy_uid
 	next_enemy_uid += 1
@@ -1914,17 +1994,18 @@ func _spawn_enemy(variant: String, spawn_pos = null) -> void:
 		"variant_id": cfg["variant_id"],
 		"label": cfg["label"],
 		"pos": pos,
-		"hp": cfg["hp"],
-		"max_hp": cfg["hp"],
+		"hp": base_hp,
+		"max_hp": base_hp,
 		"speed": base_speed,
 		"velocity": initial_direction * base_speed * 0.62,
 		"mass": mass,
 		"max_speed": base_speed * (2.25 if key != "prime" else 1.65),
-		"damage": cfg["damage"],
-		"reward": cfg["reward"],
+		"damage": breach_damage,
+		"reward": enemy_reward,
 		"radius": cfg["radius"],
 		"draw_size": cfg["draw_size"],
 		"color": cfg["color"],
+		"endless_hp_scale": hp_scale,
 		"slow_timer": 0.0,
 		"hit_timer": 0.0,
 		"heal_timer": 0.0,
@@ -2121,7 +2202,10 @@ func _damage_enemy(enemy_index: int, amount: float, source: String) -> void:
 		return
 
 	if source == "cryo_probe" or source == "magnetic_net":
-		enemy["slow_timer"] = 2.8
+		enemy["slow_timer"] = _tech_slow_duration(source)
+
+	if _has_tech("brittle_shells") and float(enemy.get("slow_timer", 0.0)) > 0.0 and source != "cryo_probe" and source != "magnetic_net":
+		amount *= 1.12
 
 	if variant == "farmer" and (source == "photon_splitter" or source == "helios_cannon"):
 		enemy["hp"] = min(float(enemy["hp"]) + amount * 0.4, float(enemy["max_hp"]) * 1.8)
@@ -2156,9 +2240,10 @@ func _damage_enemy(enemy_index: int, amount: float, source: String) -> void:
 
 
 func _enter_prime_frenzy(enemy_index: int, enemy: Dictionary) -> void:
+	var hp_scale: float = float(enemy.get("endless_hp_scale", 1.0))
 	enemy["prime_phase"] = 2
-	enemy["hp"] = 300.0
-	enemy["max_hp"] = 300.0
+	enemy["hp"] = 300.0 * hp_scale
+	enemy["max_hp"] = 300.0 * hp_scale
 	enemy["speed"] = minf(float(enemy.get("speed", 23.0)) * 1.8, 80.0)
 	enemy["max_speed"] = float(enemy["speed"]) * 1.85
 	enemy["radius"] = maxf(float(enemy.get("radius", 34.0)), 42.0)
@@ -2184,10 +2269,13 @@ func _defeat_enemy(enemy_index: int) -> void:
 	var variant: String = str(enemy["variant"])
 	var pos: Vector2 = enemy["pos"]
 
-	GameState.add_credits(int(enemy["reward"]))
+	var reward: int = int(enemy["reward"])
+	if _has_tech("salvage_culture"):
+		reward = int(ceil(float(reward) * 1.10))
+	GameState.add_credits(reward)
 	GameState.on_enemy_killed(int(enemy["variant_id"]))
 	_add_enemy_death_effect(enemy)
-	_add_text_effect("+%d SOL" % int(enemy["reward"]), pos + Vector2(0.0, -float(enemy["radius"]) - 20.0), Color(1.0, 0.86, 0.34, 0.98))
+	_add_text_effect("+%d SOL" % reward, pos + Vector2(0.0, -float(enemy["radius"]) - 20.0), Color(1.0, 0.86, 0.34, 0.98))
 	_play_sfx("prime_death" if variant == "prime" else "death", 0.050)
 
 	enemies.remove_at(enemy_index)
@@ -2935,7 +3023,14 @@ func _sun_state_key() -> String:
 
 
 func _refresh_next_wave_preview() -> void:
-	var next_wave: int = int(clamp(GameState.current_wave + 1, 1, playable_wave_limit))
+	var next_wave: int = GameState.current_wave + 1
+	if endless_mode:
+		if next_wave > playable_wave_limit:
+			next_wave_preview = {}
+			_clear_wave_preview()
+			return
+	else:
+		next_wave = int(clamp(next_wave, 1, playable_wave_limit))
 	next_wave_preview = _wave_load(next_wave)
 	if GameState.game_phase == GameState.BETWEEN_WAVE:
 		_show_wave_preview(next_wave_preview)
@@ -2992,7 +3087,81 @@ func _tower_level(tower: Dictionary) -> int:
 
 
 func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
-	return tower_library.call("runtime_stats", tower) as Dictionary
+	var stats: Dictionary = tower_library.call("runtime_stats", tower) as Dictionary
+	var tower_type: String = str(tower.get("type", "photon_splitter"))
+	if _has_tech("apex_master"):
+		stats["damage"] = float(stats["damage"]) * 1.08
+		stats["rate"] = float(stats["rate"]) * 1.08
+		stats["range"] = float(stats["range"]) * 1.08
+	match tower_type:
+		"photon_splitter":
+			if _has_tech("solar_lens"):
+				stats["range"] = float(stats["range"]) * 1.10
+			if _has_tech("split_beam"):
+				stats["damage"] = float(stats["damage"]) * 1.12
+			if _has_tech("plasma_core"):
+				stats["rate"] = float(stats["rate"]) * 1.10
+		"cryo_probe":
+			if _has_tech("long_orbit"):
+				stats["range"] = float(stats["range"]) * 1.05
+			if _has_tech("far_sight"):
+				stats["range"] = float(stats["range"]) * 1.12
+		"bio_lab":
+			if _has_tech("bio_splice"):
+				stats["rate"] = float(stats["rate"]) * 1.12
+			if _has_tech("solar_choir"):
+				stats["damage"] = float(stats["damage"]) * 1.10
+				stats["range"] = float(stats["range"]) * 1.10
+		"magnetic_net":
+			if _has_tech("rapid_charge"):
+				stats["rate"] = float(stats["rate"]) * 1.05
+			if _has_tech("magnetic_lattice"):
+				stats["range"] = float(stats["range"]) * 1.10
+			if _has_tech("gravitic_payload"):
+				stats["range"] = float(stats["range"]) * 1.10
+		"helios_cannon":
+			if _has_tech("stellar_lance"):
+				stats["damage"] = float(stats["damage"]) * 1.14
+		"tardigrade_bomb":
+			if _has_tech("pressure_hull"):
+				stats["range"] = float(stats["range"]) * 1.10
+			if _has_tech("spore_nests"):
+				stats["rate"] = float(stats["rate"]) * 1.08
+			if _has_tech("resilient_bloom"):
+				stats["damage"] = float(stats["damage"]) * 1.14
+	return stats
+
+
+func _has_tech(tech_id: String) -> bool:
+	return GameState.has_method("has_tech") and bool(GameState.call("has_tech", tech_id))
+
+
+func _tech_slow_duration(source: String) -> float:
+	var duration: float = 2.8
+	if source == "cryo_probe" and _has_tech("far_sight"):
+		duration *= 1.25
+	elif source == "magnetic_net" and _has_tech("gravitic_payload"):
+		duration *= 1.25
+	if _has_tech("apex_master"):
+		duration += 0.4
+	return duration
+
+
+func _slingshot_cost() -> int:
+	return 30 if _has_tech("slingshot_coils") else SLINGSHOT_COST
+
+
+func _award_run_tech_xp_once(victory: bool) -> int:
+	if run_tech_xp_awarded > 0:
+		return run_tech_xp_awarded
+	var luminosity_bonus: int = max(0, GameState.get_luminosity_percent())
+	var endless_bonus: int = max(0, GameState.waves_cleared - MAX_WAVES) * 35 if endless_mode else 0
+	var amount: int = int(floor(float(GameState.performance_score) / 10.0)) + GameState.enemies_killed_total * 3 + GameState.waves_cleared * 75 + luminosity_bonus + endless_bonus
+	if victory:
+		amount += 400
+	run_tech_xp_awarded = max(1, amount)
+	GameState.call("add_tech_xp", run_tech_xp_awarded)
+	return run_tech_xp_awarded
 
 
 func _tower_upgrade_cost(tower: Dictionary) -> int:
@@ -3021,21 +3190,42 @@ func _end_state_view_data() -> Dictionary:
 	var victory: bool = GameState.game_phase == GameState.VICTORY
 	var title: String = "SOL SAVED" if victory else "LUMINOSITY COLLAPSE"
 	var subtitle: String = "Mission complete. The defense grid held." if victory else "The defense grid failed. The sun went dark."
-	var stats: String = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-		GameState.waves_cleared,
-		MAX_WAVES,
-		GameState.enemies_killed_total,
-		GameState.performance_score,
-		GameState.get_luminosity_percent(),
-	]
+	var rank: String = "RANK  %s" % GameState.get_rank()
+	var stats: String
 	var tip: String = "Retry the run, return to the main menu, or press R/M."
-	if victory:
+	if endless_mode:
+		title = "ENDLESS RUN ENDED"
+		subtitle = "The swarm finally broke through."
+		rank = "SURVIVED %d WAVES" % GameState.waves_cleared
+		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.enemies_killed_total,
+			GameState.performance_score,
+			GameState.get_luminosity_percent(),
+		]
+	elif victory:
+		stats = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.waves_cleared,
+			MAX_WAVES,
+			GameState.enemies_killed_total,
+			GameState.performance_score,
+			GameState.get_luminosity_percent(),
+		]
 		tip = "Run secured. Retry for a stronger rank, return to menu, or press R/M."
+	else:
+		stats = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.waves_cleared,
+			MAX_WAVES,
+			GameState.enemies_killed_total,
+			GameState.performance_score,
+			GameState.get_luminosity_percent(),
+		]
+	if run_tech_xp_awarded > 0:
+		stats += "  |  TECH XP +%d" % run_tech_xp_awarded
 	return {
 		"victory": victory,
 		"title": title,
 		"subtitle": subtitle,
-		"rank": "RANK  %s" % GameState.get_rank(),
+		"rank": rank,
 		"stats": stats,
 		"tip": tip,
 	}
@@ -3130,7 +3320,141 @@ func _ring_summary() -> String:
 
 
 func _wave_load(wave_number: int) -> Dictionary:
+	if endless_mode:
+		return _endless_wave_data(wave_number)
 	return wave_library.call("load_wave", wave_number) as Dictionary
+
+
+func _endless_wave_data(wave_number: int) -> Dictionary:
+	var wave: int = max(1, wave_number)
+	var drifters: int = 6 + wave * 2
+	var blooms: int = max(0, wave - 2)
+	var burrowers: int = 0
+	var mimics: int = 0
+	var farmers: int = 0
+	if wave >= 5:
+		burrowers = 1 + int(floor(float(wave - 5) / 2.0))
+	if wave >= 6:
+		mimics = 1 + int(floor(float(wave - 6) / 2.0))
+	if wave >= 8:
+		farmers = 1 + int(floor(float(wave - 8) / 2.0))
+
+	var interval: float = maxf(0.72, 2.8 - float(wave) * 0.075)
+	var hp_scale: float = 1.0 + maxf(0.0, float(wave - 6)) * 0.035
+	var speed_scale: float = 1.0 + maxf(0.0, float(wave - 8)) * 0.012
+	var damage_scale: float = 1.0 + maxf(0.0, float(wave - 10)) * 0.012
+	var reward_scale: float = 1.0 + maxf(0.0, float(wave - 1)) * 0.012
+	var credit_reward: int = 24 + wave * 10 + int(floor(float(wave) / 5.0)) * 18
+
+	var spawns: Array = [
+		{"variant": "drifter", "count": drifters, "interval": interval},
+	]
+	if blooms > 0:
+		spawns.append({"variant": "bloom", "count": blooms, "interval": interval + 0.15})
+	if burrowers > 0:
+		spawns.append({"variant": "burrower", "count": burrowers, "interval": interval + 0.30})
+	if mimics > 0:
+		spawns.append({"variant": "mimic", "count": mimics, "interval": interval + 0.20})
+	if farmers > 0:
+		spawns.append({"variant": "farmer", "count": farmers, "interval": interval + 0.25})
+
+	var wave_type: String = "normal"
+	var wave_name: String = "Endless Contact"
+	var clash_groups: Array = []
+	var formation: Dictionary = {}
+	if wave % 10 == 0:
+		wave_type = "boss"
+		wave_name = "Prime Echo"
+		var first_drifters: int = int(round(float(drifters) * 0.55))
+		var first_blooms: int = int(round(float(blooms) * 0.45))
+		clash_groups = [
+			{
+				"variants": _repeat_variant("drifter", first_drifters) + _repeat_variant("bloom", first_blooms),
+				"spawn_pattern": "ring",
+				"delay_before": 0.0,
+			},
+			{
+				"variants": _repeat_variant("burrower", burrowers) + _repeat_variant("mimic", mimics) + _repeat_variant("farmer", farmers),
+				"spawn_pattern": "v_shape",
+				"spread_angle_deg": 55,
+				"delay_before": 8.0,
+			},
+			{
+				"variants": _repeat_variant("drifter", max(0, drifters - first_drifters)) + _repeat_variant("bloom", max(0, blooms - first_blooms)),
+				"spawn_pattern": "ring",
+				"delay_before": 17.0,
+			},
+			{
+				"variants": ["prime"],
+				"spawn_pattern": "center_top",
+				"delay_before": 26.0,
+			},
+		]
+	elif wave % 5 == 0:
+		wave_type = "clash"
+		wave_name = "Clash Surge"
+		var lead_drifters: int = int(round(float(drifters) * 0.60))
+		clash_groups = [
+			{
+				"variants": _repeat_variant("drifter", lead_drifters) + _repeat_variant("bloom", int(round(float(blooms) * 0.50))),
+				"spawn_pattern": "ring",
+				"delay_before": 0.0,
+			},
+			{
+				"variants": _repeat_variant("burrower", burrowers) + _repeat_variant("mimic", mimics) + _repeat_variant("farmer", farmers),
+				"spawn_pattern": "v_shape",
+				"spread_angle_deg": 50,
+				"delay_before": 8.0,
+			},
+			{
+				"variants": _repeat_variant("drifter", max(0, drifters - lead_drifters)) + _repeat_variant("bloom", int(floor(float(blooms) * 0.50))),
+				"spawn_pattern": "random",
+				"delay_before": 16.0,
+			},
+		]
+	elif wave % 7 == 0:
+		wave_type = "formation"
+		wave_name = "Vector Swarm"
+		formation = {
+			"type": "spiral" if wave >= 14 else "v_shape",
+			"variants": ["burrower", "mimic"] if wave >= 7 else ["drifter", "bloom"],
+			"count": min(18, 6 + int(floor(float(wave) * 0.55))),
+			"spread_angle_deg": 52,
+			"spiral_arms": 2 + (1 if wave >= 21 else 0),
+		}
+
+	var event: Dictionary = {}
+	if wave >= 9 and wave % 9 == 0:
+		event = {"type": "bio_lab_boost", "multiplier": 2.0, "duration": 24.0, "trigger_at_percent": 0.0}
+	elif wave >= 6 and wave % 6 == 0:
+		event = {"type": "mid_wave_autoflare", "trigger_at_percent": 0.52, "cryo_disruption_seconds": 5.0}
+	elif wave >= 8 and wave % 8 == 0:
+		event = {"type": "ring_blind", "rings": [int(wave / 8) % 4], "duration": 12.0, "trigger_at_percent": 0.18}
+
+	return {
+		"index": wave,
+		"name": "%s %02d" % [wave_name, wave],
+		"wave_type": wave_type,
+		"spawn_interval": interval,
+		"credit_reward": credit_reward,
+		"spawns": spawns,
+		"clash_groups": clash_groups,
+		"formation": formation,
+		"event": event,
+		"enemy_hp_scale": hp_scale,
+		"enemy_speed_scale": speed_scale,
+		"enemy_damage_scale": damage_scale,
+		"enemy_reward_scale": reward_scale,
+		"escalation_threshold_seconds": maxf(28.0, 44.0 - float(wave) * 0.35),
+		"tutorial_hint": "Endless mode: enemy mix, count, speed, and HP scale every wave. Clear one more.",
+	}
+
+
+func _repeat_variant(variant: String, count: int) -> Array:
+	var values: Array = []
+	for i in range(max(0, count)):
+		values.append(variant)
+	return values
 
 
 func _wave_build_spawn_queue(wave_data: Dictionary) -> Array:
@@ -3209,7 +3533,11 @@ func _update_ui() -> void:
 	var wave_index: int = int(wave_data.get("index", min(GameState.current_wave + 1, MAX_WAVES)))
 	var wave_name: String = str(wave_data.get("name", "First Contact"))
 	var title_text: String = "WAVE %02d/%02d | %s" % [wave_index, MAX_WAVES, wave_name.to_upper()]
-	if GameState.game_phase == GameState.VICTORY:
+	if endless_mode:
+		title_text = "ENDLESS WAVE %02d | %s" % [wave_index, wave_name.to_upper()]
+		if GameState.game_phase == GameState.GAME_OVER:
+			title_text = "ENDLESS RUN ENDED | WAVE %02d" % GameState.current_wave
+	elif GameState.game_phase == GameState.VICTORY:
 		title_text = "SOL DEFENSE COMPLETE | %s" % GameState.get_rank()
 	elif GameState.game_phase == GameState.GAME_OVER:
 		title_text = "SUN EXTINGUISHED | WAVE %02d/%02d" % [GameState.current_wave, MAX_WAVES]
@@ -3219,8 +3547,10 @@ func _update_ui() -> void:
 			title_text += " | %s" % wave_name.to_upper()
 
 	var reward: int = int(wave_data.get("credit_reward", 0))
-	var next_wave: int = min(GameState.current_wave + 1, MAX_WAVES)
+	var next_wave: int = GameState.current_wave + 1 if endless_mode else min(GameState.current_wave + 1, MAX_WAVES)
 	var start_disabled: bool = GameState.game_phase != GameState.BETWEEN_WAVE or next_wave > playable_wave_limit
+	if not endless_mode and next_wave > MAX_WAVES:
+		start_disabled = true
 	var start_text: String = "START WAVE %d" % next_wave
 	var intel_status: String = "LIVE" if GameState.game_phase == GameState.WAVE_ACTIVE else "NEXT"
 	if GameState.game_phase == GameState.VICTORY:

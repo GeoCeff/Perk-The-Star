@@ -4,10 +4,10 @@
     "wave_type": "normal",
     "spawn_interval": 3.0,
     "enemies": [
-        { "variant": "drifter", "count": 14 }
+        { "variant": "drifter", "count": 10 }
     ],
     "event": null,
-    "reward_base": 28,
+    "reward_base": 36,
     "escalation_threshold_seconds": null,
     "tutorial_hint": "Earn Sol Credits by defeating enemies. Spend them between waves."
 }

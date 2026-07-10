@@ -2,13 +2,13 @@
     "wave": 11,
     "name": "Penultimate",
     "wave_type": "clash",
-    "spawn_interval": 1.0,
+    "spawn_interval": 1.1,
     "enemies": [
-        { "variant": "drifter", "count": 48 },
-        { "variant": "bloom", "count": 14 },
-        { "variant": "burrower", "count": 10 },
-        { "variant": "mimic", "count": 10 },
-        { "variant": "farmer", "count": 12 }
+        { "variant": "drifter", "count": 36 },
+        { "variant": "bloom", "count": 10 },
+        { "variant": "burrower", "count": 6 },
+        { "variant": "mimic", "count": 6 },
+        { "variant": "farmer", "count": 10 }
     ],
     "clash_groups": [
         {
@@ -16,42 +16,37 @@
                 "drifter", "drifter", "drifter", "drifter", "drifter",
                 "drifter", "drifter", "drifter", "drifter", "drifter",
                 "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "bloom", "bloom", "bloom", "bloom", "bloom",
-                "bloom", "bloom", "bloom", "bloom", "bloom"
+                "drifter", "drifter", "drifter",
+                "bloom", "bloom", "bloom", "bloom", "bloom", "bloom"
             ],
             "spawn_pattern": "ring",
             "delay_before": 0.0
         },
         {
             "variants": [
-                "burrower", "burrower", "burrower", "burrower", "burrower",
-                "burrower", "burrower", "burrower", "burrower", "burrower",
-                "farmer", "farmer", "farmer", "farmer", "farmer",
-                "farmer", "farmer", "farmer", "farmer", "farmer"
+                "burrower", "burrower", "burrower", "burrower", "burrower", "burrower",
+                "farmer", "farmer", "farmer", "farmer", "farmer", "farmer"
             ],
             "spawn_pattern": "v_shape",
-            "delay_before": 8.0
+            "spread_angle_deg": 58,
+            "delay_before": 10.0
         },
         {
             "variants": [
                 "drifter", "drifter", "drifter", "drifter", "drifter",
                 "drifter", "drifter", "drifter", "drifter", "drifter",
                 "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
-                "drifter", "drifter", "drifter", "drifter", "drifter",
                 "drifter", "drifter", "drifter",
-                "mimic", "mimic", "mimic", "mimic", "mimic",
-                "mimic", "mimic", "mimic", "mimic", "mimic",
+                "mimic", "mimic", "mimic", "mimic", "mimic", "mimic",
                 "bloom", "bloom", "bloom", "bloom",
-                "farmer", "farmer"
+                "farmer", "farmer", "farmer", "farmer"
             ],
             "spawn_pattern": "ring",
-            "delay_before": 18.0
+            "delay_before": 22.0
         }
     ],
     "event": null,
-    "reward_base": 160,
-    "escalation_threshold_seconds": 60,
-    "tutorial_hint": "The biggest wave before the boss. Max out your towers now."
+    "reward_base": 190,
+    "escalation_threshold_seconds": 70,
+    "tutorial_hint": "Final swarm before Prime. Upgrade slows first, then finish with Helios or Tardigrade."
 }

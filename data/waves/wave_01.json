@@ -7,7 +7,7 @@
         { "variant": "drifter", "count": 6 }
     ],
     "event": null,
-    "reward_base": 20,
+    "reward_base": 24,
     "escalation_threshold_seconds": null,
     "tutorial_hint": "Click ring slots to place towers. Towers orbit and fire automatically."
 }

@@ -2,18 +2,18 @@
     "wave": 10,
     "name": "Research Surge",
     "wave_type": "formation",
-    "spawn_interval": 1.2,
+    "spawn_interval": 1.35,
     "enemies": [
-        { "variant": "drifter", "count": 38 },
-        { "variant": "bloom", "count": 12 },
-        { "variant": "burrower", "count": 8 },
-        { "variant": "mimic", "count": 8 },
-        { "variant": "farmer", "count": 10 }
+        { "variant": "drifter", "count": 24 },
+        { "variant": "bloom", "count": 8 },
+        { "variant": "burrower", "count": 5 },
+        { "variant": "mimic", "count": 5 },
+        { "variant": "farmer", "count": 7 }
     ],
     "formation": {
         "type": "spiral",
         "variants": ["burrower", "mimic"],
-        "count": 10,
+        "count": 8,
         "spiral_arms": 2
     },
     "event": {
@@ -22,7 +22,7 @@
         "duration": 999,
         "trigger_at_percent": 0.0
     },
-    "reward_base": 140,
-    "escalation_threshold_seconds": 55,
-    "tutorial_hint": "Bio-Lab is at 4x power this wave. Build more if you haven't."
+    "reward_base": 165,
+    "escalation_threshold_seconds": 62,
+    "tutorial_hint": "Bio-Lab is at 4x power this wave. Use the surge to clean Burrowers and Mimics."
 }

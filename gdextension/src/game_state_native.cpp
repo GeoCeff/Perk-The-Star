@@ -17,6 +17,9 @@ void GameStateNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_tutorial_completed", "completed"), &GameStateNative::set_tutorial_completed, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("set_screen_shake_enabled", "enabled"), &GameStateNative::set_screen_shake_enabled);
     ClassDB::bind_method(D_METHOD("set_auto_start_waves_enabled", "enabled"), &GameStateNative::set_auto_start_waves_enabled);
+    ClassDB::bind_method(D_METHOD("add_tech_xp", "amount"), &GameStateNative::add_tech_xp);
+    ClassDB::bind_method(D_METHOD("unlock_tech", "tech_id", "cost", "requirements"), &GameStateNative::unlock_tech, DEFVAL(Array()));
+    ClassDB::bind_method(D_METHOD("has_tech", "tech_id"), &GameStateNative::has_tech);
     ClassDB::bind_method(D_METHOD("enable_test_run", "start_wave"), &GameStateNative::enable_test_run);
     ClassDB::bind_method(D_METHOD("clear_test_run"), &GameStateNative::clear_test_run);
     ClassDB::bind_method(D_METHOD("consume_test_start_wave"), &GameStateNative::consume_test_start_wave);
@@ -67,6 +70,8 @@ void GameStateNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_tutorial_completed"), &GameStateNative::get_tutorial_completed);
     ClassDB::bind_method(D_METHOD("get_screen_shake_enabled"), &GameStateNative::get_screen_shake_enabled);
     ClassDB::bind_method(D_METHOD("get_auto_start_waves_enabled"), &GameStateNative::get_auto_start_waves_enabled);
+    ClassDB::bind_method(D_METHOD("get_tech_xp"), &GameStateNative::get_tech_xp);
+    ClassDB::bind_method(D_METHOD("get_unlocked_tech"), &GameStateNative::get_unlocked_tech);
     ClassDB::bind_method(D_METHOD("get_test_unlimited_sol_enabled"), &GameStateNative::get_test_unlimited_sol_enabled);
     ClassDB::bind_method(D_METHOD("get_music_changed_by_user_this_session"), &GameStateNative::get_music_changed_by_user_this_session);
     ClassDB::bind_method(D_METHOD("set_game_phase", "value"), &GameStateNative::set_game_phase);
@@ -93,6 +98,8 @@ void GameStateNative::_bind_methods() {
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "tutorial_completed"), "", "get_tutorial_completed");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "screen_shake_enabled"), "", "get_screen_shake_enabled");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "auto_start_waves_enabled"), "", "get_auto_start_waves_enabled");
+    ADD_PROPERTY(PropertyInfo(Variant::INT, "tech_xp"), "", "get_tech_xp");
+    ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "unlocked_tech"), "", "get_unlocked_tech");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "test_unlimited_sol_enabled"), "", "get_test_unlimited_sol_enabled");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "music_changed_by_user_this_session"), "", "get_music_changed_by_user_this_session");
     ADD_PROPERTY(PropertyInfo(Variant::INT, "game_phase"), "set_game_phase", "get_game_phase");
@@ -110,6 +117,7 @@ void GameStateNative::_bind_methods() {
     ADD_SIGNAL(MethodInfo("tutorial_settings_changed", PropertyInfo(Variant::BOOL, "completed")));
     ADD_SIGNAL(MethodInfo("game_feel_settings_changed", PropertyInfo(Variant::BOOL, "screen_shake_enabled")));
     ADD_SIGNAL(MethodInfo("auto_start_settings_changed", PropertyInfo(Variant::BOOL, "enabled")));
+    ADD_SIGNAL(MethodInfo("tech_progress_changed", PropertyInfo(Variant::INT, "tech_xp"), PropertyInfo(Variant::ARRAY, "unlocked_tech")));
 
     BIND_ENUM_CONSTANT(MENU);
     BIND_ENUM_CONSTANT(BETWEEN_WAVE);
@@ -126,7 +134,7 @@ void GameStateNative::_ready() {
 
 void GameStateNative::reset_state() {
     luminosity = 1.0;
-    sol_credits = test_unlimited_sol_enabled ? 999999 : 60;
+    sol_credits = test_unlimited_sol_enabled ? 999999 : 75;
     current_wave = 0;
     flare_charge = 0;
     waves_since_last_flare = 0;
@@ -147,11 +155,17 @@ void GameStateNative::load_audio_settings() {
         tutorial_completed = bool(config->get_value("tutorial", "completed", tutorial_completed));
         screen_shake_enabled = bool(config->get_value("gameplay", "screen_shake_enabled", screen_shake_enabled));
         auto_start_waves_enabled = bool(config->get_value("gameplay", "auto_start_waves_enabled", auto_start_waves_enabled));
+        tech_xp = int(config->get_value("tech", "xp", tech_xp));
+        Variant saved_unlocked = config->get_value("tech", "unlocked", unlocked_tech);
+        if (saved_unlocked.get_type() == Variant::ARRAY) {
+            unlocked_tech = Array(saved_unlocked);
+        }
     }
     emit_signal("music_settings_changed", music_enabled, music_volume);
     emit_signal("tutorial_settings_changed", tutorial_completed);
     emit_signal("game_feel_settings_changed", screen_shake_enabled);
     emit_signal("auto_start_settings_changed", auto_start_waves_enabled);
+    emit_signal("tech_progress_changed", tech_xp, unlocked_tech);
 }
 
 void GameStateNative::save_audio_settings() {
@@ -217,6 +231,47 @@ void GameStateNative::set_auto_start_waves_enabled(bool enabled) {
     config->set_value("gameplay", "auto_start_waves_enabled", auto_start_waves_enabled);
     config->save(SETTINGS_PATH);
     emit_signal("auto_start_settings_changed", auto_start_waves_enabled);
+}
+
+int GameStateNative::add_tech_xp(int amount) {
+    if (amount <= 0) {
+        return tech_xp;
+    }
+    tech_xp += amount;
+    save_tech_progress();
+    emit_signal("tech_progress_changed", tech_xp, unlocked_tech);
+    return tech_xp;
+}
+
+bool GameStateNative::unlock_tech(const String& tech_id, int cost, const Array& requirements) {
+    if (tech_id.is_empty()) {
+        return false;
+    }
+    if (has_tech(tech_id)) {
+        return true;
+    }
+    for (int i = 0; i < requirements.size(); ++i) {
+        if (!has_tech(String(requirements[i]))) {
+            return false;
+        }
+    }
+    if (tech_xp < cost) {
+        return false;
+    }
+    tech_xp -= MAX(cost, 0);
+    unlocked_tech.append(tech_id);
+    save_tech_progress();
+    emit_signal("tech_progress_changed", tech_xp, unlocked_tech);
+    return true;
+}
+
+bool GameStateNative::has_tech(const String& tech_id) const {
+    for (int i = 0; i < unlocked_tech.size(); ++i) {
+        if (String(unlocked_tech[i]) == tech_id) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void GameStateNative::enable_test_run(int start_wave) {
@@ -298,7 +353,8 @@ void GameStateNative::on_enemy_killed(int variant_id) {
 void GameStateNative::on_wave_cleared() {
     waves_cleared += 1;
     waves_since_last_flare += 1;
-    if (waves_since_last_flare >= 3 && flare_charge == 0) {
+    const int flare_wave_count = has_tech("flare_battery") ? 2 : 3;
+    if (waves_since_last_flare >= flare_wave_count && flare_charge == 0) {
         flare_charge = 1;
         waves_since_last_flare = 0;
         emit_signal("flare_charged");
@@ -386,6 +442,8 @@ double GameStateNative::get_music_volume() const { return music_volume; }
 bool GameStateNative::get_tutorial_completed() const { return tutorial_completed; }
 bool GameStateNative::get_screen_shake_enabled() const { return screen_shake_enabled; }
 bool GameStateNative::get_auto_start_waves_enabled() const { return auto_start_waves_enabled; }
+int GameStateNative::get_tech_xp() const { return tech_xp; }
+Array GameStateNative::get_unlocked_tech() const { return unlocked_tech; }
 bool GameStateNative::get_test_unlimited_sol_enabled() const { return test_unlimited_sol_enabled; }
 bool GameStateNative::get_music_changed_by_user_this_session() const { return music_changed_by_user_this_session; }
 int GameStateNative::get_game_phase() const { return game_phase; }
@@ -398,6 +456,13 @@ Ref<ConfigFile> GameStateNative::settings_config() const {
     return config;
 }
 
+void GameStateNative::save_tech_progress() {
+    Ref<ConfigFile> config = settings_config();
+    config->set_value("tech", "xp", tech_xp);
+    config->set_value("tech", "unlocked", unlocked_tech);
+    config->save(SETTINGS_PATH);
+}
+
 void GameStateNative::trigger_game_over() {
     game_phase = GAME_OVER;
     emit_signal("game_over_triggered", luminosity, current_wave);
@@ -405,22 +470,22 @@ void GameStateNative::trigger_game_over() {
 
 Dictionary GameStateNative::tower_costs() const {
     Dictionary costs;
-    costs["photon_splitter"] = 25;
-    costs["cryo_probe"] = 32;
-    costs["bio_lab"] = 48;
-    costs["magnetic_net"] = 44;
-    costs["helios_cannon"] = 78;
-    costs["tardigrade_bomb"] = 68;
+    costs["photon_splitter"] = 22;
+    costs["cryo_probe"] = 28;
+    costs["bio_lab"] = 40;
+    costs["magnetic_net"] = 38;
+    costs["helios_cannon"] = 68;
+    costs["tardigrade_bomb"] = 58;
     return costs;
 }
 
 Dictionary GameStateNative::tower_upgrade_costs() const {
     Dictionary costs;
-    costs["photon_splitter"] = 35;
-    costs["cryo_probe"] = 42;
-    costs["bio_lab"] = 65;
-    costs["magnetic_net"] = 58;
-    costs["helios_cannon"] = 105;
-    costs["tardigrade_bomb"] = 92;
+    costs["photon_splitter"] = 28;
+    costs["cryo_probe"] = 36;
+    costs["bio_lab"] = 52;
+    costs["magnetic_net"] = 48;
+    costs["helios_cannon"] = 88;
+    costs["tardigrade_bomb"] = 74;
     return costs;
 }

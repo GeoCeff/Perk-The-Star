@@ -18,11 +18,11 @@ public:
     double get_sun_damage_radius() const { return 62.0; }
     double get_enemy_spawn_padding() const { return 260.0; }
     double get_slot_angle_offset() const { return -1.57079632679489661923; }
-    double get_flare_damage() const { return 95.0; }
+    double get_flare_damage() const { return 110.0; }
     double get_burrower_dig_radius() const { return 74.0; }
-    double get_burrower_excavation_hp() const { return 52.0; }
+    double get_burrower_excavation_hp() const { return 42.0; }
     double get_burrower_drain_interval() const { return 1.0; }
-    double get_burrower_drain_damage() const { return 0.010; }
+    double get_burrower_drain_damage() const { return 0.007; }
     double get_enemy_gravity_const() const { return 5200000.0; }
     double get_enemy_gravity_accel_cap() const { return 360.0; }
     double get_physics_projectile_gravity_const() const { return 1450000.0; }

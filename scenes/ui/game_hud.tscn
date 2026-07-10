@@ -175,20 +175,27 @@ theme_override_constants/separation = 8
 alignment = 1
 
 [node name="StartButton" type="Button" parent="Hud/ActionsPanel/ActionRow"]
-custom_minimum_size = Vector2(154, 46)
+custom_minimum_size = Vector2(140, 46)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 12
 text = "START WAVE 1"
+clip_text = true
 
 [node name="AutoStartButton" type="Button" parent="Hud/ActionsPanel/ActionRow"]
-custom_minimum_size = Vector2(96, 46)
+custom_minimum_size = Vector2(82, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 toggle_mode = true
 text = "AUTO\nSTART"
 
+[node name="TechButton" type="Button" parent="Hud/ActionsPanel/ActionRow"]
+custom_minimum_size = Vector2(70, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "TECH"
+
 [node name="MenuButton" type="Button" parent="Hud/ActionsPanel/ActionRow"]
-custom_minimum_size = Vector2(80, 46)
+custom_minimum_size = Vector2(64, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "MENU"

@@ -4,12 +4,12 @@
     "wave_type": "normal",
     "spawn_interval": 1.6,
     "enemies": [
-        { "variant": "drifter", "count": 30 },
-        { "variant": "bloom", "count": 10 },
-        { "variant": "farmer", "count": 8 }
+        { "variant": "drifter", "count": 20 },
+        { "variant": "bloom", "count": 6 },
+        { "variant": "farmer", "count": 5 }
     ],
     "event": null,
-    "reward_base": 100,
-    "escalation_threshold_seconds": 45,
+    "reward_base": 120,
+    "escalation_threshold_seconds": 50,
     "tutorial_hint": "Solar Farmers gain HP from energy tower hits. Cryo-debuff them before attacking!"
 }

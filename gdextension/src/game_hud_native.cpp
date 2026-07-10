@@ -569,8 +569,8 @@ void GameHudNative::apply_styles() {
     if (tower_panel) tower_panel->add_theme_stylebox_override("panel", hud_panel_style(cyan(), 13, 10));
     if (message_panel) message_panel->add_theme_stylebox_override("panel", hud_panel_style(gold(), 13, 12));
     apply_readability_overrides();
-    apply_action_button(start_button, gold(), icon_play());
-    apply_action_button(auto_start_button, cyan(), icon_play());
+    apply_action_button(start_button, gold(), "");
+    apply_action_button(auto_start_button, cyan(), "");
     apply_action_button(menu_button, cyan(), "");
     apply_action_button(center_view_button, cyan(), "");
     if (start_button) start_button->add_theme_font_size_override("font_size", 13);
@@ -749,6 +749,7 @@ void GameHudNative::apply_action_button(Button* button, const Color& accent, con
     if (Object* theme = space_theme()) {
         theme->call(accent == gold() ? "apply_primary_button" : "apply_secondary_button", button, icon_path);
     }
+    if (icon_path.is_empty()) button->set_button_icon(Ref<Texture2D>());
     button->add_theme_stylebox_override("normal", hud_button_style(button_bg(), accent, 1, 12, 8));
     button->add_theme_stylebox_override("hover", hud_button_style(button_hover(), Color(accent.r, accent.g, accent.b, 1.0), 2, 12, 8));
     button->add_theme_stylebox_override("pressed", hud_button_style(button_pressed(), gold(), 2, 12, 8));
@@ -765,7 +766,7 @@ void GameHudNative::set_auto_start_button(bool enabled) {
     auto_start_button->set_pressed_no_signal(enabled);
     auto_start_button->set_text(enabled ? "AUTO\nARMED" : "AUTO\nSTART");
     auto_start_button->set_tooltip_text("Automatically starts ready waves after a short countdown.");
-    apply_action_button(auto_start_button, enabled ? gold() : cyan(), icon_play());
+    apply_action_button(auto_start_button, enabled ? gold() : cyan(), "");
     auto_start_button->add_theme_font_size_override("font_size", 9);
 }
 

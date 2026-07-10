@@ -8,9 +8,17 @@ The project now keeps most reusable systems in C++ GDExtension and leaves `scrip
 
 1. Open this repository root in Godot, not the nested `game/` folder.
 2. Run `project.godot`.
-3. Press Play from the main menu.
+3. Pick Campaign or Endless from the main menu.
 
 The game targets a 1920x1080 canvas with expand stretching enabled.
+
+## Modes
+
+- Campaign is the fixed 12-wave mission with the Prime boss finale.
+- Endless generates scaling waves forever: enemy mix, count, HP, speed, and breach damage rise over time, with clash, formation, and Prime Echo waves mixed in.
+- Tech XP is earned at run end and spent on permanent tech tree unlocks that affect tower stats, rewards, flare cadence, and Helios Slingshot.
+
+Good next modes: Boss Rush, Daily Seed, No-Flare Challenge, and Draft Defense.
 
 ## Export
 
@@ -26,6 +34,7 @@ Use the Windows Desktop preset in Godot. Generated `.exe`, `.pck`, video, PDF, a
 - `W`, `A`, `S`, and `D` pan.
 - `Space` or `Enter` starts the next wave.
 - `F` fires a charged solar flare during an active wave.
+- `T` opens the tech tree overlay.
 - `Home` or `0` recenters the Sun.
 - `Esc` opens the pause menu.
 - End screens support Retry and Main Menu.
@@ -34,6 +43,7 @@ Use the Windows Desktop preset in Godot. Generated `.exe`, `.pck`, video, PDF, a
 
 - `project.godot` is the Godot project entry.
 - `scenes/` contains playable scenes and UI scenes.
+- `scenes/ui/tech_tree_overlay.tscn` is the current in-game tech tree overlay.
 - `scripts/game/game.gd` is the only remaining gameplay GDScript controller.
 - `gdextension/src/` contains native C++ gameplay, UI, audio, math, and helper classes.
 - `data/waves/` contains editable campaign wave JSON.

@@ -4,12 +4,12 @@
     "wave_type": "normal",
     "spawn_interval": 2.2,
     "enemies": [
-        { "variant": "drifter", "count": 20 },
-        { "variant": "mimic", "count": 6 },
-        { "variant": "burrower", "count": 3 }
+        { "variant": "drifter", "count": 14 },
+        { "variant": "mimic", "count": 4 },
+        { "variant": "burrower", "count": 2 }
     ],
     "event": null,
-    "reward_base": 58,
+    "reward_base": 75,
     "escalation_threshold_seconds": null,
     "tutorial_hint": "Photon Mimics are invisible to Photon Splitters. Bio-Lab and Cryo reveal them."
 }
