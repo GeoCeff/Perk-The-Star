@@ -165,10 +165,10 @@ theme_override_constants/margin_bottom = 10
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="visual_image" type="TextureRect" parent="panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box"]
-custom_minimum_size = Vector2(132, 104)
+[node name="visual_gallery" type="HBoxContainer" parent="panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box"]
+custom_minimum_size = Vector2(560, 104)
 layout_mode = 2
-stretch_mode = 5
+theme_override_constants/separation = 8
 
 [node name="visual_caption" type="Label" parent="panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box"]
 layout_mode = 2

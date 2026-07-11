@@ -1,6 +1,9 @@
 ﻿#include "codex_native.h"
 
+#include <initializer_list>
+
 #include <godot_cpp/classes/button.hpp>
+#include <godot_cpp/classes/h_box_container.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/panel_container.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
@@ -9,6 +12,7 @@
 #include <godot_cpp/classes/scroll_container.hpp>
 #include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/classes/texture_rect.hpp>
+#include <godot_cpp/classes/v_box_container.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/callable.hpp>
 
@@ -21,11 +25,26 @@ T* node_as(Node* owner, const char* path) {
     return Object::cast_to<T>(owner->get_node_or_null(NodePath(path)));
 }
 
-Dictionary section(const String& title, const String& body, const String& image_path, const String& caption) {
+Dictionary sprite(const String& label, const String& path) {
+    Dictionary data;
+    data["label"] = label;
+    data["path"] = path;
+    return data;
+}
+
+Array gallery(std::initializer_list<Dictionary> images) {
+    Array data;
+    for (const Dictionary& image : images) {
+        data.append(image);
+    }
+    return data;
+}
+
+Dictionary section(const String& title, const String& body, const Array& images, const String& caption) {
     Dictionary data;
     data["title"] = title;
     data["body"] = body;
-    data["image"] = image_path;
+    data["images"] = images;
     data["caption"] = caption;
     return data;
 }
@@ -51,7 +70,7 @@ void CodexNative::_ready() {
     close_button = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/close_button");
     panel = node_as<PanelContainer>(this, "panel");
     visual_panel = node_as<PanelContainer>(this, "panel/margin/root_box/content_box/article_box/visual_panel");
-    visual_image = node_as<TextureRect>(this, "panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box/visual_image");
+    visual_gallery = node_as<HBoxContainer>(this, "panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box/visual_gallery");
     visual_caption = node_as<Label>(this, "panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box/visual_caption");
     section_title_label = node_as<Label>(this, "panel/margin/root_box/content_box/article_box/section_title_label");
     body_scroll = node_as<ScrollContainer>(this, "panel/margin/root_box/content_box/article_box/body_scroll");
@@ -131,19 +150,56 @@ void CodexNative::show_section(const String& section_key) {
             body_label->set_text(body);
         }
     }
-    if (visual_image != nullptr) {
-        const String image_path = String(data.get("image", ""));
-        Ref<Texture2D> texture;
-        if (!image_path.is_empty()) {
-            texture = ResourceLoader::get_singleton()->load(image_path);
+    const Array images = data.get("images", Array());
+    const bool has_images = images.size() > 0;
+    if (visual_panel != nullptr) {
+        visual_panel->set_visible(has_images);
+    }
+    if (body_scroll != nullptr) {
+        body_scroll->set_custom_minimum_size(Vector2(780.0, has_images ? 330.0 : 460.0));
+    }
+    if (visual_gallery != nullptr) {
+        const Array old_children = visual_gallery->get_children();
+        for (int i = 0; i < old_children.size(); ++i) {
+            if (Node* child = Object::cast_to<Node>(old_children[i])) {
+                visual_gallery->remove_child(child);
+                child->queue_free();
+            }
         }
-        visual_image->set_texture(texture);
-        visual_image->set_visible(texture.is_valid());
+        for (int i = 0; i < images.size(); ++i) {
+            const Dictionary image_data = images[i];
+            const String label_text = String(image_data.get("label", ""));
+            const String image_path = String(image_data.get("path", ""));
+            Ref<Texture2D> texture;
+            if (!image_path.is_empty()) {
+                texture = ResourceLoader::get_singleton()->load(image_path);
+            }
+
+            VBoxContainer* card = memnew(VBoxContainer);
+            card->set_custom_minimum_size(Vector2(84.0, 104.0));
+            card->add_theme_constant_override("separation", 4);
+            visual_gallery->add_child(card);
+
+            TextureRect* image = memnew(TextureRect);
+            image->set_custom_minimum_size(Vector2(72.0, 72.0));
+            image->set_expand_mode(TextureRect::EXPAND_FIT_WIDTH_PROPORTIONAL);
+            image->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
+            image->set_texture(texture);
+            card->add_child(image);
+
+            Label* label = memnew(Label);
+            label->set_text(label_text);
+            label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+            label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+            label->add_theme_font_size_override("font_size", 10);
+            label->add_theme_color_override("font_color", Color(0.90, 0.96, 1.0, 0.96));
+            card->add_child(label);
+        }
     }
     if (visual_caption != nullptr) {
         const String caption = String(data.get("caption", ""));
         visual_caption->set_text(caption);
-        visual_caption->set_visible(!caption.is_empty());
+        visual_caption->set_visible(has_images && !caption.is_empty());
     }
     if (body_scroll != nullptr) {
         body_scroll->set_v_scroll(0);
@@ -218,8 +274,12 @@ Command doctrine
 
 Field phrase
 Defend me, defend me! - Oa ka Perk!)",
-        "res://assets/sprites/backgrounds/battle_nebula_hq.png",
-        "Strategic view: the starfield is not decoration. It is the battlefield the orbit grid has to read before every wave."
+        gallery({
+            sprite("Defense", "res://assets/sprites/clean/towers/photon_splitter.png"),
+            sprite("Drifter", "res://assets/sprites/clean/enemies_optimized/drifter_idle_1.png"),
+            sprite("Prime", "res://assets/sprites/clean/enemies_optimized/astrophage-shell_idle_1.png"),
+        }),
+        "Quick read: your grid, the baseline Astrophage, and the final shell target."
     );
 
     sections["controls"] = section(
@@ -252,8 +312,8 @@ Fast habits
 - Upgrade towers that are already firing before buying quiet coverage.
 - Fire Solar Flare before a breach, not after luminosity is gone.
 - Use pause to check this codex, settings, retry, or return to menu.)",
-        "res://assets/ui/icons/icon_play.png",
-        "Control icon: Start Defense is the first command, but Wave Intel decides whether the grid is ready."
+        Array(),
+        ""
     );
 
     sections["systems"] = section(
@@ -280,8 +340,13 @@ HUD intelligence
 
 Commander read
 The system is not asking for perfect towers. It is asking for time: more seconds before breach, more shots in range, more control on the right lane.)",
-        "res://assets/ui/tech_tiers/bio_lab_tier_4.png",
-        "Research visual: Tech XP turns one run's survival data into permanent tower-path upgrades."
+        gallery({
+            sprite("Tier I", "res://assets/ui/tech_tiers/photon_splitter_tier_1.png"),
+            sprite("Tier II", "res://assets/ui/tech_tiers/cryo_probe_tier_2.png"),
+            sprite("Tier III", "res://assets/ui/tech_tiers/helios_cannon_tier_3.png"),
+            sprite("Apex", "res://assets/ui/tech_tiers/bio_lab_tier_4.png"),
+        }),
+        "Tech icons: every finished run can become permanent research."
     );
 
     sections["towers"] = section(
@@ -312,8 +377,15 @@ Build patterns
 
 Upgrade rule
 Upgrade towers that are already shooting. A level on a tower with targets is worth more than a fresh tower watching empty orbit.)",
-        "res://assets/sprites/clean/towers/photon_splitter.png",
-        "Tower visual: the Photon Splitter is the first clean answer, but the codex matters because not every enemy accepts Photon damage."
+        gallery({
+            sprite("Photon", "res://assets/sprites/clean/towers/photon_splitter.png"),
+            sprite("Cryo", "res://assets/sprites/clean/towers/cryo_probe.png"),
+            sprite("Bio-Lab", "res://assets/sprites/clean/towers/bio_lab.png"),
+            sprite("Magnetic", "res://assets/sprites/clean/towers/magnetic_net.png"),
+            sprite("Helios", "res://assets/sprites/clean/towers/helios_cannon.png"),
+            sprite("Tardigrade", "res://assets/sprites/clean/towers/tardigrade_bomb.png"),
+        }),
+        "Tower sprites: match the silhouette before you buy; every tower has a different job."
     );
 
     sections["astrophage"] = section(
@@ -341,8 +413,15 @@ Threat reading
 - If it says ABSORB, stop feeding Farmers.
 - If it says SHELL, fund Bio-Lab before buying prettier damage.
 - If breaches start chaining, buy control before chasing another finisher.)",
-        "res://assets/sprites/clean/enemies_optimized/astrophage-shell_idle_1.png",
-        "Enemy visual: Prime's shell is a warning label. Until Bio-Lab opens it, most damage is just noise."
+        gallery({
+            sprite("Drifter", "res://assets/sprites/clean/enemies_optimized/drifter_idle_1.png"),
+            sprite("Bloom", "res://assets/sprites/clean/enemies_optimized/bloom_idle_1.png"),
+            sprite("Burrower", "res://assets/sprites/clean/enemies_optimized/coronal_idle_1.png"),
+            sprite("Mimic", "res://assets/sprites/clean/enemies/photon_idle_1.png"),
+            sprite("Farmer", "res://assets/sprites/clean/enemies_optimized/solar_idle_1.png"),
+            sprite("Prime", "res://assets/sprites/clean/enemies_optimized/astrophage-shell_idle_1.png"),
+        }),
+        "Enemy sprites: learn the silhouette before the wave arrives."
     );
 
     sections["rings"] = section(
@@ -379,8 +458,8 @@ Wave landmarks
 
 Reading the intel
 Enemy tags tell you what not to shoot. Ring pressure tells you where to spend. Rewards tell you whether to build now or survive to upgrade after the wave.)",
-        "res://assets/sprites/backgrounds/menu_nebula.png",
-        "Orbit visual: every ring is a clock. Winning means placing the right weapon where its clock meets the enemy path."
+        Array(),
+        ""
     );
 
     sections["endings"] = section(
@@ -409,8 +488,8 @@ Run records
 
 Last order
 Do not chase a beautiful orbit. Chase a living Sun.)",
-        "res://assets/ui/icons/icon_codex.png",
-        "Record visual: the codex turns losses into instructions, then the Tech Tree turns instructions into power."
+        Array(),
+        ""
     );
 }
 

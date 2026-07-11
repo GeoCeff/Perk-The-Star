@@ -6,11 +6,11 @@
 namespace godot {
 
 class Button;
+class HBoxContainer;
 class Label;
 class PanelContainer;
 class RichTextLabel;
 class ScrollContainer;
-class TextureRect;
 
 class CodexNative : public Control {
     GDCLASS(CodexNative, Control)
@@ -40,7 +40,7 @@ private:
     Button* close_button = nullptr;
     PanelContainer* panel = nullptr;
     PanelContainer* visual_panel = nullptr;
-    TextureRect* visual_image = nullptr;
+    HBoxContainer* visual_gallery = nullptr;
     Label* visual_caption = nullptr;
     Label* section_title_label = nullptr;
     ScrollContainer* body_scroll = nullptr;
