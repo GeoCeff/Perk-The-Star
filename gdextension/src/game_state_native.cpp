@@ -20,6 +20,8 @@ void GameStateNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("add_tech_xp", "amount"), &GameStateNative::add_tech_xp);
     ClassDB::bind_method(D_METHOD("unlock_tech", "tech_id", "cost", "requirements"), &GameStateNative::unlock_tech, DEFVAL(Array()));
     ClassDB::bind_method(D_METHOD("has_tech", "tech_id"), &GameStateNative::has_tech);
+    ClassDB::bind_method(D_METHOD("record_run", "run_mode", "score", "waves", "luminosity_percent", "rank"), &GameStateNative::record_run);
+    ClassDB::bind_method(D_METHOD("best_run_summary", "run_mode"), &GameStateNative::best_run_summary);
     ClassDB::bind_method(D_METHOD("enable_test_run", "start_wave"), &GameStateNative::enable_test_run);
     ClassDB::bind_method(D_METHOD("clear_test_run"), &GameStateNative::clear_test_run);
     ClassDB::bind_method(D_METHOD("consume_test_start_wave"), &GameStateNative::consume_test_start_wave);
@@ -160,6 +162,14 @@ void GameStateNative::load_audio_settings() {
         if (saved_unlocked.get_type() == Variant::ARRAY) {
             unlocked_tech = Array(saved_unlocked);
         }
+        best_campaign_score = int(config->get_value("records", "campaign_score", best_campaign_score));
+        best_campaign_luminosity = int(config->get_value("records", "campaign_luminosity", best_campaign_luminosity));
+        best_campaign_rank = String(config->get_value("records", "campaign_rank", best_campaign_rank));
+        best_no_flare_score = int(config->get_value("records", "no_flare_score", best_no_flare_score));
+        best_no_flare_luminosity = int(config->get_value("records", "no_flare_luminosity", best_no_flare_luminosity));
+        best_no_flare_rank = String(config->get_value("records", "no_flare_rank", best_no_flare_rank));
+        best_endless_waves = int(config->get_value("records", "endless_waves", best_endless_waves));
+        best_endless_score = int(config->get_value("records", "endless_score", best_endless_score));
     }
     emit_signal("music_settings_changed", music_enabled, music_volume);
     emit_signal("tutorial_settings_changed", tutorial_completed);
@@ -272,6 +282,65 @@ bool GameStateNative::has_tech(const String& tech_id) const {
         }
     }
     return false;
+}
+
+Dictionary GameStateNative::record_run(const String& run_mode, int score, int waves, int luminosity_percent, const String& rank) {
+    const String mode = run_mode == "endless" ? "endless" : (run_mode == "no_flare" ? "no_flare" : "campaign");
+    bool new_score = false;
+    bool new_luminosity = false;
+    bool new_waves = false;
+
+    if (mode == "endless") {
+        new_waves = waves > best_endless_waves;
+        new_score = score > best_endless_score;
+        if (new_waves) best_endless_waves = waves;
+        if (new_score) best_endless_score = score;
+    } else if (mode == "no_flare") {
+        new_score = score > best_no_flare_score;
+        new_luminosity = luminosity_percent > best_no_flare_luminosity || best_no_flare_rank.is_empty();
+        if (new_score) best_no_flare_score = score;
+        if (new_luminosity) {
+            best_no_flare_luminosity = luminosity_percent;
+            best_no_flare_rank = rank;
+        }
+    } else {
+        new_score = score > best_campaign_score;
+        new_luminosity = luminosity_percent > best_campaign_luminosity || best_campaign_rank.is_empty();
+        if (new_score) best_campaign_score = score;
+        if (new_luminosity) {
+            best_campaign_luminosity = luminosity_percent;
+            best_campaign_rank = rank;
+        }
+    }
+
+    if (new_score || new_luminosity || new_waves) {
+        save_records();
+    }
+
+    Dictionary summary = best_run_summary(mode);
+    summary["new_score"] = new_score;
+    summary["new_luminosity"] = new_luminosity;
+    summary["new_waves"] = new_waves;
+    summary["new_best"] = new_score || new_luminosity || new_waves;
+    return summary;
+}
+
+Dictionary GameStateNative::best_run_summary(const String& run_mode) const {
+    const String mode = run_mode == "endless" ? "endless" : (run_mode == "no_flare" ? "no_flare" : "campaign");
+    Dictionary summary;
+    summary["mode"] = mode;
+    if (mode == "endless") {
+        summary["waves"] = best_endless_waves;
+        summary["score"] = best_endless_score;
+        return summary;
+    }
+
+    const bool no_flare = mode == "no_flare";
+    const String rank = no_flare ? best_no_flare_rank : best_campaign_rank;
+    summary["score"] = no_flare ? best_no_flare_score : best_campaign_score;
+    summary["luminosity"] = no_flare ? best_no_flare_luminosity : best_campaign_luminosity;
+    summary["rank"] = rank.is_empty() ? String("UNRANKED") : rank;
+    return summary;
 }
 
 void GameStateNative::enable_test_run(int start_wave) {
@@ -460,6 +529,19 @@ void GameStateNative::save_tech_progress() {
     Ref<ConfigFile> config = settings_config();
     config->set_value("tech", "xp", tech_xp);
     config->set_value("tech", "unlocked", unlocked_tech);
+    config->save(SETTINGS_PATH);
+}
+
+void GameStateNative::save_records() {
+    Ref<ConfigFile> config = settings_config();
+    config->set_value("records", "campaign_score", best_campaign_score);
+    config->set_value("records", "campaign_luminosity", best_campaign_luminosity);
+    config->set_value("records", "campaign_rank", best_campaign_rank);
+    config->set_value("records", "no_flare_score", best_no_flare_score);
+    config->set_value("records", "no_flare_luminosity", best_no_flare_luminosity);
+    config->set_value("records", "no_flare_rank", best_no_flare_rank);
+    config->set_value("records", "endless_waves", best_endless_waves);
+    config->set_value("records", "endless_score", best_endless_score);
     config->save(SETTINGS_PATH);
 }
 

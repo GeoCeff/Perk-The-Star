@@ -38,6 +38,8 @@ public:
     int add_tech_xp(int amount);
     bool unlock_tech(const String& tech_id, int cost, const Array& requirements = Array());
     bool has_tech(const String& tech_id) const;
+    Dictionary record_run(const String& run_mode, int score, int waves, int luminosity_percent, const String& rank);
+    Dictionary best_run_summary(const String& run_mode) const;
     void enable_test_run(int start_wave);
     void clear_test_run();
     int consume_test_start_wave();
@@ -117,6 +119,14 @@ private:
     bool auto_start_waves_enabled = false;
     int tech_xp = 0;
     Array unlocked_tech;
+    int best_campaign_score = 0;
+    int best_campaign_luminosity = 0;
+    String best_campaign_rank;
+    int best_no_flare_score = 0;
+    int best_no_flare_luminosity = 0;
+    String best_no_flare_rank;
+    int best_endless_waves = 0;
+    int best_endless_score = 0;
     bool test_unlimited_sol_enabled = false;
     int pending_test_start_wave = 0;
     bool music_changed_by_user_this_session = false;
@@ -124,6 +134,7 @@ private:
 
     Ref<ConfigFile> settings_config() const;
     void save_tech_progress();
+    void save_records();
     void trigger_game_over();
     Dictionary tower_costs() const;
     Dictionary tower_upgrade_costs() const;

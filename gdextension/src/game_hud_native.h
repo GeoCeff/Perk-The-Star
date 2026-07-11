@@ -87,6 +87,7 @@ private:
     Label* end_state_stats_label = nullptr;
     Label* end_state_tip_label = nullptr;
     Button* end_state_retry_button = nullptr;
+    Button* end_state_tech_tree_button = nullptr;
     Button* end_state_main_menu_button = nullptr;
 
     template <class T>
@@ -132,6 +133,7 @@ private:
     void on_tower_manage_close_pressed();
     void on_center_view_button_pressed();
     void on_end_retry_pressed();
+    void on_end_tech_tree_pressed();
     void on_end_main_menu_pressed();
     void on_ui_hovered();
 };

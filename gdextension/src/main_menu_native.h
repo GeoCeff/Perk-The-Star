@@ -21,7 +21,6 @@ public:
 
 private:
     Button* btn_play = nullptr;
-    Button* btn_endless = nullptr;
     Button* btn_codex = nullptr;
     Button* btn_settings = nullptr;
     Button* btn_credits = nullptr;

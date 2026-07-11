@@ -27,6 +27,7 @@ Color button_hover() { return Color(0.035, 0.085, 0.120, 1.0); }
 Color button_pressed() { return Color(0.052, 0.112, 0.138, 1.0); }
 Color button_disabled() { return Color(0.018, 0.026, 0.038, 0.78); }
 String icon_play() { return "res://assets/ui/icons/icon_play.png"; }
+String icon_codex() { return "res://assets/ui/icons/icon_codex.png"; }
 String icon_back() { return "res://assets/ui/icons/icon_back.png"; }
 
 Dictionary tower_button_paths() {
@@ -81,6 +82,7 @@ void GameHudNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("_on_tower_manage_close_pressed"), &GameHudNative::on_tower_manage_close_pressed);
     ClassDB::bind_method(D_METHOD("_on_center_view_button_pressed"), &GameHudNative::on_center_view_button_pressed);
     ClassDB::bind_method(D_METHOD("_on_end_retry_pressed"), &GameHudNative::on_end_retry_pressed);
+    ClassDB::bind_method(D_METHOD("_on_end_tech_tree_pressed"), &GameHudNative::on_end_tech_tree_pressed);
     ClassDB::bind_method(D_METHOD("_on_end_main_menu_pressed"), &GameHudNative::on_end_main_menu_pressed);
     ClassDB::bind_method(D_METHOD("_on_ui_hovered"), &GameHudNative::on_ui_hovered);
 
@@ -93,6 +95,7 @@ void GameHudNative::_bind_methods() {
     ADD_SIGNAL(MethodInfo("tower_manage_closed"));
     ADD_SIGNAL(MethodInfo("recenter_requested"));
     ADD_SIGNAL(MethodInfo("retry_requested"));
+    ADD_SIGNAL(MethodInfo("tech_tree_requested"));
     ADD_SIGNAL(MethodInfo("main_menu_requested"));
     ADD_SIGNAL(MethodInfo("ui_hovered"));
 }
@@ -417,8 +420,8 @@ void GameHudNative::build_end_state_card() {
     if (hud_root == nullptr) return;
     end_state_panel = memnew(PanelContainer);
     end_state_panel->set_name("EndStateCard");
-    end_state_panel->set_custom_minimum_size(Vector2(620, 304));
-    end_state_panel->set_size(Vector2(620, 304));
+    end_state_panel->set_custom_minimum_size(Vector2(700, 360));
+    end_state_panel->set_size(Vector2(700, 360));
     end_state_panel->set_visible(false);
     end_state_panel->set_mouse_filter(Control::MOUSE_FILTER_STOP);
     end_state_panel->set_z_index(90);
@@ -472,6 +475,14 @@ void GameHudNative::build_end_state_card() {
     end_state_retry_button->connect("pressed", Callable(this, "_on_end_retry_pressed"));
     connect_hover(end_state_retry_button, this);
     buttons->add_child(end_state_retry_button);
+
+    end_state_tech_tree_button = memnew(Button);
+    end_state_tech_tree_button->set_name("EndStateTechTreeButton");
+    end_state_tech_tree_button->set_custom_minimum_size(Vector2(156, 44));
+    end_state_tech_tree_button->set_text("TECH TREE");
+    end_state_tech_tree_button->connect("pressed", Callable(this, "_on_end_tech_tree_pressed"));
+    connect_hover(end_state_tech_tree_button, this);
+    buttons->add_child(end_state_tech_tree_button);
 
     end_state_main_menu_button = memnew(Button);
     end_state_main_menu_button->set_name("EndStateMainMenuButton");
@@ -550,7 +561,7 @@ void GameHudNative::update_end_state_card(const Variant& end_state) {
     end_state_tip_label->set_text(String(state.get("tip", "")));
     position_end_state_card();
     end_state_panel->set_visible(true);
-    if (!end_state_retry_button->has_focus() && !end_state_main_menu_button->has_focus()) end_state_retry_button->grab_focus();
+    if (!end_state_retry_button->has_focus() && !end_state_tech_tree_button->has_focus() && !end_state_main_menu_button->has_focus()) end_state_retry_button->grab_focus();
 }
 
 void GameHudNative::apply_styles() {
@@ -640,9 +651,10 @@ void GameHudNative::apply_readability_overrides() {
         end_state_title_label->add_theme_font_size_override("font_size", 25);
         end_state_subtitle_label->add_theme_font_size_override("font_size", 14);
         end_state_rank_label->add_theme_font_size_override("font_size", 18);
-        end_state_stats_label->add_theme_font_size_override("font_size", 14);
+        end_state_stats_label->add_theme_font_size_override("font_size", 13);
         end_state_tip_label->add_theme_font_size_override("font_size", 12);
         apply_action_button(end_state_retry_button, gold(), icon_play());
+        apply_action_button(end_state_tech_tree_button, cyan(), icon_codex());
         apply_action_button(end_state_main_menu_button, cyan(), icon_back());
     }
 }
@@ -858,5 +870,6 @@ void GameHudNative::on_tower_manage_sell_pressed() {
 void GameHudNative::on_tower_manage_close_pressed() { emit_signal("tower_manage_closed"); }
 void GameHudNative::on_center_view_button_pressed() { emit_signal("recenter_requested"); }
 void GameHudNative::on_end_retry_pressed() { emit_signal("retry_requested"); }
+void GameHudNative::on_end_tech_tree_pressed() { emit_signal("tech_tree_requested"); }
 void GameHudNative::on_end_main_menu_pressed() { emit_signal("main_menu_requested"); }
 void GameHudNative::on_ui_hovered() { emit_signal("ui_hovered"); }

@@ -8,7 +8,7 @@ The project now keeps most reusable systems in C++ GDExtension and leaves `scrip
 
 1. Open this repository root in Godot, not the nested `game/` folder.
 2. Run `project.godot`.
-3. Pick Campaign or Endless from the main menu.
+3. Click Start Defense, then pick Campaign, Endless, or No-Flare Challenge.
 
 The game targets a 1920x1080 canvas with expand stretching enabled.
 
@@ -16,9 +16,11 @@ The game targets a 1920x1080 canvas with expand stretching enabled.
 
 - Campaign is the fixed 12-wave mission with the Prime boss finale.
 - Endless generates scaling waves forever: enemy mix, count, HP, speed, and breach damage rise over time, with clash, formation, and Prime Echo waves mixed in.
+- No-Flare Challenge reuses the Prime campaign but disables Solar Flare and pays bonus Tech XP.
 - Tech XP is earned at run end and spent on permanent tech tree unlocks that affect tower stats, rewards, flare cadence, and Helios Slingshot.
+- Best campaign, no-flare, and endless records are saved in `user://settings.cfg`.
 
-Good next modes: Boss Rush, Daily Seed, No-Flare Challenge, and Draft Defense.
+Good next modes: Boss Rush, Daily Seed, and Draft Defense.
 
 ## Export
 
@@ -37,7 +39,7 @@ Use the Windows Desktop preset in Godot. Generated `.exe`, `.pck`, video, PDF, a
 - `T` opens the tech tree overlay.
 - `Home` or `0` recenters the Sun.
 - `Esc` opens the pause menu.
-- End screens support Retry and Main Menu.
+- End screens support Retry, Tech Tree, and Main Menu.
 
 ## Clean File Map
 

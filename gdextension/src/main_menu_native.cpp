@@ -19,7 +19,7 @@ namespace {
 constexpr const char* GAME_TITLE = "PERK THE STAR";
 constexpr const char* SUBTITLE = "DEFEND THE SUN - SAVE THE SYSTEM";
 constexpr const char* TAGLINE = "Defend me, defend me! - Oa ka Perk!";
-constexpr const char* OVERVIEW = "Command orbiting towers around the Sun, survive the 12-wave Prime campaign or an endless Astrophage swarm, then bank Tech XP into six tower paths with their own Apex versions.";
+constexpr const char* OVERVIEW = "Command orbiting towers around the Sun, survive the Prime campaign, brave Endless, or clear No-Flare Challenge, then bank Tech XP into six tower paths.";
 constexpr const char* TECH_LABEL = "CMSC 21 | C++ / Godot Engine 4.x / GDExtension";
 constexpr const char* AUTHOR_LABEL = "Geo Ceff Gabaisen & Dexter Juevesano";
 
@@ -39,7 +39,6 @@ void MainMenuNative::_bind_methods() {}
 
 void MainMenuNative::_ready() {
     btn_play = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_play")));
-    btn_endless = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_endless")));
     btn_codex = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_codex")));
     btn_settings = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_settings")));
     btn_credits = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_credits")));
@@ -109,7 +108,6 @@ void MainMenuNative::apply_menu_style() {
     if (author_label != nullptr) author_label->add_theme_color_override("font_color", Color(0.68, 0.94, 1.0, 1.0));
 
     theme->call("apply_primary_button", btn_play, theme->get("ICON_PLAY_PATH"));
-    theme->call("apply_secondary_button", btn_endless, theme->get("ICON_PLAY_PATH"));
     theme->call("apply_secondary_button", btn_codex, theme->get("ICON_CODEX_PATH"));
     theme->call("apply_secondary_button", btn_settings, theme->get("ICON_SETTINGS_PATH"));
     theme->call("apply_secondary_button", btn_credits, theme->get("ICON_CREDITS_PATH"));

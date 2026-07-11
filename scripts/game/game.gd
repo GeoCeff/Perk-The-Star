@@ -34,6 +34,7 @@ const HEALTH_BAR_HEIGHT: float = 6.0
 const AUTO_START_DELAY: float = 3.0
 const RUN_MODE_META: StringName = &"run_mode"
 const RUN_MODE_ENDLESS: String = "endless"
+const RUN_MODE_NO_FLARE: String = "no_flare"
 const ENDLESS_WAVE_CAP: int = 999
 
 var ENEMY_ASSET_PATHS: Dictionary = game_catalog.call("enemy_asset_paths") as Dictionary
@@ -103,7 +104,10 @@ var managed_tower_ring: int = -1
 var managed_tower_slot: int = -1
 var run_mode: String = "campaign"
 var endless_mode: bool = false
+var no_flare_mode: bool = false
 var run_tech_xp_awarded: int = 0
+var run_tech_xp_breakdown: String = ""
+var run_record_summary: Dictionary = {}
 var pending_test_start_wave: int = 0
 var prime_briefing_visible: bool = false
 var prime_briefing_wave_data: Dictionary = {}
@@ -181,10 +185,14 @@ func _ready() -> void:
 	GameState.reset_state()
 	run_mode = str(GameState.get_meta(RUN_MODE_META, "campaign"))
 	endless_mode = run_mode == RUN_MODE_ENDLESS
+	no_flare_mode = run_mode == RUN_MODE_NO_FLARE
 	if endless_mode:
 		playable_wave_limit = ENDLESS_WAVE_CAP
 		briefing_title = "ENDLESS DEFENSE"
 		message_text = "Endless mode armed. Survive as many waves as possible."
+	elif no_flare_mode:
+		briefing_title = "NO-FLARE CHALLENGE"
+		message_text = "No-Flare Challenge armed. Clear the Prime mission without Solar Flare."
 	GameState.load_audio_settings()
 	GameState.ensure_music_audible()
 	if GameState.has_method("consume_test_start_wave"):
@@ -484,10 +492,8 @@ func _draw() -> void:
 	_draw_prime_briefing(viewport_size)
 	if GameState.game_phase == GameState.GAME_OVER:
 		draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(0.0, 0.0, 0.0, 0.34), true)
-		_draw_end_state_overlay(viewport_size, false)
 	elif GameState.game_phase == GameState.VICTORY:
 		draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(1.0, 0.78, 0.18, 0.12), true)
-		_draw_end_state_overlay(viewport_size, true)
 
 
 func _draw_battle_background(viewport_size: Vector2) -> void:
@@ -717,49 +723,6 @@ func _draw_prime_briefing(viewport_size: Vector2) -> void:
 	draw_rect(button_rect, Color(0.020, 0.052, 0.078, 0.96), true)
 	draw_rect(button_rect, Color(1.0, 0.78, 0.24, 0.82), false, 1.5)
 	draw_string(end_title_font, button_rect.position + Vector2(0.0, 25.0), "BEGIN PRIME WAVE", HORIZONTAL_ALIGNMENT_CENTER, button_rect.size.x, 12, Color(0.96, 0.99, 1.0, 1.0))
-
-
-func _draw_end_state_overlay(viewport_size: Vector2, victory: bool) -> void:
-	if end_title_font == null or end_body_font == null:
-		return
-	var width: float = minf(viewport_size.x - 56.0, 680.0)
-	var height: float = 260.0
-	var rect: Rect2 = Rect2((viewport_size - Vector2(width, height)) * 0.5, Vector2(width, height))
-	var accent: Color = Color(1.0, 0.78, 0.24, 0.96) if victory else Color(1.0, 0.22, 0.16, 0.96)
-	var title: String = "SOL SAVED" if victory else "SUN EXTINGUISHED"
-	var subtitle: String = "Mission complete. The defense grid held." if victory else "The defense grid failed. The Sun went dark."
-	var rank_text: String = "RANK  %s" % GameState.get_rank()
-	var stats: String
-	if endless_mode:
-		title = "ENDLESS RUN ENDED"
-		subtitle = "The swarm finally broke through."
-		rank_text = "SURVIVED %d WAVES" % GameState.waves_cleared
-		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-			GameState.enemies_killed_total,
-			GameState.performance_score,
-			GameState.get_luminosity_percent(),
-		]
-	else:
-		stats = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-			GameState.waves_cleared,
-			MAX_WAVES,
-			GameState.enemies_killed_total,
-			GameState.performance_score,
-			GameState.get_luminosity_percent(),
-		]
-	if run_tech_xp_awarded > 0:
-		stats += "  |  TECH XP +%d" % run_tech_xp_awarded
-	var tip: String = "Press R to retry or M for main menu."
-
-	draw_rect(rect.grow(8.0), Color(0.0, 0.0, 0.0, 0.58), true)
-	draw_rect(rect, Color(0.004, 0.012, 0.022, 0.95), true)
-	draw_rect(rect, Color(accent.r, accent.g, accent.b, 0.86), false, 2.0)
-	draw_line(rect.position + Vector2(28.0, 66.0), rect.position + Vector2(rect.size.x - 28.0, 66.0), Color(accent.r, accent.g, accent.b, 0.44), 1.5)
-	draw_string(end_title_font, rect.position + Vector2(0.0, 42.0), title, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 25, accent)
-	draw_string(end_body_font, rect.position + Vector2(0.0, 92.0), subtitle, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 16, Color(0.90, 0.96, 1.0, 0.94))
-	draw_string(end_title_font, rect.position + Vector2(0.0, 136.0), rank_text, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 18, Color(1.0, 0.90, 0.52, 0.96))
-	draw_string(end_body_font, rect.position + Vector2(0.0, 176.0), stats, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 14, Color(0.82, 0.92, 1.0, 0.92))
-	draw_string(end_body_font, rect.position + Vector2(0.0, 218.0), tip, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 13, Color(0.98, 0.95, 0.84, 0.90))
 
 
 func _load_assets() -> void:
@@ -999,6 +962,7 @@ func _build_ui() -> void:
 		"tower_manage_closed": Callable(self, "_on_tower_manage_closed"),
 		"recenter_requested": Callable(self, "_reset_view"),
 		"retry_requested": Callable(self, "_on_retry_requested"),
+		"tech_tree_requested": Callable(self, "_on_tech_tree_pressed"),
 		"main_menu_requested": Callable(self, "_on_end_main_menu_requested"),
 		"ui_hovered": Callable(self, "_on_ui_hovered"),
 	}
@@ -1330,9 +1294,12 @@ func _process_wave_event(_delta: float) -> void:
 	wave_event_triggered = true
 	match str(wave_event.get("type", "")):
 		"mid_wave_autoflare":
-			_trigger_solar_flare()
 			cryo_disruption_timer = float(wave_event.get("cryo_disruption_seconds", 0.0))
-			_set_message("Solar storm flare fired. Cryo Probes offline for %.0fs." % cryo_disruption_timer, 4.0)
+			if no_flare_mode:
+				_set_message("No-Flare Challenge suppressed the solar storm. Cryo Probes offline for %.0fs." % cryo_disruption_timer, 4.0)
+			else:
+				_trigger_solar_flare()
+				_set_message("Solar storm flare fired. Cryo Probes offline for %.0fs." % cryo_disruption_timer, 4.0)
 		"ring_blind":
 			var duration: float = float(wave_event.get("duration", 0.0))
 			for raw_ring in wave_event.get("rings", []):
@@ -1401,6 +1368,9 @@ func _wave_progress_ratio() -> float:
 
 
 func _try_manual_flare() -> void:
+	if no_flare_mode:
+		_set_message("No-Flare Challenge disables Solar Flare.", 1.8)
+		return
 	if GameState.game_phase != GameState.WAVE_ACTIVE:
 		_set_message("Solar flare can only fire during an active wave.", 1.6)
 		return
@@ -1416,6 +1386,8 @@ func _try_manual_flare() -> void:
 
 
 func _trigger_solar_flare() -> void:
+	if no_flare_mode:
+		return
 	var sun: Vector2 = _sun_pos()
 	var flare_damage: float = FLARE_DAMAGE + (10.0 if _has_tech("helios_apex") or _has_tech("apex_master") else 0.0)
 	_add_visual_effect("flare", sun, Color(1.0, 0.78, 0.24, 0.96), 0.74, SUN_RADIUS + 36.0)
@@ -2028,11 +2000,14 @@ func _find_target_for_tower(tower: Dictionary) -> int:
 	var stats: Dictionary = _tower_runtime_stats(tower)
 	var tower_range: float = float(stats["range"])
 	var range_squared: float = tower_range * tower_range
+	var tower_type: String = str(tower.get("type", ""))
 	var best_index: int = -1
 	var best_sun_dist_squared: float = INF
 
 	for i in range(enemies.size()):
 		var enemy: Dictionary = enemies[i]
+		if not _can_tower_damage_enemy(tower_type, enemy):
+			continue
 		var tower_dist_squared: float = tower_pos.distance_squared_to(enemy["pos"])
 		var sun_dist_squared: float = sun.distance_squared_to(enemy["pos"])
 		if tower_dist_squared <= range_squared and sun_dist_squared < best_sun_dist_squared:
@@ -2040,6 +2015,17 @@ func _find_target_for_tower(tower: Dictionary) -> int:
 			best_sun_dist_squared = sun_dist_squared
 
 	return best_index
+
+
+func _can_tower_damage_enemy(tower_type: String, enemy: Dictionary) -> bool:
+	var variant: String = str(enemy.get("variant", ""))
+	if variant == "mimic" and tower_type == "photon_splitter":
+		return false
+	if variant == "farmer" and (tower_type == "photon_splitter" or tower_type == "helios_cannon"):
+		return false
+	if variant == "prime" and int(enemy.get("prime_phase", 0)) == 0 and tower_type != "bio_lab":
+		return false
+	return true
 
 
 func _fire_tower(tower: Dictionary, enemy_index: int) -> void:
@@ -3161,14 +3147,57 @@ func _slingshot_cost() -> int:
 func _award_run_tech_xp_once(victory: bool) -> int:
 	if run_tech_xp_awarded > 0:
 		return run_tech_xp_awarded
+	var score_xp: int = int(floor(float(GameState.performance_score) / 10.0))
+	var kill_xp: int = GameState.enemies_killed_total * 3
+	var wave_xp: int = GameState.waves_cleared * 75
 	var luminosity_bonus: int = max(0, GameState.get_luminosity_percent())
 	var endless_bonus: int = max(0, GameState.waves_cleared - MAX_WAVES) * 35 if endless_mode else 0
-	var amount: int = int(floor(float(GameState.performance_score) / 10.0)) + GameState.enemies_killed_total * 3 + GameState.waves_cleared * 75 + luminosity_bonus + endless_bonus
-	if victory:
-		amount += 400
+	var victory_bonus: int = 400 if victory else 0
+	var no_flare_bonus: int = (GameState.waves_cleared * 25 + (250 if victory else 0)) if no_flare_mode else 0
+	var amount: int = score_xp + kill_xp + wave_xp + luminosity_bonus + endless_bonus + victory_bonus + no_flare_bonus
 	run_tech_xp_awarded = max(1, amount)
+	var xp_parts: Array = [
+		"SCORE %d" % score_xp,
+		"KILLS %d" % kill_xp,
+		"WAVES %d" % wave_xp,
+		"LUM %d" % luminosity_bonus,
+	]
+	if endless_bonus > 0:
+		xp_parts.append("ENDLESS %d" % endless_bonus)
+	if no_flare_bonus > 0:
+		xp_parts.append("NO-FLARE %d" % no_flare_bonus)
+	if victory_bonus > 0:
+		xp_parts.append("VICTORY %d" % victory_bonus)
+	run_tech_xp_breakdown = "XP: %s = %d" % [" + ".join(xp_parts), run_tech_xp_awarded]
 	GameState.call("add_tech_xp", run_tech_xp_awarded)
+	if GameState.has_method("record_run"):
+		run_record_summary = GameState.call(
+			"record_run",
+			run_mode,
+			GameState.performance_score,
+			GameState.waves_cleared,
+			GameState.get_luminosity_percent(),
+			GameState.get_rank()
+		) as Dictionary
 	return run_tech_xp_awarded
+
+
+func _run_record_text() -> String:
+	var summary: Dictionary = run_record_summary
+	if summary.is_empty() and GameState.has_method("best_run_summary"):
+		summary = GameState.call("best_run_summary", run_mode) as Dictionary
+	if summary.is_empty():
+		return ""
+	var label: String = "NEW BEST" if bool(summary.get("new_best", false)) else "BEST"
+	match str(summary.get("mode", run_mode)):
+		"endless":
+			if int(summary.get("waves", 0)) <= 0 and int(summary.get("score", 0)) <= 0:
+				return ""
+			return "%s ENDLESS: WAVE %d | SCORE %d" % [label, int(summary.get("waves", 0)), int(summary.get("score", 0))]
+		"no_flare":
+			return "%s NO-FLARE: SCORE %d | %s | LUM %d%%" % [label, int(summary.get("score", 0)), str(summary.get("rank", "UNRANKED")), int(summary.get("luminosity", 0))]
+		_:
+			return "%s CAMPAIGN: SCORE %d | %s | LUM %d%%" % [label, int(summary.get("score", 0)), str(summary.get("rank", "UNRANKED")), int(summary.get("luminosity", 0))]
 
 
 func _tower_upgrade_cost(tower: Dictionary) -> int:
@@ -3199,12 +3228,22 @@ func _end_state_view_data() -> Dictionary:
 	var subtitle: String = "Mission complete. The defense grid held." if victory else "The defense grid failed. The sun went dark."
 	var rank: String = "RANK  %s" % GameState.get_rank()
 	var stats: String
-	var tip: String = "Retry the run, return to the main menu, or press R/M."
+	var tip: String = "Open Tech Tree, retry the run, return to the main menu, or press R/M."
 	if endless_mode:
 		title = "ENDLESS RUN ENDED"
 		subtitle = "The swarm finally broke through."
 		rank = "SURVIVED %d WAVES" % GameState.waves_cleared
 		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.enemies_killed_total,
+			GameState.performance_score,
+			GameState.get_luminosity_percent(),
+		]
+	elif no_flare_mode:
+		title = "NO-FLARE COMPLETE" if victory else "NO-FLARE RUN ENDED"
+		subtitle = "Prime fell without Solar Flare." if victory else "The no-flare defense line collapsed."
+		stats = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.waves_cleared,
+			MAX_WAVES,
 			GameState.enemies_killed_total,
 			GameState.performance_score,
 			GameState.get_luminosity_percent(),
@@ -3217,7 +3256,7 @@ func _end_state_view_data() -> Dictionary:
 			GameState.performance_score,
 			GameState.get_luminosity_percent(),
 		]
-		tip = "Run secured. Retry for a stronger rank, return to menu, or press R/M."
+		tip = "Run secured. Open Tech Tree, retry for a stronger rank, return to menu, or press R/M."
 	else:
 		stats = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
 			GameState.waves_cleared,
@@ -3228,6 +3267,11 @@ func _end_state_view_data() -> Dictionary:
 		]
 	if run_tech_xp_awarded > 0:
 		stats += "  |  TECH XP +%d" % run_tech_xp_awarded
+		if not run_tech_xp_breakdown.is_empty():
+			stats += "\n%s" % run_tech_xp_breakdown
+	var record_text: String = _run_record_text()
+	if not record_text.is_empty():
+		stats += "\n%s" % record_text
 	return {
 		"victory": victory,
 		"title": title,
@@ -3544,6 +3588,10 @@ func _update_ui() -> void:
 		title_text = "ENDLESS WAVE %02d | %s" % [wave_index, wave_name.to_upper()]
 		if GameState.game_phase == GameState.GAME_OVER:
 			title_text = "ENDLESS RUN ENDED | WAVE %02d" % GameState.current_wave
+	elif no_flare_mode and GameState.game_phase == GameState.VICTORY:
+		title_text = "NO-FLARE COMPLETE | %s" % GameState.get_rank()
+	elif no_flare_mode and GameState.game_phase == GameState.GAME_OVER:
+		title_text = "NO-FLARE FAILED | WAVE %02d/%02d" % [GameState.current_wave, MAX_WAVES]
 	elif GameState.game_phase == GameState.VICTORY:
 		title_text = "SOL DEFENSE COMPLETE | %s" % GameState.get_rank()
 	elif GameState.game_phase == GameState.GAME_OVER:
@@ -3577,7 +3625,7 @@ func _update_ui() -> void:
 		"credits": str(GameState.sol_credits),
 		"score": str(GameState.performance_score),
 		"kills": str(GameState.enemies_killed_total),
-		"flare": "F READY" if GameState.flare_charge > 0 else "CHARGING",
+		"flare": "DISABLED" if no_flare_mode else ("F READY" if GameState.flare_charge > 0 else "CHARGING"),
 		"luminosity": float(GameState.get_luminosity_percent()),
 		"enemy_texture": _enemy_preview_texture(_wave_primary_variant(wave_data)),
 		"intel_status": intel_status,
