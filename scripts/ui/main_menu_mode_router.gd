@@ -2,6 +2,7 @@ extends Node
 
 const RUN_MODE_META: StringName = &"run_mode"
 const GAME_SCENE_PATH := "res://scenes/game.tscn"
+const TECH_TREE_OVERLAY_SCENE_PATH := "res://scenes/ui/tech_tree_overlay.tscn"
 
 var SpaceTheme: RefCounted = ClassDB.instantiate("SpaceThemeNative") as RefCounted
 var mode_overlay: Control
@@ -11,6 +12,12 @@ func _ready() -> void:
 	var start_button := _menu_button("btn_play")
 	if start_button != null:
 		start_button.pressed.connect(_show_mode_overlay)
+	var tech_button := _menu_button("btn_tech_tree")
+	if tech_button != null:
+		tech_button.pressed.connect(_show_tech_tree)
+		if SpaceTheme != null:
+			SpaceTheme.call("apply_secondary_button", tech_button, SpaceTheme.get("ICON_CODEX_PATH"))
+			tech_button.add_theme_font_size_override("font_size", 20)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -109,6 +116,16 @@ func _close_mode_overlay() -> void:
 	if mode_overlay != null:
 		mode_overlay.queue_free()
 	mode_overlay = null
+
+
+func _show_tech_tree() -> void:
+	if get_parent().get_node_or_null("TechTreeOverlay") != null:
+		return
+	var packed := load(TECH_TREE_OVERLAY_SCENE_PATH) as PackedScene
+	if packed == null:
+		push_error("Main menu could not load tech tree overlay.")
+		return
+	get_parent().add_child(packed.instantiate())
 
 
 func _start_mode(mode: String) -> void:
