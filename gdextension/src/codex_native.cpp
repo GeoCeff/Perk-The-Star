@@ -7,6 +7,8 @@
 #include <godot_cpp/classes/rich_text_label.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/scroll_container.hpp>
+#include <godot_cpp/classes/texture2d.hpp>
+#include <godot_cpp/classes/texture_rect.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/callable.hpp>
 
@@ -19,10 +21,12 @@ T* node_as(Node* owner, const char* path) {
     return Object::cast_to<T>(owner->get_node_or_null(NodePath(path)));
 }
 
-Dictionary section(const String& title, const String& body) {
+Dictionary section(const String& title, const String& body, const String& image_path, const String& caption) {
     Dictionary data;
     data["title"] = title;
     data["body"] = body;
+    data["image"] = image_path;
+    data["caption"] = caption;
     return data;
 }
 
@@ -46,6 +50,9 @@ void CodexNative::_bind_methods() {
 void CodexNative::_ready() {
     close_button = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/close_button");
     panel = node_as<PanelContainer>(this, "panel");
+    visual_panel = node_as<PanelContainer>(this, "panel/margin/root_box/content_box/article_box/visual_panel");
+    visual_image = node_as<TextureRect>(this, "panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box/visual_image");
+    visual_caption = node_as<Label>(this, "panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box/visual_caption");
     section_title_label = node_as<Label>(this, "panel/margin/root_box/content_box/article_box/section_title_label");
     body_scroll = node_as<ScrollContainer>(this, "panel/margin/root_box/content_box/article_box/body_scroll");
     body_label = node_as<RichTextLabel>(this, "panel/margin/root_box/content_box/article_box/body_scroll/body_label");
@@ -124,6 +131,20 @@ void CodexNative::show_section(const String& section_key) {
             body_label->set_text(body);
         }
     }
+    if (visual_image != nullptr) {
+        const String image_path = String(data.get("image", ""));
+        Ref<Texture2D> texture;
+        if (!image_path.is_empty()) {
+            texture = ResourceLoader::get_singleton()->load(image_path);
+        }
+        visual_image->set_texture(texture);
+        visual_image->set_visible(texture.is_valid());
+    }
+    if (visual_caption != nullptr) {
+        const String caption = String(data.get("caption", ""));
+        visual_caption->set_text(caption);
+        visual_caption->set_visible(!caption.is_empty());
+    }
     if (body_scroll != nullptr) {
         body_scroll->set_v_scroll(0);
     }
@@ -160,153 +181,237 @@ void CodexNative::apply_style() {
     theme->call("apply_cursor");
     theme->call("apply_fonts", this);
     theme->call("apply_deep_panel", panel, theme->get("COLOR_CYAN"));
+    theme->call("apply_panel", visual_panel, theme->get("COLOR_GOLD"));
     theme->call("apply_scroll_container", body_scroll);
     theme->call("apply_rich_text_body", body_label, 17);
+    if (visual_caption != nullptr) {
+        visual_caption->add_theme_font_size_override("font_size", 14);
+        visual_caption->add_theme_color_override("font_color", Color(0.82, 0.90, 1.0, 0.94));
+    }
 }
 
 void CodexNative::build_sections() {
-    sections["briefing"] = section("Mission Briefing", R"(Perk the Star is a single-player orbital tower defense game about protecting the Sun from Astrophage: photosynthetic microorganisms that feed on stellar energy and breach the core if the orbit grid fails.
+    sections["briefing"] = section(
+        "Mission Briefing",
+        R"(Situation
+The Sun is no longer alone. Astrophage colonies ride the dark lanes between the rings, drinking heat and steering toward the core. The Sol Defense Corps calls the grid Perk: a last orbiting lattice of towers, labs, and flare capacitors.
 
-Objective
-- Keep luminosity above zero. Every breach costs light; Burrowers keep draining until Bio-Lab clears them.
-- Campaign clears 12 authored waves and ends with Astrophage Prime.
-- Endless keeps the same rules, then scales enemy count, mix, speed, HP, breach damage, and rewards.
-- Spend Sol Credits during the run on orbital towers, upgrades, and emergency rebuilds.
-- Bank Tech XP after runs for tower-specific research paths. Every tower line now has its own Apex version.
-- Read Wave Intel before launching. It lists enemy tags, ring pressure, rewards, and the cleanest counter plan.
+Your role
+You are the ring commander. Build the first satellites, read each wave before it launches, and keep enough light alive for the Sun to answer back.
 
-Field Doctrine
-- Coverage wins early waves: use cheap towers on fast rings before chasing heavy damage.
-- Control buys time: Cryo and Magnetic slows let Helios and Tardigrade finish targets.
-- Mixed damage prevents hard counters: Mimics ignore Photon, Farmers absorb Photon and Helios, and Prime needs Bio-Lab.
-- Sell stale placements when pressure moves. A refund is better than a tower watching empty space.
-- Fire Solar Flare when a wave is about to breach, not after the Sun has already paid for it.
+Campaign orders
+- Survive 12 authored waves.
+- Preserve luminosity; every breach removes light from the star.
+- Stop Burrowers quickly. Once lodged, they keep draining until Bio-Lab excavates them.
+- Crack Astrophage Prime in wave 12 by opening its shell with Bio-Lab support.
 
-Command phrase
-Defend me, defend me! - Oa ka Perk!)");
+Mode notes
+- Normal Defense is the Prime campaign.
+- Endless keeps scaling enemy count, HP, speed, breach damage, rewards, and special wave shapes.
+- No-Flare Challenge uses the Prime campaign but disables Solar Flare for bonus Tech XP.
 
-    sections["controls"] = section("Field Controls", R"(Build
-- Left click a tower in the Tower Bay, then click an open orbital slot.
-- Click a placed tower to upgrade, sell, or inspect it.
+Command doctrine
+- Build coverage first, then damage.
+- Pair control with finishers: Cryo and Magnetic hold targets for Helios and Tardigrade.
+- Mix damage types. Mimics ignore Photon, Farmers absorb Photon and Helios, and Prime resists anything before its shell opens.
+- Sell stale placements when pressure shifts. A partial refund beats a silent tower.
+
+Field phrase
+Defend me, defend me! - Oa ka Perk!)",
+        "res://assets/sprites/backgrounds/battle_nebula_hq.png",
+        "Strategic view: the starfield is not decoration. It is the battlefield the orbit grid has to read before every wave."
+    );
+
+    sections["controls"] = section(
+        "Field Controls",
+        R"(Command loop
+1. Read Wave Intel.
+2. Choose a tower from the bay.
+3. Place it on a ring slot that will actually see the threat.
+4. Start the wave.
+5. Upgrade, sell, or reposition before the next pressure lane forms.
+
+Build controls
+- Left click a tower, then click an open orbital slot.
+- Click a placed tower to upgrade, sell, or inspect exact stats.
 - Number keys 1-6 select towers from the bay.
-- Press T to open the Tech Tree between decisions.
+- T opens the Tech Tree between decisions.
 
-Camera
+Camera controls
 - Mouse wheel zooms around the cursor.
 - WASD, screen-edge hover, or right/middle drag pans around the star.
 - Home, 0, or Center Sun recenters the view.
 
-Wave Tools
+Wave controls
 - Space or Enter starts the next ready wave.
 - Auto Start launches ready waves after a short countdown.
-- F fires Solar Flare when charged.
-- Esc opens or closes pause screens.
+- F fires Solar Flare when charged; No-Flare Challenge disables it.
+- Esc opens pause screens or backs out of overlays.
 
-Fast Read
-- Start Wave when the build plan matches Wave Intel.
+Fast habits
 - Upgrade towers that are already firing before buying quiet coverage.
-- Pause to check this codex, retry, change settings, or return to menu.)");
+- Fire Solar Flare before a breach, not after luminosity is gone.
+- Use pause to check this codex, settings, retry, or return to menu.)",
+        "res://assets/ui/icons/icon_play.png",
+        "Control icon: Start Defense is the first command, but Wave Intel decides whether the grid is ready."
+    );
 
-    sections["systems"] = section("Core Systems", R"(GameState
-Central runtime data for luminosity, Sol Credits, wave phase, score, flare charge, tutorial completion, screen shake, Auto Start, and persistent Tech XP.
+    sections["systems"] = section(
+        "Core Systems",
+        R"(The grid
+Perk is split between native systems and scene scripts. C++ holds reusable game data, UI widgets, math, audio, and state. GDScript connects the live scene: input, drawing, wave flow, and tactical decisions.
 
-Sun
-Tracks luminosity, expression states, and death/victory state. The Sun changes expression as luminosity drops.
+Runtime state
+- Luminosity tracks whether the Sun survives.
+- Sol Credits pay for tower construction, upgrades, and emergency rebuilds.
+- Score, kills, waves, victory, and luminosity create the end-run Tech XP payout.
+- Best campaign, no-flare, and endless records save with settings.
 
-OrbitalTower
-Orbiting defense satellites. Their value depends on orbital radius, period, cooldown, level, line of sight, and how long their ring keeps targets in range.
+Solar Flare
+The flare is a manual radial burst charged by cleared waves. It punishes packed lanes and becomes stronger through Helios research. It is not available in No-Flare Challenge.
 
-WaveManager
-Loads campaign wave JSON and feeds generated Endless waves into the same spawn flow.
+Tech Tree
+Tech XP is permanent. Each tower has a three-step research path and an Apex endpoint. Research upgrades damage, range, fire rate, reward flow, flare cadence, and special tower behavior.
 
-SolarFlare
-Manual radial burst. It charges from cleared waves, punishes packed lanes, and improves through Helios research.
+HUD intelligence
+- Wave Intel previews enemy mix, warning tags, ring pressure, and rewards.
+- Tower panels show cost, role, current stats, upgrade gains, final stats, and refund value.
+- End screens show rank, score, kills, waves, luminosity, XP breakdown, best runs, Retry, Tech Tree, and Main Menu.
 
-TechTree
-Permanent run-to-run research. Each tower has three upgrades into its own Apex version; future tower merging can build on those separate apex endpoints.
+Commander read
+The system is not asking for perfect towers. It is asking for time: more seconds before breach, more shots in range, more control on the right lane.)",
+        "res://assets/ui/tech_tiers/bio_lab_tier_4.png",
+        "Research visual: Tech XP turns one run's survival data into permanent tower-path upgrades."
+    );
 
-UIManager
-HUD, tower hover cards, tower management, wave intel, tech tree, tutorial overlay, pause menu, settings, codex, and end-state buttons.
-
-Camera
-Mouse wheel zooms around the cursor. Right/middle drag, screen-edge hover, and WASD pan around the star. Center Sun snaps back.)");
-
-    sections["towers"] = section("Tower Dossier", R"(Photon Splitter
-Baseline direct-damage tower. Best on the fast Corona Belt for early intercept, but Photon Mimics ignore it and Solar Farmers can absorb it.
+    sections["towers"] = section(
+        "Tower Dossier",
+        R"(Photon Splitter
+Fast baseline direct damage. Good first answer on the Corona Belt. Weakness: Mimics ignore it and Farmers feed on it.
 
 Cryo Probe
-Control tower for slowing threats. Strong on the Chromosphere Band and useful before enemies reach inner rings. It can be disrupted by solar storm events.
+Control tower that slows threats and stretches engagement windows. Best when placed before heavy damage. Solar storm events can disrupt it.
 
 Bio-Lab Station
-Analysis and counter-biology platform. It clears lodged Burrowers, benefits from Research Surge, and opens Astrophage Prime's shell.
+Counter-biology platform. It clears lodged Burrowers, improves reward tempo through research, and opens Astrophage Prime's shell.
 
 Magnetic Net
-Long-range field-control support tower. It slows enemies so heavy towers get more time to fire.
+Wide support field. It slows enemies without needing to be the final hit, making it a strong partner for every heavy tower.
 
 Helios Cannon
-High-impact solar weapon. Strong finisher, but Solar Farmers absorb it and accelerate if they are not controlled first.
+High-impact finisher. It deletes priority targets when timed well, but Farmers absorb it unless controlled or avoided.
 
 Tardigrade Bomb
-Heavy finisher. Best after Cryo Probe or Magnetic Net has slowed the target.
+Heavy biological ordnance. It is slow, strong, and happiest when Cryo or Magnetic keeps enemies inside the blast window.
 
-Upgrades + Selling
-Click a placed tower to open its management panel. Upgrades show current stats, exact stat gains, final upgraded stats, and cost. Selling refunds part of the Sol spent.)");
+Build patterns
+- Early wave: Photon plus Cryo covers speed and time.
+- Mixed wave: add Magnetic before more damage.
+- Burrower wave: keep Bio-Lab funded.
+- Prime wave: Bio-Lab opens the shell, then finish with the strongest mixed damage available.
 
-    sections["astrophage"] = section("Astrophage Variants", R"(0 - Drifter
-Baseline Astrophage. Use it to verify tower timing, wave pacing, and credit rewards.
+Upgrade rule
+Upgrade towers that are already shooting. A level on a tower with targets is worth more than a fresh tower watching empty orbit.)",
+        "res://assets/sprites/clean/towers/photon_splitter.png",
+        "Tower visual: the Photon Splitter is the first clean answer, but the codex matters because not every enemy accepts Photon damage."
+    );
 
-1 - Bloom
-Splitting threat. Defeated Blooms split into three Drifters, so slowing them before they break is safer.
+    sections["astrophage"] = section(
+        "Astrophage Variants",
+        R"(Drifter
+The baseline organism. It is not harmless; it teaches timing, reward flow, and how quickly a lane can become crowded.
 
-2 - Burrower
-Sun-pressure threat. If it reaches the Sun, it lodges inside and drains luminosity until Bio-Lab excavates it.
+Bloom
+Splits into smaller bodies when defeated. Slow it before it breaks, or the child Drifters arrive as a second wave inside the first.
 
-3 - Mimic
-Detection/targeting challenge. Carries the MIMIC tag and ignores Photon Splitters, forcing mixed tower plans.
+Burrower
+A pressure organism built to reach the Sun. If it lodges, luminosity keeps bleeding until Bio-Lab clears the infection.
 
-4 - Farmer
-Counterplay enemy. Carries the ABSORB tag and feeds from Photon/Helios damage, gaining HP and speed.
+Mimic
+Carries the MIMIC tag. Photon Splitters waste shots on it, so mixed tower plans are mandatory.
 
-5 - Astrophage Prime
-Boss wave target. Wave 12 is the Prime encounter. SHELL blocks most damage until Bio-Lab opens it; OPEN means the boss is vulnerable.)");
+Farmer
+Carries the ABSORB tag. Photon and Helios feed it, giving it HP and speed. Control it, route around it, or let non-feeding damage handle it.
 
-    sections["rings"] = section("Rings + Waves", R"(Orbital Rings
-Ring 1 - Corona Belt: radius 80 px, period 6 s, 4 slots. Best: Photon Splitter, Helios Cannon.
-Ring 2 - Chromosphere Band: radius 140 px, period 11 s, 6 slots. Best: Cryo Probe, Tardigrade Bomb.
-Ring 3 - Photosphere Arc: radius 210 px, period 17 s, 8 slots. Best: Bio-Lab Station, Magnetic Net.
-Ring 4 - Outer Veil: radius 290 px, period 26 s, 10 slots. Best: early intercept and scout role.
+Astrophage Prime
+The wave 12 command organism. SHELL blocks most damage. Bio-Lab must open the shell before the rest of the grid can finish the target.
 
-Strategic Rule
-Inner rings orbit fast, giving short engagement windows. Outer rings orbit slowly, giving longer intercept windows.
+Threat reading
+- If Wave Intel says MIMIC, do not trust Photon coverage alone.
+- If it says ABSORB, stop feeding Farmers.
+- If it says SHELL, fund Bio-Lab before buying prettier damage.
+- If breaches start chaining, buy control before chasing another finisher.)",
+        "res://assets/sprites/clean/enemies_optimized/astrophage-shell_idle_1.png",
+        "Enemy visual: Prime's shell is a warning label. Until Bio-Lab opens it, most damage is just noise."
+    );
 
-Wave Plan
-- 12 waves are loaded from JSON.
-- Wave 6: mid-wave auto flare / Cryo disruption.
-- Wave 7: night-side ring pressure.
-- Wave 10: Bio-Lab boost.
-- Wave 12: Astrophage Prime.
-- Endless waves scale mix, count, HP, speed, breach damage, and rewards.
+    sections["rings"] = section(
+        "Rings + Waves",
+        R"(Orbital map
+The rings are not just build slots. They are timing machines. A tower's value changes with radius, orbit period, and how long enemies stay inside range.
 
-Wave Intel
-The HUD previews enemy counts, warning tags, reward, and a quick counter hint before each wave. Auto Start can launch ready waves after a short countdown. Press T between decisions to spend Tech XP.)");
+Ring 1 - Corona Belt
+- Radius 80 px, period 6 s, 4 slots.
+- Fast orbit, short windows.
+- Best for early Photon or Helios intercepts.
 
-    sections["endings"] = section("Victory + Failure", R"(Full Shine
-Clear 12 waves with luminosity above 80%.
+Ring 2 - Chromosphere Band
+- Radius 140 px, period 11 s, 6 slots.
+- Good balance of speed and reach.
+- Strong for Cryo Probe and Tardigrade Bomb support.
+
+Ring 3 - Photosphere Arc
+- Radius 210 px, period 17 s, 8 slots.
+- Slower, broader coverage.
+- Strong for Bio-Lab Station and Magnetic Net.
+
+Ring 4 - Outer Veil
+- Radius 290 px, period 26 s, 10 slots.
+- Longest intercept window.
+- Best for early warning, wide control, and lane shaping.
+
+Wave landmarks
+- Wave 6 tests your response to solar storm disruption.
+- Wave 7 stresses night-side ring pressure.
+- Wave 10 rewards Bio-Lab planning.
+- Wave 12 deploys Astrophage Prime.
+- Endless reshuffles the pressure forever.
+
+Reading the intel
+Enemy tags tell you what not to shoot. Ring pressure tells you where to spend. Rewards tell you whether to build now or survive to upgrade after the wave.)",
+        "res://assets/sprites/backgrounds/menu_nebula.png",
+        "Orbit visual: every ring is a clock. Winning means placing the right weapon where its clock meets the enemy path."
+    );
+
+    sections["endings"] = section(
+        "Victory + Failure",
+        R"(End states
+The campaign does not only ask whether the Sun survived. It asks how much light you preserved and how much the grid learned from the run.
+
+Full Shine
+Clear 12 waves with luminosity above 80%. This is clean defense: good counters, few breaches, and strong late-wave control.
 
 Dim but Alive
-Clear 12 waves with luminosity from 20% to 80%.
+Clear 12 waves with luminosity from 20% to 80%. The Sun survives, but the record says where the grid leaked.
 
 Last Light
-Clear 12 waves with luminosity from 1% to 20%.
+Clear 12 waves with luminosity from 1% to 20%. A survival story, not a clean one. Spend the Tech XP and patch the weakness.
 
 Sun Extinguished
-Luminosity hits 0%. The guide routes this into a post-mortem screen.
+Luminosity reaches 0%. The post-mortem still matters: kills, wave reached, and score show what held and what collapsed.
 
-End Screen Tools
-Retry Run restarts the mission, Main Menu leaves the run, R retries, and M returns to menu.
+Run records
+- Campaign, No-Flare Challenge, and Endless save their best results.
+- End screens show score, kills, waves, luminosity, victory bonus, total XP, and best-run notes.
+- Retry tests a better opening.
+- Tech Tree spends the lesson.
+- Main Menu changes the mission mode.
 
-Field Reminder
-Every credit spent should buy time, coverage, or control. A beautiful orbit means nothing if the Sun goes dark.)");
+Last order
+Do not chase a beautiful orbit. Chase a living Sun.)",
+        "res://assets/ui/icons/icon_codex.png",
+        "Record visual: the codex turns losses into instructions, then the Tech Tree turns instructions into power."
+    );
 }
 
 Object* CodexNative::space_theme() const {

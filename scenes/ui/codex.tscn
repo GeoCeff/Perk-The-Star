@@ -150,8 +150,37 @@ theme_override_colors/font_color = Color(1, 0.88, 0.36, 1)
 theme_override_font_sizes/font_size = 24
 text = "Mission Briefing"
 
+[node name="visual_panel" type="PanelContainer" parent="panel/margin/root_box/content_box/article_box"]
+custom_minimum_size = Vector2(780, 124)
+layout_mode = 2
+
+[node name="visual_margin" type="MarginContainer" parent="panel/margin/root_box/content_box/article_box/visual_panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="visual_box" type="HBoxContainer" parent="panel/margin/root_box/content_box/article_box/visual_panel/visual_margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="visual_image" type="TextureRect" parent="panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box"]
+custom_minimum_size = Vector2(132, 104)
+layout_mode = 2
+stretch_mode = 5
+
+[node name="visual_caption" type="Label" parent="panel/margin/root_box/content_box/article_box/visual_panel/visual_margin/visual_box"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.82, 0.9, 1, 0.94)
+theme_override_font_sizes/font_size = 14
+text = "Codex visual"
+vertical_alignment = 1
+autowrap_mode = 3
+
 [node name="body_scroll" type="ScrollContainer" parent="panel/margin/root_box/content_box/article_box"]
-custom_minimum_size = Vector2(780, 460)
+custom_minimum_size = Vector2(780, 330)
 layout_mode = 2
 horizontal_scroll_mode = 0
 
