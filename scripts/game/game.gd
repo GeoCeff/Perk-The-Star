@@ -3399,7 +3399,7 @@ func _award_run_tech_xp_once(victory: bool) -> int:
 		xp_parts.append("VICTORY %d" % victory_bonus)
 	run_tech_xp_breakdown = "XP: %s = %d" % [" + ".join(xp_parts), run_tech_xp_awarded]
 	GameState.call("add_tech_xp", run_tech_xp_awarded)
-	if GameState.has_method("record_run") and not boss_rush_mode and not daily_seed_mode and not draft_defense_mode:
+	if GameState.has_method("record_run"):
 		run_record_summary = GameState.call(
 			"record_run",
 			run_mode,
@@ -3412,8 +3412,6 @@ func _award_run_tech_xp_once(victory: bool) -> int:
 
 
 func _run_record_text() -> String:
-	if boss_rush_mode or daily_seed_mode or draft_defense_mode:
-		return ""
 	var summary: Dictionary = run_record_summary
 	if summary.is_empty() and GameState.has_method("best_run_summary"):
 		summary = GameState.call("best_run_summary", run_mode) as Dictionary
@@ -3425,6 +3423,18 @@ func _run_record_text() -> String:
 			if int(summary.get("waves", 0)) <= 0 and int(summary.get("score", 0)) <= 0:
 				return ""
 			return "%s ENDLESS: WAVE %d | SCORE %d" % [label, int(summary.get("waves", 0)), int(summary.get("score", 0))]
+		"boss_rush":
+			if int(summary.get("waves", 0)) <= 0 and int(summary.get("score", 0)) <= 0:
+				return ""
+			return "%s BOSS RUSH: WAVE %d/%d | SCORE %d" % [label, int(summary.get("waves", 0)), BOSS_RUSH_WAVES, int(summary.get("score", 0))]
+		"daily_seed":
+			if int(summary.get("waves", 0)) <= 0 and int(summary.get("score", 0)) <= 0:
+				return ""
+			return "%s DAILY: WAVE %d/%d | SCORE %d" % [label, int(summary.get("waves", 0)), DAILY_SEED_WAVES, int(summary.get("score", 0))]
+		"draft_defense":
+			if int(summary.get("waves", 0)) <= 0 and int(summary.get("score", 0)) <= 0:
+				return ""
+			return "%s DRAFT: WAVE %d/%d | SCORE %d" % [label, int(summary.get("waves", 0)), DRAFT_DEFENSE_WAVES, int(summary.get("score", 0))]
 		"no_flare":
 			return "%s NO-FLARE: SCORE %d | %s | LUM %d%%" % [label, int(summary.get("score", 0)), str(summary.get("rank", "UNRANKED")), int(summary.get("luminosity", 0))]
 		_:

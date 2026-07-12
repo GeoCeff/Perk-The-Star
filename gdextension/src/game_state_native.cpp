@@ -175,6 +175,12 @@ void GameStateNative::load_audio_settings() {
         best_no_flare_rank = String(config->get_value("records", "no_flare_rank", best_no_flare_rank));
         best_endless_waves = int(config->get_value("records", "endless_waves", best_endless_waves));
         best_endless_score = int(config->get_value("records", "endless_score", best_endless_score));
+        best_boss_rush_waves = int(config->get_value("records", "boss_rush_waves", best_boss_rush_waves));
+        best_boss_rush_score = int(config->get_value("records", "boss_rush_score", best_boss_rush_score));
+        best_daily_seed_waves = int(config->get_value("records", "daily_seed_waves", best_daily_seed_waves));
+        best_daily_seed_score = int(config->get_value("records", "daily_seed_score", best_daily_seed_score));
+        best_draft_defense_waves = int(config->get_value("records", "draft_defense_waves", best_draft_defense_waves));
+        best_draft_defense_score = int(config->get_value("records", "draft_defense_score", best_draft_defense_score));
     }
     emit_signal("music_settings_changed", music_enabled, music_volume);
     emit_signal("tutorial_settings_changed", tutorial_completed);
@@ -304,16 +310,28 @@ bool GameStateNative::has_tech(const String& tech_id) const {
 }
 
 Dictionary GameStateNative::record_run(const String& run_mode, int score, int waves, int luminosity_percent, const String& rank) {
-    const String mode = run_mode == "endless" ? "endless" : (run_mode == "no_flare" ? "no_flare" : "campaign");
+    String mode = run_mode;
+    if (mode != "endless" && mode != "no_flare" && mode != "boss_rush" && mode != "daily_seed" && mode != "draft_defense") {
+        mode = "campaign";
+    }
     bool new_score = false;
     bool new_luminosity = false;
     bool new_waves = false;
+    auto update_wave_score_record = [&](int& best_waves, int& best_score) {
+        new_waves = waves > best_waves;
+        new_score = score > best_score;
+        if (new_waves) best_waves = waves;
+        if (new_score) best_score = score;
+    };
 
     if (mode == "endless") {
-        new_waves = waves > best_endless_waves;
-        new_score = score > best_endless_score;
-        if (new_waves) best_endless_waves = waves;
-        if (new_score) best_endless_score = score;
+        update_wave_score_record(best_endless_waves, best_endless_score);
+    } else if (mode == "boss_rush") {
+        update_wave_score_record(best_boss_rush_waves, best_boss_rush_score);
+    } else if (mode == "daily_seed") {
+        update_wave_score_record(best_daily_seed_waves, best_daily_seed_score);
+    } else if (mode == "draft_defense") {
+        update_wave_score_record(best_draft_defense_waves, best_draft_defense_score);
     } else if (mode == "no_flare") {
         new_score = score > best_no_flare_score;
         new_luminosity = luminosity_percent > best_no_flare_luminosity || best_no_flare_rank.is_empty();
@@ -345,12 +363,27 @@ Dictionary GameStateNative::record_run(const String& run_mode, int score, int wa
 }
 
 Dictionary GameStateNative::best_run_summary(const String& run_mode) const {
-    const String mode = run_mode == "endless" ? "endless" : (run_mode == "no_flare" ? "no_flare" : "campaign");
+    String mode = run_mode;
+    if (mode != "endless" && mode != "no_flare" && mode != "boss_rush" && mode != "daily_seed" && mode != "draft_defense") {
+        mode = "campaign";
+    }
     Dictionary summary;
     summary["mode"] = mode;
     if (mode == "endless") {
         summary["waves"] = best_endless_waves;
         summary["score"] = best_endless_score;
+        return summary;
+    } else if (mode == "boss_rush") {
+        summary["waves"] = best_boss_rush_waves;
+        summary["score"] = best_boss_rush_score;
+        return summary;
+    } else if (mode == "daily_seed") {
+        summary["waves"] = best_daily_seed_waves;
+        summary["score"] = best_daily_seed_score;
+        return summary;
+    } else if (mode == "draft_defense") {
+        summary["waves"] = best_draft_defense_waves;
+        summary["score"] = best_draft_defense_score;
         return summary;
     }
 
@@ -563,6 +596,12 @@ void GameStateNative::save_records() {
     config->set_value("records", "no_flare_rank", best_no_flare_rank);
     config->set_value("records", "endless_waves", best_endless_waves);
     config->set_value("records", "endless_score", best_endless_score);
+    config->set_value("records", "boss_rush_waves", best_boss_rush_waves);
+    config->set_value("records", "boss_rush_score", best_boss_rush_score);
+    config->set_value("records", "daily_seed_waves", best_daily_seed_waves);
+    config->set_value("records", "daily_seed_score", best_daily_seed_score);
+    config->set_value("records", "draft_defense_waves", best_draft_defense_waves);
+    config->set_value("records", "draft_defense_score", best_draft_defense_score);
     config->save(SETTINGS_PATH);
 }
 

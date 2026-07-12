@@ -24,9 +24,9 @@ The game targets a 1920x1080 canvas with expand stretching enabled.
 - The Tech Tree top-right Effects toggle can disable or re-enable unlocked upgrade effects without removing unlocks.
 - Perfect Orbit bonuses pay extra Sol and score when a wave is cleared without losing luminosity.
 - Fast kill combos add bonus score, and slowed Solar Farmers pay bonus Sol when defeated.
-- Best campaign, no-flare, and endless records are saved in `user://settings.cfg`.
+- Best records for each mode are saved in `user://settings.cfg`.
 
-Good next additions: per-mode best records for Boss Rush, Daily Seed, and Draft Defense.
+Good next addition: Solar Flare Overcharge.
 
 ## Export
 

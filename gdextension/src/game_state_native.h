@@ -130,6 +130,12 @@ private:
     String best_no_flare_rank;
     int best_endless_waves = 0;
     int best_endless_score = 0;
+    int best_boss_rush_waves = 0;
+    int best_boss_rush_score = 0;
+    int best_daily_seed_waves = 0;
+    int best_daily_seed_score = 0;
+    int best_draft_defense_waves = 0;
+    int best_draft_defense_score = 0;
     bool test_unlimited_sol_enabled = false;
     int pending_test_start_wave = 0;
     bool music_changed_by_user_this_session = false;
