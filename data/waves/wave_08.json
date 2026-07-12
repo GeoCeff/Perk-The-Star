@@ -11,5 +11,5 @@
     "event": null,
     "reward_base": 120,
     "escalation_threshold_seconds": 50,
-    "tutorial_hint": "Solar Farmers gain HP from energy tower hits. Cryo-debuff them before attacking!"
+    "tutorial_hint": "Solar Farmers gain HP from Photon or Helios hits. Slow them first; slowed Farmer kills pay bonus Sol."
 }

@@ -35,6 +35,7 @@ public:
     void set_tutorial_completed(bool completed = true);
     void set_screen_shake_enabled(bool enabled);
     void set_auto_start_waves_enabled(bool enabled);
+    void set_tech_effects_enabled(bool enabled);
     int add_tech_xp(int amount);
     bool unlock_tech(const String& tech_id, int cost, const Array& requirements = Array());
     bool has_tech(const String& tech_id) const;
@@ -91,6 +92,7 @@ public:
     bool get_tutorial_completed() const;
     bool get_screen_shake_enabled() const;
     bool get_auto_start_waves_enabled() const;
+    bool get_tech_effects_enabled() const;
     int get_tech_xp() const;
     Array get_unlocked_tech() const;
     bool get_test_unlimited_sol_enabled() const;
@@ -117,6 +119,7 @@ private:
     bool tutorial_completed = false;
     bool screen_shake_enabled = true;
     bool auto_start_waves_enabled = false;
+    bool tech_effects_enabled = true;
     int tech_xp = 0;
     Array unlocked_tech;
     int best_campaign_score = 0;

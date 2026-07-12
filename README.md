@@ -18,6 +18,9 @@ The game targets a 1920x1080 canvas with expand stretching enabled.
 - Endless generates scaling waves forever: enemy mix, count, HP, speed, and breach damage rise over time, with clash, formation, and Prime Echo waves mixed in.
 - No-Flare Challenge reuses the Prime campaign but disables Solar Flare and pays bonus Tech XP.
 - Tech XP is earned at run end and spent on permanent tech tree unlocks that affect tower stats, rewards, flare cadence, and Helios Slingshot.
+- The Tech Tree top-right Effects toggle can disable or re-enable unlocked upgrade effects without removing unlocks.
+- Perfect Orbit bonuses pay extra Sol and score when a wave is cleared without losing luminosity.
+- Fast kill combos add bonus score, and slowed Solar Farmers pay bonus Sol when defeated.
 - Best campaign, no-flare, and endless records are saved in `user://settings.cfg`.
 
 Good next modes: Boss Rush, Daily Seed, and Draft Defense.

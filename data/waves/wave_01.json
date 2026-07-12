@@ -9,5 +9,5 @@
     "event": null,
     "reward_base": 24,
     "escalation_threshold_seconds": null,
-    "tutorial_hint": "Click ring slots to place towers. Towers orbit and fire automatically."
+    "tutorial_hint": "Place a Photon Splitter on a ring slot. Towers orbit and fire automatically; clear with no luminosity loss for a Perfect Orbit bonus."
 }

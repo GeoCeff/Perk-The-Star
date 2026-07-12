@@ -17,6 +17,7 @@ void GameStateNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_tutorial_completed", "completed"), &GameStateNative::set_tutorial_completed, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("set_screen_shake_enabled", "enabled"), &GameStateNative::set_screen_shake_enabled);
     ClassDB::bind_method(D_METHOD("set_auto_start_waves_enabled", "enabled"), &GameStateNative::set_auto_start_waves_enabled);
+    ClassDB::bind_method(D_METHOD("set_tech_effects_enabled", "enabled"), &GameStateNative::set_tech_effects_enabled);
     ClassDB::bind_method(D_METHOD("add_tech_xp", "amount"), &GameStateNative::add_tech_xp);
     ClassDB::bind_method(D_METHOD("unlock_tech", "tech_id", "cost", "requirements"), &GameStateNative::unlock_tech, DEFVAL(Array()));
     ClassDB::bind_method(D_METHOD("has_tech", "tech_id"), &GameStateNative::has_tech);
@@ -72,6 +73,7 @@ void GameStateNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_tutorial_completed"), &GameStateNative::get_tutorial_completed);
     ClassDB::bind_method(D_METHOD("get_screen_shake_enabled"), &GameStateNative::get_screen_shake_enabled);
     ClassDB::bind_method(D_METHOD("get_auto_start_waves_enabled"), &GameStateNative::get_auto_start_waves_enabled);
+    ClassDB::bind_method(D_METHOD("get_tech_effects_enabled"), &GameStateNative::get_tech_effects_enabled);
     ClassDB::bind_method(D_METHOD("get_tech_xp"), &GameStateNative::get_tech_xp);
     ClassDB::bind_method(D_METHOD("get_unlocked_tech"), &GameStateNative::get_unlocked_tech);
     ClassDB::bind_method(D_METHOD("get_test_unlimited_sol_enabled"), &GameStateNative::get_test_unlimited_sol_enabled);
@@ -100,6 +102,7 @@ void GameStateNative::_bind_methods() {
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "tutorial_completed"), "", "get_tutorial_completed");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "screen_shake_enabled"), "", "get_screen_shake_enabled");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "auto_start_waves_enabled"), "", "get_auto_start_waves_enabled");
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL, "tech_effects_enabled"), "set_tech_effects_enabled", "get_tech_effects_enabled");
     ADD_PROPERTY(PropertyInfo(Variant::INT, "tech_xp"), "", "get_tech_xp");
     ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "unlocked_tech"), "", "get_unlocked_tech");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "test_unlimited_sol_enabled"), "", "get_test_unlimited_sol_enabled");
@@ -157,6 +160,7 @@ void GameStateNative::load_audio_settings() {
         tutorial_completed = bool(config->get_value("tutorial", "completed", tutorial_completed));
         screen_shake_enabled = bool(config->get_value("gameplay", "screen_shake_enabled", screen_shake_enabled));
         auto_start_waves_enabled = bool(config->get_value("gameplay", "auto_start_waves_enabled", auto_start_waves_enabled));
+        tech_effects_enabled = bool(config->get_value("gameplay", "tech_effects_enabled", tech_effects_enabled));
         const int loaded_tech_xp = int(config->get_value("tech", "xp", tech_xp));
         tech_xp = MAX(0, loaded_tech_xp);
         Variant saved_unlocked = config->get_value("tech", "unlocked", unlocked_tech);
@@ -246,6 +250,13 @@ void GameStateNative::set_auto_start_waves_enabled(bool enabled) {
     config->set_value("gameplay", "auto_start_waves_enabled", auto_start_waves_enabled);
     config->save(SETTINGS_PATH);
     emit_signal("auto_start_settings_changed", auto_start_waves_enabled);
+}
+
+void GameStateNative::set_tech_effects_enabled(bool enabled) {
+    tech_effects_enabled = enabled;
+    Ref<ConfigFile> config = settings_config();
+    config->set_value("gameplay", "tech_effects_enabled", tech_effects_enabled);
+    config->save(SETTINGS_PATH);
 }
 
 int GameStateNative::add_tech_xp(int amount) {
@@ -430,7 +441,7 @@ void GameStateNative::on_enemy_killed(int variant_id) {
 void GameStateNative::on_wave_cleared() {
     waves_cleared += 1;
     waves_since_last_flare += 1;
-    const int flare_wave_count = has_tech("flare_battery") ? 2 : 3;
+    const int flare_wave_count = (tech_effects_enabled && has_tech("flare_battery")) ? 2 : 3;
     if (waves_since_last_flare >= flare_wave_count && flare_charge == 0) {
         flare_charge = 1;
         waves_since_last_flare = 0;
@@ -519,6 +530,7 @@ double GameStateNative::get_music_volume() const { return music_volume; }
 bool GameStateNative::get_tutorial_completed() const { return tutorial_completed; }
 bool GameStateNative::get_screen_shake_enabled() const { return screen_shake_enabled; }
 bool GameStateNative::get_auto_start_waves_enabled() const { return auto_start_waves_enabled; }
+bool GameStateNative::get_tech_effects_enabled() const { return tech_effects_enabled; }
 int GameStateNative::get_tech_xp() const { return MAX(0, tech_xp); }
 Array GameStateNative::get_unlocked_tech() const { return unlocked_tech; }
 bool GameStateNative::get_test_unlimited_sol_enabled() const { return test_unlimited_sol_enabled; }

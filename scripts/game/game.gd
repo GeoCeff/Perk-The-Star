@@ -32,6 +32,12 @@ const ENEMY_STATUS_FONT_SIZE: int = 10
 const ENEMY_HIT_FLASH_SECONDS: float = 0.24
 const HEALTH_BAR_HEIGHT: float = 6.0
 const AUTO_START_DELAY: float = 3.0
+const PERFECT_ORBIT_SOL_BONUS: int = 12
+const PERFECT_ORBIT_SCORE_BONUS: int = 75
+const KILL_COMBO_WINDOW: float = 2.6
+const KILL_COMBO_MIN_COUNT: int = 3
+const KILL_COMBO_SCORE_STEP: int = 5
+const SLOWED_FARMER_SOL_BONUS: int = 10
 const RUN_MODE_META: StringName = &"run_mode"
 const RUN_MODE_ENDLESS: String = "endless"
 const RUN_MODE_NO_FLARE: String = "no_flare"
@@ -71,10 +77,13 @@ var total_wave_spawn_count: int = 0
 var next_enemy_uid: int = 1
 var wave_active: bool = false
 var wave_start_time: float = 0.0
+var wave_start_luminosity: float = 1.0
 var escalation_checked: bool = false
 var counter_attack_active: bool = false
 var auto_start_timer: float = 0.0
 var auto_start_countdown_second: int = -1
+var kill_combo_count: int = 0
+var kill_combo_timer: float = 0.0
 var message_text: String = "Select an orbital slot, then start Wave 1."
 var message_timer: float = 0.0
 var wave_banner_text: String = ""
@@ -105,6 +114,8 @@ var managed_tower_slot: int = -1
 var run_mode: String = "campaign"
 var endless_mode: bool = false
 var no_flare_mode: bool = false
+var run_perfect_orbits: int = 0
+var run_best_combo: int = 0
 var run_tech_xp_awarded: int = 0
 var run_tech_xp_breakdown: String = ""
 var run_record_summary: Dictionary = {}
@@ -227,6 +238,7 @@ func _process(delta: float) -> void:
 		if message_timer <= 0.0:
 			message_text = "Build anytime. Towers orbit and fire automatically."
 			_update_ui()
+	_process_kill_combo(delta)
 	_process_wave_banner(delta)
 
 	_process_music(delta)
@@ -1111,6 +1123,7 @@ func _begin_wave(wave_number: int, wave_data: Dictionary) -> void:
 	_start_wave_spawning(current_wave_data)
 	wave_active = true
 	wave_start_time = Time.get_ticks_msec() / 1000.0
+	wave_start_luminosity = float(GameState.luminosity)
 	escalation_checked = false
 	counter_attack_active = false
 	_begin_wave_event(current_wave_data)
@@ -1829,13 +1842,19 @@ func _check_wave_clear() -> void:
 	GameState.on_wave_cleared()
 	if reward > 0:
 		_add_text_effect("+%d SOL WAVE CLEAR" % reward, _sun_pos() + Vector2(0.0, -_outer_ring_radius() - 52.0), Color(1.0, 0.86, 0.34, 0.98), 0.95)
+	var perfect_orbit: bool = float(GameState.luminosity) >= wave_start_luminosity - 0.0001
+	if perfect_orbit:
+		run_perfect_orbits += 1
+		GameState.add_credits(PERFECT_ORBIT_SOL_BONUS)
+		GameState.add_score(PERFECT_ORBIT_SCORE_BONUS)
+		_add_text_effect("PERFECT ORBIT  +%d SOL  +%d SCORE" % [PERFECT_ORBIT_SOL_BONUS, PERFECT_ORBIT_SCORE_BONUS], _sun_pos() + Vector2(0.0, -_outer_ring_radius() - 84.0), Color(0.48, 1.0, 0.64, 0.98), 1.1)
 
 	if endless_mode:
 		_play_sfx("wave_clear")
 		GameState.set_phase(GameState.BETWEEN_WAVE)
 		_refresh_next_wave_preview()
 		_show_next_wave_banner()
-		_set_message("Endless Wave %d cleared. Corps reward: %d Sol Credits." % [GameState.current_wave, reward], 4.0)
+		_set_message(_wave_clear_message("Endless Wave %d cleared" % GameState.current_wave, reward, perfect_orbit), 4.0)
 	elif GameState.current_wave >= playable_wave_limit and playable_wave_limit < MAX_WAVES:
 		_play_sfx("wave_clear")
 		GameState.set_phase(GameState.BETWEEN_WAVE)
@@ -1856,8 +1875,15 @@ func _check_wave_clear() -> void:
 		GameState.set_phase(GameState.BETWEEN_WAVE)
 		_refresh_next_wave_preview()
 		_show_next_wave_banner()
-		_set_message("Wave %d cleared. Corps reward: %d Sol Credits." % [GameState.current_wave, reward], 4.0)
+		_set_message(_wave_clear_message("Wave %d cleared" % GameState.current_wave, reward, perfect_orbit), 4.0)
 	_update_ui()
+
+
+func _wave_clear_message(prefix: String, reward: int, perfect_orbit: bool) -> String:
+	var text: String = "%s. Corps reward: %d Sol Credits." % [prefix, reward]
+	if perfect_orbit:
+		text += " Perfect Orbit: +%d Sol, +%d score." % [PERFECT_ORBIT_SOL_BONUS, PERFECT_ORBIT_SCORE_BONUS]
+	return text
 
 
 func _try_launch_counter_attack() -> bool:
@@ -2259,7 +2285,11 @@ func _defeat_enemy(enemy_index: int) -> void:
 	if _has_tech("salvage_culture"):
 		reward = int(ceil(float(reward) * 1.10))
 	GameState.add_credits(reward)
+	if variant == "farmer" and float(enemy.get("slow_timer", 0.0)) > 0.0:
+		GameState.add_credits(SLOWED_FARMER_SOL_BONUS)
+		_add_text_effect("SLOWED FARMER  +%d SOL" % SLOWED_FARMER_SOL_BONUS, pos + Vector2(0.0, -float(enemy["radius"]) - 60.0), Color(0.48, 1.0, 0.64, 0.98), 0.82, 14)
 	GameState.on_enemy_killed(int(enemy["variant_id"]))
+	_apply_kill_combo(pos, float(enemy["radius"]))
 	_add_enemy_death_effect(enemy)
 	_add_text_effect("+%d SOL" % reward, pos + Vector2(0.0, -float(enemy["radius"]) - 20.0), Color(1.0, 0.86, 0.34, 0.98))
 	_play_sfx("prime_death" if variant == "prime" else "death", 0.050)
@@ -2276,6 +2306,25 @@ func _defeat_enemy(enemy_index: int) -> void:
 		_set_message("Astrophage Prime has collapsed. Clear the remaining swarm.", 3.0)
 
 	_update_ui()
+
+
+func _process_kill_combo(delta: float) -> void:
+	if kill_combo_timer <= 0.0:
+		return
+	kill_combo_timer -= delta
+	if kill_combo_timer <= 0.0:
+		kill_combo_count = 0
+
+
+func _apply_kill_combo(pos: Vector2, radius: float) -> void:
+	kill_combo_count = kill_combo_count + 1 if kill_combo_timer > 0.0 else 1
+	kill_combo_timer = KILL_COMBO_WINDOW
+	run_best_combo = maxi(run_best_combo, kill_combo_count)
+	if kill_combo_count < KILL_COMBO_MIN_COUNT:
+		return
+	var bonus: int = kill_combo_count * KILL_COMBO_SCORE_STEP
+	GameState.add_score(bonus)
+	_add_text_effect("COMBO x%d  +%d SCORE" % [kill_combo_count, bonus], pos + Vector2(0.0, -radius - 44.0), Color(0.42, 0.90, 1.0, 0.96), 0.72, 14)
 
 
 func _lodge_burrower(enemy: Dictionary) -> void:
@@ -3126,6 +3175,8 @@ func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
 
 
 func _has_tech(tech_id: String) -> bool:
+	if GameState.has_method("get_tech_effects_enabled") and not bool(GameState.call("get_tech_effects_enabled")):
+		return false
 	return GameState.has_method("has_tech") and bool(GameState.call("has_tech", tech_id))
 
 
@@ -3269,6 +3320,10 @@ func _end_state_view_data() -> Dictionary:
 		stats += "  |  TECH XP +%d" % run_tech_xp_awarded
 		if not run_tech_xp_breakdown.is_empty():
 			stats += "\n%s" % run_tech_xp_breakdown
+	if run_perfect_orbits > 0:
+		stats += "\nPERFECT ORBITS %d" % run_perfect_orbits
+	if run_best_combo >= KILL_COMBO_MIN_COUNT:
+		stats += "\nBEST COMBO x%d" % run_best_combo
 	var record_text: String = _run_record_text()
 	if not record_text.is_empty():
 		stats += "\n%s" % record_text

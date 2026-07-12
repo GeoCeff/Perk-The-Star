@@ -272,6 +272,16 @@ const UPGRADES: Array = [
 		"req": ["resilient_bloom"],
 		"desc": "Tardigrade Bombs gain 8% damage, rate, and range.",
 	},
+	{
+		"id": "apex_master",
+		"title": "Apex Master",
+		"row": 2.5,
+		"col": 4,
+		"tower": "bio_lab",
+		"cost": 3000,
+		"req": ["photon_apex", "cryo_apex", "bio_apex", "magnetic_apex", "helios_apex", "tardigrade_apex"],
+		"desc": "All towers count as apex-tuned. Control slows last longer and Solar Flare hits harder.",
+	},
 ]
 
 const LINKS: Array = [
@@ -293,6 +303,12 @@ const LINKS: Array = [
 	["pressure_hull", "spore_nests"],
 	["spore_nests", "resilient_bloom"],
 	["resilient_bloom", "tardigrade_apex"],
+	["photon_apex", "apex_master"],
+	["cryo_apex", "apex_master"],
+	["bio_apex", "apex_master"],
+	["magnetic_apex", "apex_master"],
+	["helios_apex", "apex_master"],
+	["tardigrade_apex", "apex_master"],
 ]
 
 const TOWER_ICONS: Dictionary = {
@@ -311,7 +327,7 @@ const COLOR_CYAN := Color(0.22, 0.84, 0.94, 0.88)
 const COLOR_GOLD := Color(1.0, 0.78, 0.26, 0.92)
 const COLOR_MUTED := Color(0.58, 0.70, 0.82, 0.86)
 const COLOR_TEXT := Color(0.90, 0.96, 1.0, 1.0)
-const TREE_COLS := 4.0
+const TREE_COLS := 5.0
 const TREE_ROWS := 6.0
 
 var SpaceTheme: RefCounted = ClassDB.instantiate("SpaceThemeNative") as RefCounted
@@ -323,6 +339,7 @@ var node_cards: Dictionary = {}
 var root: Control
 var shade: ColorRect
 var close_button: Button
+var effects_toggle_button: Button
 var title_panel: PanelContainer
 var main_panel: PanelContainer
 var selected_panel: Panel
@@ -433,6 +450,14 @@ func _build_overlay() -> void:
 	close_button.pressed.connect(_close)
 	root.add_child(close_button)
 
+	effects_toggle_button = Button.new()
+	effects_toggle_button.name = "TechEffectsToggleButton"
+	effects_toggle_button.custom_minimum_size = Vector2(176, 58)
+	effects_toggle_button.tooltip_text = "Toggle active tech upgrade effects."
+	effects_toggle_button.pressed.connect(_toggle_tech_effects)
+	root.add_child(effects_toggle_button)
+	_refresh_effects_toggle_button()
+
 	selected_panel = Panel.new()
 	selected_panel.name = "SelectedTechPanel"
 	selected_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -450,8 +475,11 @@ func _build_overlay() -> void:
 	if SpaceTheme != null:
 		SpaceTheme.call("apply_fonts", root)
 		SpaceTheme.call("apply_secondary_button", close_button, SpaceTheme.get("ICON_BACK_PATH"))
+		SpaceTheme.call("apply_secondary_button", effects_toggle_button)
 		_apply_xp_label_font()
 	close_button.add_theme_font_size_override("font_size", 15)
+	effects_toggle_button.add_theme_font_size_override("font_size", 13)
+	_refresh_effects_toggle_button()
 
 
 func _build_selected_panel() -> void:
@@ -571,8 +599,10 @@ func _layout_overlay() -> void:
 
 	close_button.position = Vector2(panel_pos.x + 18.0, panel_pos.y + 16.0)
 	close_button.size = Vector2(92.0, 58.0)
+	effects_toggle_button.position = Vector2(panel_pos.x + panel_size.x - 196.0, panel_pos.y + 16.0)
+	effects_toggle_button.size = Vector2(176.0, 58.0)
 
-	var title_width: float = minf(panel_size.x - 360.0, 860.0)
+	var title_width: float = minf(panel_size.x - 460.0, 860.0)
 	title_panel.position = Vector2(panel_pos.x + (panel_size.x - title_width) * 0.5, panel_pos.y + 14.0)
 	title_panel.size = Vector2(title_width, 92.0)
 
@@ -691,6 +721,28 @@ func _try_unlock_selected() -> void:
 		_refresh_tree()
 
 
+func _toggle_tech_effects() -> void:
+	if not GameState.has_method("set_tech_effects_enabled"):
+		return
+	GameState.call("set_tech_effects_enabled", not _tech_effects_enabled())
+	_refresh_effects_toggle_button()
+
+
+func _refresh_effects_toggle_button() -> void:
+	if effects_toggle_button == null:
+		return
+	var enabled := _tech_effects_enabled()
+	effects_toggle_button.text = "EFFECTS\nON" if enabled else "EFFECTS\nOFF"
+	effects_toggle_button.add_theme_color_override("font_color", COLOR_TEXT if enabled else COLOR_MUTED)
+	effects_toggle_button.add_theme_color_override("font_hover_color", COLOR_TEXT)
+
+
+func _tech_effects_enabled() -> bool:
+	if not GameState.has_method("get_tech_effects_enabled"):
+		return true
+	return bool(GameState.call("get_tech_effects_enabled"))
+
+
 func _update_unlock_button(upgrade: Dictionary) -> void:
 	var state: String = _upgrade_state(upgrade)
 	var cost: int = int(upgrade["cost"])
@@ -712,7 +764,7 @@ func _update_unlock_button(upgrade: Dictionary) -> void:
 func _upgrade_state(upgrade: Dictionary) -> String:
 	var id: String = str(upgrade["id"])
 	if bool(GameState.call("has_tech", id)):
-		return "master" if id.ends_with("_apex") else "unlocked"
+		return "master" if id == "apex_master" or id.ends_with("_apex") else "unlocked"
 	if not _requirements_met(upgrade):
 		return "locked"
 	return "ready" if _tech_xp() >= int(upgrade["cost"]) else "locked"
