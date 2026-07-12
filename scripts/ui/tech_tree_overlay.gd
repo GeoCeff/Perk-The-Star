@@ -412,7 +412,7 @@ func _build_overlay() -> void:
 
 	xp_label = Label.new()
 	xp_label.name = "XpLabel"
-	xp_label.text = "XP BANK  %s" % _format_number(_tech_xp())
+	_update_xp_label()
 	xp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	xp_label.add_theme_font_size_override("font_size", 24)
 	xp_label.add_theme_color_override("font_color", Color(0.50, 1.0, 0.28, 1.0))
@@ -450,6 +450,7 @@ func _build_overlay() -> void:
 	if SpaceTheme != null:
 		SpaceTheme.call("apply_fonts", root)
 		SpaceTheme.call("apply_secondary_button", close_button, SpaceTheme.get("ICON_BACK_PATH"))
+		_apply_xp_label_font()
 	close_button.add_theme_font_size_override("font_size", 15)
 
 
@@ -661,7 +662,7 @@ func _select_upgrade(id: String) -> void:
 
 
 func _refresh_tree() -> void:
-	xp_label.text = "XP BANK  %s" % _format_number(_tech_xp())
+	_update_xp_label()
 	for id in node_cards:
 		var upgrade: Dictionary = upgrade_by_id[id]
 		var state: String = _upgrade_state(upgrade)
@@ -701,7 +702,7 @@ func _update_unlock_button(upgrade: Dictionary) -> void:
 			unlock_button.text = "UNLOCK\n%s XP" % _format_number(cost)
 		"locked":
 			if _requirements_met(upgrade):
-				unlock_button.text = "NEED\n%s XP" % _format_number(max(0, cost - _tech_xp()))
+				unlock_button.text = "NEED\n%s MORE" % _format_number(max(0, cost - _tech_xp()))
 			else:
 				unlock_button.text = "LOCKED"
 		_:
@@ -777,7 +778,20 @@ func _close() -> void:
 
 
 func _tech_xp() -> int:
-	return int(GameState.get("tech_xp"))
+	return max(0, int(GameState.get("tech_xp")))
+
+
+func _update_xp_label() -> void:
+	if xp_label != null:
+		xp_label.text = "XP BANK: %s" % _format_number(_tech_xp())
+
+
+func _apply_xp_label_font() -> void:
+	if xp_label == null or SpaceTheme == null:
+		return
+	var font := load(str(SpaceTheme.get("FONT_BODY_PATH")))
+	if font is Font:
+		xp_label.add_theme_font_override("font", font)
 
 
 func _format_number(value: int) -> String:

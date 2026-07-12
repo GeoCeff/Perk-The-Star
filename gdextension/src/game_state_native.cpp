@@ -157,7 +157,8 @@ void GameStateNative::load_audio_settings() {
         tutorial_completed = bool(config->get_value("tutorial", "completed", tutorial_completed));
         screen_shake_enabled = bool(config->get_value("gameplay", "screen_shake_enabled", screen_shake_enabled));
         auto_start_waves_enabled = bool(config->get_value("gameplay", "auto_start_waves_enabled", auto_start_waves_enabled));
-        tech_xp = int(config->get_value("tech", "xp", tech_xp));
+        const int loaded_tech_xp = int(config->get_value("tech", "xp", tech_xp));
+        tech_xp = MAX(0, loaded_tech_xp);
         Variant saved_unlocked = config->get_value("tech", "unlocked", unlocked_tech);
         if (saved_unlocked.get_type() == Variant::ARRAY) {
             unlocked_tech = Array(saved_unlocked);
@@ -175,6 +176,10 @@ void GameStateNative::load_audio_settings() {
     emit_signal("tutorial_settings_changed", tutorial_completed);
     emit_signal("game_feel_settings_changed", screen_shake_enabled);
     emit_signal("auto_start_settings_changed", auto_start_waves_enabled);
+    if (tech_xp != int(config->get_value("tech", "xp", tech_xp))) {
+        config->set_value("tech", "xp", tech_xp);
+        config->save(SETTINGS_PATH);
+    }
     emit_signal("tech_progress_changed", tech_xp, unlocked_tech);
 }
 
@@ -245,9 +250,10 @@ void GameStateNative::set_auto_start_waves_enabled(bool enabled) {
 
 int GameStateNative::add_tech_xp(int amount) {
     if (amount <= 0) {
+        tech_xp = MAX(0, tech_xp);
         return tech_xp;
     }
-    tech_xp += amount;
+    tech_xp = MAX(0, tech_xp) + amount;
     save_tech_progress();
     emit_signal("tech_progress_changed", tech_xp, unlocked_tech);
     return tech_xp;
@@ -265,10 +271,12 @@ bool GameStateNative::unlock_tech(const String& tech_id, int cost, const Array& 
             return false;
         }
     }
-    if (tech_xp < cost) {
+    tech_xp = MAX(0, tech_xp);
+    const int safe_cost = MAX(cost, 0);
+    if (tech_xp < safe_cost) {
         return false;
     }
-    tech_xp -= MAX(cost, 0);
+    tech_xp -= safe_cost;
     unlocked_tech.append(tech_id);
     save_tech_progress();
     emit_signal("tech_progress_changed", tech_xp, unlocked_tech);
@@ -511,7 +519,7 @@ double GameStateNative::get_music_volume() const { return music_volume; }
 bool GameStateNative::get_tutorial_completed() const { return tutorial_completed; }
 bool GameStateNative::get_screen_shake_enabled() const { return screen_shake_enabled; }
 bool GameStateNative::get_auto_start_waves_enabled() const { return auto_start_waves_enabled; }
-int GameStateNative::get_tech_xp() const { return tech_xp; }
+int GameStateNative::get_tech_xp() const { return MAX(0, tech_xp); }
 Array GameStateNative::get_unlocked_tech() const { return unlocked_tech; }
 bool GameStateNative::get_test_unlimited_sol_enabled() const { return test_unlimited_sol_enabled; }
 bool GameStateNative::get_music_changed_by_user_this_session() const { return music_changed_by_user_this_session; }
@@ -527,6 +535,7 @@ Ref<ConfigFile> GameStateNative::settings_config() const {
 
 void GameStateNative::save_tech_progress() {
     Ref<ConfigFile> config = settings_config();
+    tech_xp = MAX(0, tech_xp);
     config->set_value("tech", "xp", tech_xp);
     config->set_value("tech", "unlocked", unlocked_tech);
     config->save(SETTINGS_PATH);
