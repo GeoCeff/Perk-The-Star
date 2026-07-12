@@ -41,7 +41,11 @@ const SLOWED_FARMER_SOL_BONUS: int = 10
 const RUN_MODE_META: StringName = &"run_mode"
 const RUN_MODE_ENDLESS: String = "endless"
 const RUN_MODE_NO_FLARE: String = "no_flare"
+const RUN_MODE_BOSS_RUSH: String = "boss_rush"
+const RUN_MODE_DAILY_SEED: String = "daily_seed"
 const ENDLESS_WAVE_CAP: int = 999
+const BOSS_RUSH_WAVES: int = 4
+const DAILY_SEED_WAVES: int = 6
 
 var ENEMY_ASSET_PATHS: Dictionary = game_catalog.call("enemy_asset_paths") as Dictionary
 var ENEMY_ANIMATION_PATHS: Dictionary = game_catalog.call("enemy_animation_paths") as Dictionary
@@ -114,6 +118,8 @@ var managed_tower_slot: int = -1
 var run_mode: String = "campaign"
 var endless_mode: bool = false
 var no_flare_mode: bool = false
+var boss_rush_mode: bool = false
+var daily_seed_mode: bool = false
 var run_perfect_orbits: int = 0
 var run_best_combo: int = 0
 var run_tech_xp_awarded: int = 0
@@ -197,10 +203,22 @@ func _ready() -> void:
 	run_mode = str(GameState.get_meta(RUN_MODE_META, "campaign"))
 	endless_mode = run_mode == RUN_MODE_ENDLESS
 	no_flare_mode = run_mode == RUN_MODE_NO_FLARE
+	boss_rush_mode = run_mode == RUN_MODE_BOSS_RUSH
+	daily_seed_mode = run_mode == RUN_MODE_DAILY_SEED
 	if endless_mode:
 		playable_wave_limit = ENDLESS_WAVE_CAP
 		briefing_title = "ENDLESS DEFENSE"
 		message_text = "Endless mode armed. Survive as many waves as possible."
+	elif boss_rush_mode:
+		playable_wave_limit = BOSS_RUSH_WAVES
+		briefing_title = "BOSS RUSH"
+		GameState.sol_credits = 160
+		message_text = "Boss Rush armed. Survive four compressed Prime-class waves."
+	elif daily_seed_mode:
+		playable_wave_limit = DAILY_SEED_WAVES
+		briefing_title = "DAILY SEED"
+		GameState.sol_credits = 95
+		message_text = "Daily Seed %s armed. Clear today's fixed 6-wave challenge." % _daily_seed_label()
 	elif no_flare_mode:
 		briefing_title = "NO-FLARE CHALLENGE"
 		message_text = "No-Flare Challenge armed. Clear the Prime mission without Solar Flare."
@@ -872,6 +890,8 @@ func _set_music_stream(path: String, loop_enabled: bool) -> void:
 
 
 func _bgm_path_for_wave(wave_number: int) -> String:
+	if boss_rush_mode:
+		return BOSS_BGM_PATH
 	return str(runtime_native.call("bgm_path_for_wave", wave_number, WAVE_EARLY_BGM_PATH, WAVE_MID_BGM_PATH, WAVE_LATE_BGM_PATH, BOSS_BGM_PATH))
 
 
@@ -1855,13 +1875,7 @@ func _check_wave_clear() -> void:
 		_refresh_next_wave_preview()
 		_show_next_wave_banner()
 		_set_message(_wave_clear_message("Endless Wave %d cleared" % GameState.current_wave, reward, perfect_orbit), 4.0)
-	elif GameState.current_wave >= playable_wave_limit and playable_wave_limit < MAX_WAVES:
-		_play_sfx("wave_clear")
-		GameState.set_phase(GameState.BETWEEN_WAVE)
-		_refresh_next_wave_preview()
-		_show_next_wave_banner()
-		_set_message("Wave %d cleared. Additional waves are locked for this scene." % GameState.current_wave, 999.0)
-	elif GameState.current_wave >= MAX_WAVES:
+	elif GameState.current_wave >= MAX_WAVES or ((boss_rush_mode or daily_seed_mode) and GameState.current_wave >= playable_wave_limit):
 		_clear_wave_preview()
 		_clear_auto_start_timer(false)
 		_clear_managed_tower(false)
@@ -1870,6 +1884,12 @@ func _check_wave_clear() -> void:
 		_play_sfx("victory")
 		_play_ending_music()
 		_set_message("Victory. Final rank: %s. +%d Tech XP banked." % [GameState.get_rank(), earned], 999.0)
+	elif GameState.current_wave >= playable_wave_limit and playable_wave_limit < MAX_WAVES:
+		_play_sfx("wave_clear")
+		GameState.set_phase(GameState.BETWEEN_WAVE)
+		_refresh_next_wave_preview()
+		_show_next_wave_banner()
+		_set_message("Wave %d cleared. Additional waves are locked for this scene." % GameState.current_wave, 999.0)
 	else:
 		_play_sfx("wave_clear")
 		GameState.set_phase(GameState.BETWEEN_WAVE)
@@ -3205,7 +3225,9 @@ func _award_run_tech_xp_once(victory: bool) -> int:
 	var endless_bonus: int = max(0, GameState.waves_cleared - MAX_WAVES) * 35 if endless_mode else 0
 	var victory_bonus: int = 400 if victory else 0
 	var no_flare_bonus: int = (GameState.waves_cleared * 25 + (250 if victory else 0)) if no_flare_mode else 0
-	var amount: int = score_xp + kill_xp + wave_xp + luminosity_bonus + endless_bonus + victory_bonus + no_flare_bonus
+	var boss_rush_bonus: int = (GameState.waves_cleared * 60 + (300 if victory else 0)) if boss_rush_mode else 0
+	var daily_bonus: int = (GameState.waves_cleared * 35 + (180 if victory else 0)) if daily_seed_mode else 0
+	var amount: int = score_xp + kill_xp + wave_xp + luminosity_bonus + endless_bonus + victory_bonus + no_flare_bonus + boss_rush_bonus + daily_bonus
 	run_tech_xp_awarded = max(1, amount)
 	var xp_parts: Array = [
 		"SCORE %d" % score_xp,
@@ -3217,11 +3239,15 @@ func _award_run_tech_xp_once(victory: bool) -> int:
 		xp_parts.append("ENDLESS %d" % endless_bonus)
 	if no_flare_bonus > 0:
 		xp_parts.append("NO-FLARE %d" % no_flare_bonus)
+	if boss_rush_bonus > 0:
+		xp_parts.append("BOSS RUSH %d" % boss_rush_bonus)
+	if daily_bonus > 0:
+		xp_parts.append("DAILY %d" % daily_bonus)
 	if victory_bonus > 0:
 		xp_parts.append("VICTORY %d" % victory_bonus)
 	run_tech_xp_breakdown = "XP: %s = %d" % [" + ".join(xp_parts), run_tech_xp_awarded]
 	GameState.call("add_tech_xp", run_tech_xp_awarded)
-	if GameState.has_method("record_run"):
+	if GameState.has_method("record_run") and not boss_rush_mode and not daily_seed_mode:
 		run_record_summary = GameState.call(
 			"record_run",
 			run_mode,
@@ -3234,6 +3260,8 @@ func _award_run_tech_xp_once(victory: bool) -> int:
 
 
 func _run_record_text() -> String:
+	if boss_rush_mode or daily_seed_mode:
+		return ""
 	var summary: Dictionary = run_record_summary
 	if summary.is_empty() and GameState.has_method("best_run_summary"):
 		summary = GameState.call("best_run_summary", run_mode) as Dictionary
@@ -3284,6 +3312,24 @@ func _end_state_view_data() -> Dictionary:
 		title = "ENDLESS RUN ENDED"
 		subtitle = "The swarm finally broke through."
 		rank = "SURVIVED %d WAVES" % GameState.waves_cleared
+		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.enemies_killed_total,
+			GameState.performance_score,
+			GameState.get_luminosity_percent(),
+		]
+	elif boss_rush_mode:
+		title = "BOSS RUSH COMPLETE" if victory else "BOSS RUSH ENDED"
+		subtitle = "The Prime echoes collapsed." if victory else "The compressed Prime assault broke through."
+		rank = "RUSH %d/%d WAVES" % [GameState.waves_cleared, BOSS_RUSH_WAVES]
+		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.enemies_killed_total,
+			GameState.performance_score,
+			GameState.get_luminosity_percent(),
+		]
+	elif daily_seed_mode:
+		title = "DAILY SEED COMPLETE" if victory else "DAILY SEED ENDED"
+		subtitle = "Today's fixed challenge is clear." if victory else "Today's seed held the line."
+		rank = "SEED %s  |  %d/%d WAVES" % [_daily_seed_label(), GameState.waves_cleared, DAILY_SEED_WAVES]
 		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
 			GameState.enemies_killed_total,
 			GameState.performance_score,
@@ -3426,9 +3472,132 @@ func _ring_summary() -> String:
 
 
 func _wave_load(wave_number: int) -> Dictionary:
+	if boss_rush_mode:
+		return _boss_rush_wave_data(wave_number)
+	if daily_seed_mode:
+		return _daily_seed_wave_data(wave_number)
 	if endless_mode:
 		return _endless_wave_data(wave_number)
 	return wave_library.call("load_wave", wave_number) as Dictionary
+
+
+func _daily_seed_label() -> String:
+	var date: Dictionary = Time.get_date_dict_from_system()
+	return "%04d%02d%02d" % [int(date.get("year", 0)), int(date.get("month", 1)), int(date.get("day", 1))]
+
+
+func _daily_seed_value() -> int:
+	return int(_daily_seed_label())
+
+
+func _daily_pick(pool: Array, wave: int, salt: int):
+	return pool[(_daily_seed_value() + wave * 17 + salt * 31) % pool.size()]
+
+
+func _daily_seed_wave_data(wave_number: int) -> Dictionary:
+	var wave: int = clampi(wave_number, 1, DAILY_SEED_WAVES)
+	var pool: Array = ["drifter", "bloom", "burrower", "mimic", "farmer"]
+	var primary: String = str(_daily_pick(pool, wave, 1))
+	var secondary: String = str(_daily_pick(pool, wave, 2))
+	var hp_scale: float = 0.92 + float(wave) * 0.07
+	var speed_scale: float = 0.96 + float(wave) * 0.025
+	var reward: int = 52 + wave * 22
+	if wave == DAILY_SEED_WAVES:
+		return {
+			"index": wave,
+			"name": "Daily Prime %s" % _daily_seed_label(),
+			"wave_type": "boss",
+			"spawn_interval": 0.72,
+			"credit_reward": reward + 80,
+			"clash_groups": [
+				{"variants": _repeat_variant(primary, 10) + _repeat_variant(secondary, 8), "spawn_pattern": "ring", "delay_before": 0.0},
+				{"variants": _repeat_variant("burrower", 3) + _repeat_variant("mimic", 4) + _repeat_variant("farmer", 3), "spawn_pattern": "v_shape", "spread_angle_deg": 58, "delay_before": 8.0},
+				{"variants": ["prime"], "spawn_pattern": "center_top", "delay_before": 20.0},
+			],
+			"event": {"type": "bio_lab_boost", "multiplier": 2.0, "duration": 20.0, "trigger_at_percent": 0.0},
+			"enemy_hp_scale": hp_scale,
+			"enemy_speed_scale": speed_scale,
+			"enemy_damage_scale": 1.0,
+			"enemy_reward_scale": 1.1,
+			"escalation_threshold_seconds": null,
+			"tutorial_hint": "Daily finale %s: Prime arrives with today's fixed escort mix." % _daily_seed_label(),
+		}
+	if wave % 3 == 0:
+		return {
+			"index": wave,
+			"name": "Daily Vector %d" % wave,
+			"wave_type": "formation",
+			"spawn_interval": 1.55,
+			"credit_reward": reward,
+			"spawns": [{"variant": primary, "count": 8 + wave, "interval": 1.15}],
+			"formation": {"type": "spiral", "variants": [primary, secondary], "count": 8 + wave, "spiral_arms": 2},
+			"event": {},
+			"enemy_hp_scale": hp_scale,
+			"enemy_speed_scale": speed_scale,
+			"enemy_damage_scale": 0.90 + float(wave) * 0.03,
+			"enemy_reward_scale": 1.0,
+			"escalation_threshold_seconds": null,
+			"tutorial_hint": "Daily Seed %s: same formation all day, so adapt and replay for a cleaner clear." % _daily_seed_label(),
+		}
+	return {
+		"index": wave,
+		"name": "Daily Contact %d" % wave,
+		"wave_type": "normal",
+		"spawn_interval": maxf(0.9, 2.2 - float(wave) * 0.18),
+		"credit_reward": reward,
+		"spawns": [
+			{"variant": primary, "count": 7 + wave * 2, "interval": maxf(0.9, 2.0 - float(wave) * 0.12)},
+			{"variant": secondary, "count": max(2, wave + 1), "interval": 1.25},
+		],
+		"event": {"type": "ring_blind", "rings": [wave % 4], "duration": 8.0, "trigger_at_percent": 0.3} if wave == 4 else {},
+		"enemy_hp_scale": hp_scale,
+		"enemy_speed_scale": speed_scale,
+		"enemy_damage_scale": 0.86 + float(wave) * 0.03,
+		"enemy_reward_scale": 1.0,
+		"escalation_threshold_seconds": null,
+		"tutorial_hint": "Daily Seed %s: today's fixed enemy mix is %s plus %s." % [_daily_seed_label(), primary.capitalize(), secondary.capitalize()],
+	}
+
+
+func _boss_rush_wave_data(wave_number: int) -> Dictionary:
+	var wave: int = clampi(wave_number, 1, BOSS_RUSH_WAVES)
+	var escort_count: int = 8 + wave * 4
+	var prime_delay: float = 12.0 + float(wave) * 2.0
+	var hp_scale: float = 0.62 + float(wave) * 0.16
+	var speed_scale: float = 1.0 + float(wave - 1) * 0.05
+	var groups: Array = [
+		{
+			"variants": _repeat_variant("drifter", escort_count) + _repeat_variant("bloom", wave + 1),
+			"spawn_pattern": "ring",
+			"delay_before": 0.0,
+		},
+		{
+			"variants": _repeat_variant("burrower", max(0, wave - 1)) + _repeat_variant("mimic", wave) + _repeat_variant("farmer", max(0, wave - 2)),
+			"spawn_pattern": "v_shape",
+			"spread_angle_deg": 48 + wave * 3,
+			"delay_before": 6.0,
+		},
+		{
+			"variants": ["prime"],
+			"spawn_pattern": "center_top",
+			"delay_before": prime_delay,
+		},
+	]
+	return {
+		"index": wave,
+		"name": "Prime Echo %d" % wave,
+		"wave_type": "boss",
+		"spawn_interval": maxf(0.55, 1.25 - float(wave) * 0.12),
+		"credit_reward": 90 + wave * 35,
+		"clash_groups": groups,
+		"event": {"type": "bio_lab_boost", "multiplier": 1.5 + float(wave) * 0.25, "duration": 14.0 + float(wave) * 2.0, "trigger_at_percent": 0.0} if wave >= 3 else {},
+		"enemy_hp_scale": hp_scale,
+		"enemy_speed_scale": speed_scale,
+		"enemy_damage_scale": 0.78 + float(wave) * 0.08,
+		"enemy_reward_scale": 1.2,
+		"escalation_threshold_seconds": null,
+		"tutorial_hint": "Boss Rush: Prime Echo %d arrives fast. Crack the shell with Bio-Lab, then finish with Helios or Tardigrade." % wave,
+	}
 
 
 func _endless_wave_data(wave_number: int) -> Dictionary:
@@ -3643,6 +3812,18 @@ func _update_ui() -> void:
 		title_text = "ENDLESS WAVE %02d | %s" % [wave_index, wave_name.to_upper()]
 		if GameState.game_phase == GameState.GAME_OVER:
 			title_text = "ENDLESS RUN ENDED | WAVE %02d" % GameState.current_wave
+	elif boss_rush_mode:
+		title_text = "BOSS RUSH %02d/%02d | %s" % [wave_index, BOSS_RUSH_WAVES, wave_name.to_upper()]
+		if GameState.game_phase == GameState.VICTORY:
+			title_text = "BOSS RUSH COMPLETE | %s" % GameState.get_rank()
+		elif GameState.game_phase == GameState.GAME_OVER:
+			title_text = "BOSS RUSH FAILED | WAVE %02d/%02d" % [GameState.current_wave, BOSS_RUSH_WAVES]
+	elif daily_seed_mode:
+		title_text = "DAILY %s  %02d/%02d | %s" % [_daily_seed_label(), wave_index, DAILY_SEED_WAVES, wave_name.to_upper()]
+		if GameState.game_phase == GameState.VICTORY:
+			title_text = "DAILY SEED COMPLETE | %s" % GameState.get_rank()
+		elif GameState.game_phase == GameState.GAME_OVER:
+			title_text = "DAILY SEED FAILED | WAVE %02d/%02d" % [GameState.current_wave, DAILY_SEED_WAVES]
 	elif no_flare_mode and GameState.game_phase == GameState.VICTORY:
 		title_text = "NO-FLARE COMPLETE | %s" % GameState.get_rank()
 	elif no_flare_mode and GameState.game_phase == GameState.GAME_OVER:
