@@ -52,12 +52,12 @@ func _show_mode_overlay() -> void:
 
 	var panel := PanelContainer.new()
 	panel.name = "ModePanel"
-	panel.custom_minimum_size = Vector2(560, 510)
+	panel.custom_minimum_size = Vector2(560, 570)
 	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.offset_left = -280
-	panel.offset_top = -255
+	panel.offset_top = -285
 	panel.offset_right = 280
-	panel.offset_bottom = 255
+	panel.offset_bottom = 285
 	mode_overlay.add_child(panel)
 
 	var box := VBoxContainer.new()
@@ -82,6 +82,7 @@ func _show_mode_overlay() -> void:
 	_add_mode_button(box, "Normal Defense", "campaign", true)
 	_add_mode_button(box, "Boss Rush", "boss_rush", false)
 	_add_mode_button(box, "Daily Seed", "daily_seed", false)
+	_add_mode_button(box, "Draft Defense", "draft_defense", false)
 	_add_mode_button(box, "Endless Defense", "endless", false)
 	_add_mode_button(box, "No-Flare Challenge", "no_flare", false)
 

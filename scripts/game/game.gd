@@ -43,9 +43,11 @@ const RUN_MODE_ENDLESS: String = "endless"
 const RUN_MODE_NO_FLARE: String = "no_flare"
 const RUN_MODE_BOSS_RUSH: String = "boss_rush"
 const RUN_MODE_DAILY_SEED: String = "daily_seed"
+const RUN_MODE_DRAFT_DEFENSE: String = "draft_defense"
 const ENDLESS_WAVE_CAP: int = 999
 const BOSS_RUSH_WAVES: int = 4
 const DAILY_SEED_WAVES: int = 6
+const DRAFT_DEFENSE_WAVES: int = 6
 
 var ENEMY_ASSET_PATHS: Dictionary = game_catalog.call("enemy_asset_paths") as Dictionary
 var ENEMY_ANIMATION_PATHS: Dictionary = game_catalog.call("enemy_animation_paths") as Dictionary
@@ -120,6 +122,9 @@ var endless_mode: bool = false
 var no_flare_mode: bool = false
 var boss_rush_mode: bool = false
 var daily_seed_mode: bool = false
+var draft_defense_mode: bool = false
+var draft_package: Dictionary = {}
+var draft_overlay: CanvasLayer
 var run_perfect_orbits: int = 0
 var run_best_combo: int = 0
 var run_tech_xp_awarded: int = 0
@@ -205,6 +210,7 @@ func _ready() -> void:
 	no_flare_mode = run_mode == RUN_MODE_NO_FLARE
 	boss_rush_mode = run_mode == RUN_MODE_BOSS_RUSH
 	daily_seed_mode = run_mode == RUN_MODE_DAILY_SEED
+	draft_defense_mode = run_mode == RUN_MODE_DRAFT_DEFENSE
 	if endless_mode:
 		playable_wave_limit = ENDLESS_WAVE_CAP
 		briefing_title = "ENDLESS DEFENSE"
@@ -219,6 +225,11 @@ func _ready() -> void:
 		briefing_title = "DAILY SEED"
 		GameState.sol_credits = 95
 		message_text = "Daily Seed %s armed. Clear today's fixed 6-wave challenge." % _daily_seed_label()
+	elif draft_defense_mode:
+		playable_wave_limit = DRAFT_DEFENSE_WAVES
+		briefing_title = "DRAFT DEFENSE"
+		GameState.sol_credits = 100
+		message_text = "Draft Defense armed. Pick a contract before Wave 1."
 	elif no_flare_mode:
 		briefing_title = "NO-FLARE CHALLENGE"
 		message_text = "No-Flare Challenge armed. Clear the Prime mission without Solar Flare."
@@ -241,6 +252,8 @@ func _ready() -> void:
 	if pending_test_start_wave > 0:
 		_set_message("Test mode armed: unlimited Sol Credits. Click Start Wave when ready.", 4.0)
 		_update_ui()
+	elif draft_defense_mode:
+		call_deferred("_show_draft_overlay")
 	else:
 		call_deferred("_maybe_show_tutorial")
 	set_process(true)
@@ -281,6 +294,8 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if tutorial_overlay != null:
+		return
+	if draft_overlay != null:
 		return
 	if prime_briefing_visible:
 		if event is InputEventMouseButton:
@@ -892,6 +907,8 @@ func _set_music_stream(path: String, loop_enabled: bool) -> void:
 func _bgm_path_for_wave(wave_number: int) -> String:
 	if boss_rush_mode:
 		return BOSS_BGM_PATH
+	if draft_defense_mode and wave_number >= DRAFT_DEFENSE_WAVES:
+		return BOSS_BGM_PATH
 	return str(runtime_native.call("bgm_path_for_wave", wave_number, WAVE_EARLY_BGM_PATH, WAVE_MID_BGM_PATH, WAVE_LATE_BGM_PATH, BOSS_BGM_PATH))
 
 
@@ -956,7 +973,7 @@ func _needs_frame_redraw(viewport_changed: bool) -> bool:
 
 
 func _process_edge_pan(delta: float) -> bool:
-	if tutorial_overlay != null:
+	if tutorial_overlay != null or draft_overlay != null:
 		return false
 
 	var viewport_rect: Rect2 = get_viewport_rect()
@@ -966,7 +983,7 @@ func _process_edge_pan(delta: float) -> bool:
 
 
 func _process_keyboard_pan(delta: float) -> bool:
-	if tutorial_overlay != null:
+	if tutorial_overlay != null or draft_overlay != null:
 		return false
 	return view_controller.process_keyboard_pan(delta, get_viewport_rect().size, _outer_ring_radius())
 
@@ -1012,6 +1029,118 @@ func _build_ui() -> void:
 			tech_button.mouse_entered.connect(hover_callback)
 		SpaceTheme.call("apply_secondary_button", tech_button)
 		tech_button.add_theme_font_size_override("font_size", 12)
+
+
+func _draft_packages() -> Array:
+	return [
+		{"id": "sol", "title": "Sol Windfall", "body": "+55 Sol Credits before Wave 1.", "sol": 55},
+		{"id": "control", "title": "Control Grid", "body": "Cryo and Magnetic gain +10% range.", "towers": ["cryo_probe", "magnetic_net"], "range": 1.10},
+		{"id": "burst", "title": "Burst Lenses", "body": "Photon and Helios gain +10% damage.", "towers": ["photon_splitter", "helios_cannon"], "damage": 1.10},
+		{"id": "bio", "title": "Bio Bloom", "body": "Bio-Lab and Tardigrade gain +10% rate.", "towers": ["bio_lab", "tardigrade_bomb"], "rate": 1.10},
+	]
+
+
+func _draft_choices() -> Array:
+	var packages: Array = _draft_packages()
+	packages.shuffle()
+	while packages.size() > 3:
+		packages.pop_back()
+	return packages
+
+
+func _draft_needs_pick() -> bool:
+	return draft_defense_mode and draft_package.is_empty()
+
+
+func _draft_package_title() -> String:
+	return str(draft_package.get("title", "Pick a contract"))
+
+
+func _show_draft_overlay() -> void:
+	if not _draft_needs_pick() or draft_overlay != null:
+		return
+
+	draft_overlay = CanvasLayer.new()
+	draft_overlay.name = "DraftDefenseOverlay"
+	draft_overlay.layer = 80
+	add_child(draft_overlay)
+
+	var overlay := Control.new()
+	overlay.name = "DraftOverlay"
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	draft_overlay.add_child(overlay)
+
+	var shade := ColorRect.new()
+	shade.name = "Shade"
+	shade.color = Color(0.0, 0.0, 0.0, 0.68)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(shade)
+
+	var panel := PanelContainer.new()
+	panel.name = "DraftPanel"
+	panel.custom_minimum_size = Vector2(560, 390)
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -280
+	panel.offset_top = -195
+	panel.offset_right = 280
+	panel.offset_bottom = 195
+	overlay.add_child(panel)
+
+	var box := VBoxContainer.new()
+	box.name = "DraftBox"
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+
+	var title := Label.new()
+	title.text = "DRAFT DEFENSE"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	box.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Pick one contract for this six-wave run."
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 14)
+	subtitle.add_theme_color_override("font_color", Color(0.76, 0.88, 0.96, 0.92))
+	box.add_child(subtitle)
+
+	var first_button: Button
+	for package in _draft_choices():
+		var button := Button.new()
+		button.text = "%s\n%s" % [str(package.get("title", "Draft")), str(package.get("body", ""))]
+		button.custom_minimum_size = Vector2(420, 72)
+		button.pressed.connect(_select_draft_package.bind(package))
+		box.add_child(button)
+		if first_button == null:
+			first_button = button
+		if SpaceTheme != null:
+			SpaceTheme.call("apply_secondary_button", button)
+			button.add_theme_font_size_override("font_size", 14)
+
+	if SpaceTheme != null:
+		SpaceTheme.call("apply_fonts", overlay)
+		SpaceTheme.call("apply_deep_panel", panel, SpaceTheme.get("COLOR_GOLD"))
+		title.add_theme_color_override("font_color", SpaceTheme.get("COLOR_GOLD"))
+	if first_button != null:
+		first_button.grab_focus()
+
+
+func _select_draft_package(package: Dictionary) -> void:
+	draft_package = package.duplicate(true)
+	if draft_overlay != null:
+		draft_overlay.queue_free()
+		draft_overlay = null
+	var sol_bonus: int = int(draft_package.get("sol", 0))
+	if sol_bonus > 0:
+		GameState.add_credits(sol_bonus)
+	_play_sfx("button")
+	_show_wave_banner("DRAFT LOCKED", _draft_package_title().to_upper(), Color(0.96, 0.78, 0.24), 2.6)
+	_set_message("Draft locked: %s. %s" % [_draft_package_title(), str(draft_package.get("body", ""))], 4.0)
+	_refresh_next_wave_preview()
+	_update_ui()
 
 
 func _maybe_show_tutorial() -> void:
@@ -1095,6 +1224,10 @@ func _on_start_wave_pressed() -> void:
 	if GameState.game_phase != GameState.BETWEEN_WAVE:
 		return
 	_clear_auto_start_timer(false)
+	if _draft_needs_pick():
+		_show_draft_overlay()
+		_set_message("Choose a Draft Defense contract before Wave 1.", 2.0)
+		return
 
 	var wave_number: int = GameState.current_wave + 1
 	if wave_number > playable_wave_limit:
@@ -1825,6 +1958,8 @@ func _should_auto_start_wave() -> bool:
 		return false
 	if tutorial_overlay != null:
 		return false
+	if _draft_needs_pick():
+		return false
 	if GameState.game_phase != GameState.BETWEEN_WAVE:
 		return false
 	var wave_number: int = GameState.current_wave + 1
@@ -1875,7 +2010,7 @@ func _check_wave_clear() -> void:
 		_refresh_next_wave_preview()
 		_show_next_wave_banner()
 		_set_message(_wave_clear_message("Endless Wave %d cleared" % GameState.current_wave, reward, perfect_orbit), 4.0)
-	elif GameState.current_wave >= MAX_WAVES or ((boss_rush_mode or daily_seed_mode) and GameState.current_wave >= playable_wave_limit):
+	elif GameState.current_wave >= MAX_WAVES or ((boss_rush_mode or daily_seed_mode or draft_defense_mode) and GameState.current_wave >= playable_wave_limit):
 		_clear_wave_preview()
 		_clear_auto_start_timer(false)
 		_clear_managed_tower(false)
@@ -3013,6 +3148,8 @@ func _reset_view() -> void:
 
 
 func _can_build_towers() -> bool:
+	if _draft_needs_pick():
+		return false
 	return bool(runtime_native.call("can_build_towers", GameState.game_phase, GameState.BETWEEN_WAVE, GameState.WAVE_ACTIVE))
 
 
@@ -3191,7 +3328,19 @@ func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
 		stats["damage"] = float(stats["damage"]) * 1.08
 		stats["rate"] = float(stats["rate"]) * 1.08
 		stats["range"] = float(stats["range"]) * 1.08
+	_apply_draft_package_stats(tower_type, stats)
 	return stats
+
+
+func _apply_draft_package_stats(tower_type: String, stats: Dictionary) -> void:
+	if not draft_defense_mode or draft_package.is_empty():
+		return
+	var draft_towers: Array = draft_package.get("towers", [])
+	if not draft_towers.has(tower_type):
+		return
+	stats["damage"] = float(stats["damage"]) * float(draft_package.get("damage", 1.0))
+	stats["rate"] = float(stats["rate"]) * float(draft_package.get("rate", 1.0))
+	stats["range"] = float(stats["range"]) * float(draft_package.get("range", 1.0))
 
 
 func _has_tech(tech_id: String) -> bool:
@@ -3227,7 +3376,8 @@ func _award_run_tech_xp_once(victory: bool) -> int:
 	var no_flare_bonus: int = (GameState.waves_cleared * 25 + (250 if victory else 0)) if no_flare_mode else 0
 	var boss_rush_bonus: int = (GameState.waves_cleared * 60 + (300 if victory else 0)) if boss_rush_mode else 0
 	var daily_bonus: int = (GameState.waves_cleared * 35 + (180 if victory else 0)) if daily_seed_mode else 0
-	var amount: int = score_xp + kill_xp + wave_xp + luminosity_bonus + endless_bonus + victory_bonus + no_flare_bonus + boss_rush_bonus + daily_bonus
+	var draft_bonus: int = (GameState.waves_cleared * 45 + (220 if victory else 0)) if draft_defense_mode else 0
+	var amount: int = score_xp + kill_xp + wave_xp + luminosity_bonus + endless_bonus + victory_bonus + no_flare_bonus + boss_rush_bonus + daily_bonus + draft_bonus
 	run_tech_xp_awarded = max(1, amount)
 	var xp_parts: Array = [
 		"SCORE %d" % score_xp,
@@ -3243,11 +3393,13 @@ func _award_run_tech_xp_once(victory: bool) -> int:
 		xp_parts.append("BOSS RUSH %d" % boss_rush_bonus)
 	if daily_bonus > 0:
 		xp_parts.append("DAILY %d" % daily_bonus)
+	if draft_bonus > 0:
+		xp_parts.append("DRAFT %d" % draft_bonus)
 	if victory_bonus > 0:
 		xp_parts.append("VICTORY %d" % victory_bonus)
 	run_tech_xp_breakdown = "XP: %s = %d" % [" + ".join(xp_parts), run_tech_xp_awarded]
 	GameState.call("add_tech_xp", run_tech_xp_awarded)
-	if GameState.has_method("record_run") and not boss_rush_mode and not daily_seed_mode:
+	if GameState.has_method("record_run") and not boss_rush_mode and not daily_seed_mode and not draft_defense_mode:
 		run_record_summary = GameState.call(
 			"record_run",
 			run_mode,
@@ -3260,7 +3412,7 @@ func _award_run_tech_xp_once(victory: bool) -> int:
 
 
 func _run_record_text() -> String:
-	if boss_rush_mode or daily_seed_mode:
+	if boss_rush_mode or daily_seed_mode or draft_defense_mode:
 		return ""
 	var summary: Dictionary = run_record_summary
 	if summary.is_empty() and GameState.has_method("best_run_summary"):
@@ -3331,6 +3483,19 @@ func _end_state_view_data() -> Dictionary:
 		subtitle = "Today's fixed challenge is clear." if victory else "Today's seed held the line."
 		rank = "SEED %s  |  %d/%d WAVES" % [_daily_seed_label(), GameState.waves_cleared, DAILY_SEED_WAVES]
 		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			GameState.enemies_killed_total,
+			GameState.performance_score,
+			GameState.get_luminosity_percent(),
+		]
+	elif draft_defense_mode:
+		title = "DRAFT DEFENSE COMPLETE" if victory else "DRAFT DEFENSE ENDED"
+		if victory:
+			subtitle = "%s carried the run." % _draft_package_title()
+		else:
+			subtitle = "%s was not enough this time." % _draft_package_title()
+		rank = "DRAFT %d/%d WAVES" % [GameState.waves_cleared, DRAFT_DEFENSE_WAVES]
+		stats = "CONTRACT %s  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
+			_draft_package_title().to_upper(),
 			GameState.enemies_killed_total,
 			GameState.performance_score,
 			GameState.get_luminosity_percent(),
@@ -3476,9 +3641,37 @@ func _wave_load(wave_number: int) -> Dictionary:
 		return _boss_rush_wave_data(wave_number)
 	if daily_seed_mode:
 		return _daily_seed_wave_data(wave_number)
+	if draft_defense_mode:
+		return _draft_defense_wave_data(wave_number)
 	if endless_mode:
 		return _endless_wave_data(wave_number)
 	return wave_library.call("load_wave", wave_number) as Dictionary
+
+
+func _draft_defense_wave_data(wave_number: int) -> Dictionary:
+	var wave: int = clampi(wave_number, 1, DRAFT_DEFENSE_WAVES)
+	if wave == DRAFT_DEFENSE_WAVES:
+		var finale: Dictionary = _boss_rush_wave_data(2).duplicate(true)
+		finale["index"] = wave
+		finale["name"] = "Draft Prime"
+		finale["credit_reward"] = 175
+		finale["enemy_hp_scale"] = 1.08
+		finale["enemy_speed_scale"] = 1.06
+		finale["enemy_damage_scale"] = 1.02
+		finale["enemy_reward_scale"] = 1.18
+		finale["tutorial_hint"] = "Draft finale: %s must carry you through a Prime Echo and its escorts." % _draft_package_title()
+		return finale
+
+	var data: Dictionary = wave_library.call("load_wave", min(wave + 1, MAX_WAVES - 1)) as Dictionary
+	data = data.duplicate(true)
+	data["index"] = wave
+	data["name"] = "Draft %s" % str(data.get("name", "Contact %d" % wave))
+	data["credit_reward"] = int(data.get("credit_reward", 0)) + 18 + wave * 4
+	data["enemy_hp_scale"] = float(data.get("enemy_hp_scale", 1.0)) * (0.88 + float(wave) * 0.045)
+	data["enemy_speed_scale"] = float(data.get("enemy_speed_scale", 1.0)) * (0.96 + float(wave) * 0.015)
+	data["enemy_reward_scale"] = float(data.get("enemy_reward_scale", 1.0)) * 1.08
+	data["tutorial_hint"] = "Draft Defense: %s active. %s" % [_draft_package_title(), str(data.get("tutorial_hint", "Hold the six-wave line."))]
+	return data
 
 
 func _daily_seed_label() -> String:
@@ -3824,6 +4017,14 @@ func _update_ui() -> void:
 			title_text = "DAILY SEED COMPLETE | %s" % GameState.get_rank()
 		elif GameState.game_phase == GameState.GAME_OVER:
 			title_text = "DAILY SEED FAILED | WAVE %02d/%02d" % [GameState.current_wave, DAILY_SEED_WAVES]
+	elif draft_defense_mode:
+		title_text = "DRAFT DEFENSE %02d/%02d | %s" % [wave_index, DRAFT_DEFENSE_WAVES, wave_name.to_upper()]
+		if _draft_needs_pick():
+			title_text = "DRAFT DEFENSE | PICK CONTRACT"
+		elif GameState.game_phase == GameState.VICTORY:
+			title_text = "DRAFT DEFENSE COMPLETE | %s" % GameState.get_rank()
+		elif GameState.game_phase == GameState.GAME_OVER:
+			title_text = "DRAFT DEFENSE FAILED | WAVE %02d/%02d" % [GameState.current_wave, DRAFT_DEFENSE_WAVES]
 	elif no_flare_mode and GameState.game_phase == GameState.VICTORY:
 		title_text = "NO-FLARE COMPLETE | %s" % GameState.get_rank()
 	elif no_flare_mode and GameState.game_phase == GameState.GAME_OVER:
@@ -3839,11 +4040,14 @@ func _update_ui() -> void:
 
 	var reward: int = int(wave_data.get("credit_reward", 0))
 	var next_wave: int = GameState.current_wave + 1 if endless_mode else min(GameState.current_wave + 1, MAX_WAVES)
-	var start_disabled: bool = GameState.game_phase != GameState.BETWEEN_WAVE or next_wave > playable_wave_limit
+	var start_disabled: bool = GameState.game_phase != GameState.BETWEEN_WAVE or next_wave > playable_wave_limit or _draft_needs_pick()
 	if not endless_mode and next_wave > MAX_WAVES:
 		start_disabled = true
 	var start_text: String = "START WAVE %d" % next_wave
 	var intel_status: String = "LIVE" if GameState.game_phase == GameState.WAVE_ACTIVE else "NEXT"
+	if _draft_needs_pick():
+		start_text = "PICK DRAFT"
+		intel_status = "DRAFT"
 	if GameState.game_phase == GameState.VICTORY:
 		start_text = "MISSION COMPLETE"
 		intel_status = "CLEARED"

@@ -8,7 +8,7 @@ The project now keeps most reusable systems in C++ GDExtension and leaves `scrip
 
 1. Open this repository root in Godot, not the nested `game/` folder.
 2. Run `project.godot`.
-3. Click Start Defense, then pick Campaign, Boss Rush, Daily Seed, Endless, or No-Flare Challenge.
+3. Click Start Defense, then pick Campaign, Boss Rush, Daily Seed, Draft Defense, Endless, or No-Flare Challenge.
 
 The game targets a 1920x1080 canvas with expand stretching enabled.
 
@@ -17,6 +17,7 @@ The game targets a 1920x1080 canvas with expand stretching enabled.
 - Campaign is the fixed 12-wave mission with the Prime boss finale.
 - Boss Rush is a four-wave compressed Prime Echo mode with extra starting Sol and boss music from launch.
 - Daily Seed is a six-wave date-based challenge with the same enemy mix for everyone on that day.
+- Draft Defense is a six-wave contract run: pick one of three random perks before Wave 1, then clear five remixed waves and a Prime-style finale.
 - Endless generates scaling waves forever: enemy mix, count, HP, speed, and breach damage rise over time, with clash, formation, and Prime Echo waves mixed in.
 - No-Flare Challenge reuses the Prime campaign but disables Solar Flare and pays bonus Tech XP.
 - Tech XP is earned at run end and spent on permanent tech tree unlocks that affect tower stats, rewards, flare cadence, and Helios Slingshot.
@@ -25,7 +26,7 @@ The game targets a 1920x1080 canvas with expand stretching enabled.
 - Fast kill combos add bonus score, and slowed Solar Farmers pay bonus Sol when defeated.
 - Best campaign, no-flare, and endless records are saved in `user://settings.cfg`.
 
-Good next mode: Draft Defense.
+Good next additions: per-mode best records for Boss Rush, Daily Seed, and Draft Defense.
 
 ## Export
 
