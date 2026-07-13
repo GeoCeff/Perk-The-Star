@@ -11,5 +11,5 @@
     "event": null,
     "reward_base": 65,
     "escalation_threshold_seconds": null,
-    "tutorial_hint": "Burrowers drain luminosity at the corona. Bio-Lab excavates them."
+    "tutorial_hint": "Threat Advisor: Burrowers dig into the corona and drain luminosity. Build Bio-Lab coverage before they arrive."
 }

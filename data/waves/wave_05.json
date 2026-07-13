@@ -11,5 +11,5 @@
     "event": null,
     "reward_base": 75,
     "escalation_threshold_seconds": null,
-    "tutorial_hint": "Photon Mimics are invisible to Photon Splitters. Bio-Lab and Cryo reveal them."
+    "tutorial_hint": "Threat Advisor: Photon Mimics ignore Photon Splitters. Mix in Bio-Lab, Cryo, Magnetic, or Helios before relying on Photon."
 }

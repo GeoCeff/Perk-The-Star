@@ -43,5 +43,5 @@
     },
     "reward_base": 90,
     "escalation_threshold_seconds": 42,
-    "tutorial_hint": "MASSIVE WAVE - enemies arrive in rings. A mid-wave solar storm fires automatically."
+    "tutorial_hint": "Threat Advisor: this is the first clash wave. Enemies arrive in bursts; save coverage for Mimics and expect an automatic storm flare."
 }

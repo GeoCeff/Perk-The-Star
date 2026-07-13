@@ -16,5 +16,5 @@
     "event": null,
     "reward_base": 48,
     "escalation_threshold_seconds": null,
-    "tutorial_hint": "Blooms split into 3 Drifters on direct damage. Use AoE or Cryo first!"
+    "tutorial_hint": "Threat Advisor: Blooms split into 3 Drifters when destroyed. Add Cryo or Tardigrade support so the split swarm stays controlled."
 }

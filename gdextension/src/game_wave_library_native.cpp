@@ -296,18 +296,18 @@ String GameWaveLibraryNative::warning_tags(const Dictionary& wave_data) const {
 
 String GameWaveLibraryNative::counter_hint(const Dictionary& wave_data) const {
     Dictionary variants = variant_counts(wave_data);
-    if (variants.has("prime")) return "COUNTER: Bio-Lab opens shell, then Helios/Tardigrade finish.";
-    if (variants.has("farmer")) return "COUNTER: Cryo or Magnetic first; avoid feeding Farmers with energy.";
-    if (variants.has("mimic")) return "COUNTER: Mix Bio-Lab, Cryo, Magnetic, or Helios with Photon.";
-    if (variants.has("burrower")) return "COUNTER: Build Bio-Lab before Burrowers reach the Sun.";
-    if (variants.has("splitter_bloom")) return "COUNTER: Burst Splitter Blooms before their Drifters spread.";
-    if (variants.has("bloom")) return "COUNTER: Slow Blooms before they split into Drifters.";
+    if (variants.has("prime")) return "ADVISOR: Bio-Lab opens Prime shell; Helios or Tardigrade finishes the core.";
+    if (variants.has("farmer")) return "ADVISOR: Slow Farmers with Cryo/Magnetic before using energy damage.";
+    if (variants.has("mimic")) return "ADVISOR: Mimics ignore Photon; mix Bio-Lab, Cryo, Magnetic, or Helios.";
+    if (variants.has("burrower")) return "ADVISOR: Build Bio-Lab coverage before Burrowers reach the corona.";
+    if (variants.has("splitter_bloom")) return "ADVISOR: Burst Splitter Blooms early or slow the Drifters they release.";
+    if (variants.has("bloom")) return "ADVISOR: Slow Blooms first; they split into Drifters when destroyed.";
     Variant event_value = wave_data.get("event", Dictionary());
     if (event_value.get_type() == Variant::DICTIONARY) {
         Dictionary event_data = event_value;
-        if (String(event_data.get("type", "")) == "comet_cache") return "COUNTER: Outer-ring fire can crack the Comet Cache for bonus Sol.";
+        if (String(event_data.get("type", "")) == "comet_cache") return "ADVISOR: Outer-ring fire can crack the Comet Cache for bonus Sol.";
     }
-    return "COUNTER: Photon Splitters handle the first swarm cleanly.";
+    return "ADVISOR: Photon Splitters handle Drifters; place one where its orbit crosses the lane.";
 }
 
 String GameWaveLibraryNative::intel_detail(const Dictionary& wave_data, int reward, int active_count, int burrowed_count, int queued_count, const String& modifier_summary) const {
@@ -319,6 +319,9 @@ String GameWaveLibraryNative::intel_detail(const Dictionary& wave_data, int rewa
     if (event_value.get_type() == Variant::DICTIONARY) {
         Dictionary event_data = event_value;
         if (String(event_data.get("type", "")) == "comet_cache") lines.append("EVENT: Destroy Comet Cache for Sol, or it breaks into Drifters.");
+        else if (String(event_data.get("type", "")) == "mid_wave_autoflare") lines.append("EVENT: Solar storm fires a flare and briefly disrupts Cryo.");
+        else if (String(event_data.get("type", "")) == "ring_blind") lines.append("EVENT: Dark rings stop towers there; cover with other orbits.");
+        else if (String(event_data.get("type", "")) == "bio_lab_boost") lines.append("EVENT: Bio-Labs surge; use them to clean hard targets.");
     }
     if (active_count >= 0) {
         lines.insert(0, vformat("LIVE: %d ACTIVE | %d BURROWED | %d QUEUED", active_count, burrowed_count, queued_count));

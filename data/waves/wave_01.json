@@ -9,5 +9,5 @@
     "event": null,
     "reward_base": 24,
     "escalation_threshold_seconds": null,
-    "tutorial_hint": "Place a Photon Splitter on a ring slot. Towers orbit and fire automatically; clear with no luminosity loss for a Perfect Orbit bonus."
+    "tutorial_hint": "Threat Advisor: place one Photon Splitter on an outer slot. Its orbit will cross Drifters automatically; no damage taken earns a Perfect Orbit bonus."
 }
