@@ -79,6 +79,7 @@ void GameHudNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("_show_tower_info", "tower_type"), &GameHudNative::show_tower_info);
     ClassDB::bind_method(D_METHOD("_hide_tower_info", "tower_type"), &GameHudNative::hide_tower_info, DEFVAL(""));
     ClassDB::bind_method(D_METHOD("_on_tower_manage_upgrade_pressed"), &GameHudNative::on_tower_manage_upgrade_pressed);
+    ClassDB::bind_method(D_METHOD("_on_tower_manage_reroute_pressed"), &GameHudNative::on_tower_manage_reroute_pressed);
     ClassDB::bind_method(D_METHOD("_on_tower_manage_sell_pressed"), &GameHudNative::on_tower_manage_sell_pressed);
     ClassDB::bind_method(D_METHOD("_on_tower_manage_close_pressed"), &GameHudNative::on_tower_manage_close_pressed);
     ClassDB::bind_method(D_METHOD("_on_center_view_button_pressed"), &GameHudNative::on_center_view_button_pressed);
@@ -93,6 +94,7 @@ void GameHudNative::_bind_methods() {
     ADD_SIGNAL(MethodInfo("menu_requested"));
     ADD_SIGNAL(MethodInfo("tower_selected", PropertyInfo(Variant::STRING, "tower_type")));
     ADD_SIGNAL(MethodInfo("tower_upgrade_requested", PropertyInfo(Variant::INT, "ring_index"), PropertyInfo(Variant::INT, "slot_index")));
+    ADD_SIGNAL(MethodInfo("tower_reroute_requested", PropertyInfo(Variant::INT, "ring_index"), PropertyInfo(Variant::INT, "slot_index")));
     ADD_SIGNAL(MethodInfo("tower_sell_requested", PropertyInfo(Variant::INT, "ring_index"), PropertyInfo(Variant::INT, "slot_index")));
     ADD_SIGNAL(MethodInfo("tower_manage_closed"));
     ADD_SIGNAL(MethodInfo("recenter_requested"));
@@ -412,15 +414,23 @@ void GameHudNative::build_tower_manage_card() {
 
     tower_manage_upgrade_button = memnew(Button);
     tower_manage_upgrade_button->set_name("TowerManageUpgradeButton");
-    tower_manage_upgrade_button->set_custom_minimum_size(Vector2(148, 40));
+    tower_manage_upgrade_button->set_custom_minimum_size(Vector2(128, 40));
     tower_manage_upgrade_button->set_text("UPGRADE");
     tower_manage_upgrade_button->connect("pressed", Callable(this, "_on_tower_manage_upgrade_pressed"));
     connect_hover(tower_manage_upgrade_button, this);
     actions->add_child(tower_manage_upgrade_button);
 
+    tower_manage_reroute_button = memnew(Button);
+    tower_manage_reroute_button->set_name("TowerManageRerouteButton");
+    tower_manage_reroute_button->set_custom_minimum_size(Vector2(128, 40));
+    tower_manage_reroute_button->set_text("REROUTE");
+    tower_manage_reroute_button->connect("pressed", Callable(this, "_on_tower_manage_reroute_pressed"));
+    connect_hover(tower_manage_reroute_button, this);
+    actions->add_child(tower_manage_reroute_button);
+
     tower_manage_sell_button = memnew(Button);
     tower_manage_sell_button->set_name("TowerManageSellButton");
-    tower_manage_sell_button->set_custom_minimum_size(Vector2(120, 40));
+    tower_manage_sell_button->set_custom_minimum_size(Vector2(102, 40));
     tower_manage_sell_button->set_text("SELL");
     tower_manage_sell_button->connect("pressed", Callable(this, "_on_tower_manage_sell_pressed"));
     connect_hover(tower_manage_sell_button, this);
@@ -540,13 +550,17 @@ void GameHudNative::update_tower_manage_card(const Variant& managed_state) {
     tower_manage_stats_label->set_text(String(state.get("stats", "")));
     tower_manage_economy_label->set_text(String(state.get("economy", "")));
     tower_manage_upgrade_button->set_text(String(state.get("upgrade_text", "UPGRADE")));
+    tower_manage_reroute_button->set_text(String(state.get("reroute_text", "REROUTE")));
     tower_manage_sell_button->set_text(String(state.get("sell_text", "SELL")));
     tower_manage_upgrade_button->set_disabled(bool(state.get("upgrade_disabled", false)));
+    tower_manage_reroute_button->set_disabled(bool(state.get("reroute_disabled", false)));
+    tower_manage_reroute_button->set_tooltip_text(String(state.get("reroute_tip", "Move this tower to an empty slot between waves.")));
     tower_manage_sell_button->set_disabled(bool(state.get("sell_disabled", false)));
     Color accent = color_from_variant(state.get("accent", gold()), gold());
     tower_manage_card->add_theme_stylebox_override("panel", hud_panel_style(accent, 14, 12));
     tower_manage_title_label->add_theme_color_override("font_color", Color(accent.r, accent.g, accent.b, 1.0));
     apply_action_button(tower_manage_upgrade_button, tower_manage_upgrade_button->is_disabled() ? cyan() : gold(), "");
+    apply_action_button(tower_manage_reroute_button, tower_manage_reroute_button->is_disabled() ? cyan() : gold(), "");
     apply_action_button(tower_manage_sell_button, cyan(), "");
     apply_action_button(tower_manage_close_button, cyan(), "");
     position_tower_manage_card();
@@ -873,6 +887,12 @@ void GameHudNative::on_tower_button_pressed(const String& tower_type) { emit_sig
 void GameHudNative::on_tower_manage_upgrade_pressed() {
     if (managed_tower_ring >= 0 && managed_tower_slot >= 0) {
         emit_signal("tower_upgrade_requested", managed_tower_ring, managed_tower_slot);
+    }
+}
+
+void GameHudNative::on_tower_manage_reroute_pressed() {
+    if (managed_tower_ring >= 0 && managed_tower_slot >= 0) {
+        emit_signal("tower_reroute_requested", managed_tower_ring, managed_tower_slot);
     }
 }
 

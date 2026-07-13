@@ -36,6 +36,7 @@ const HEALTH_BAR_HEIGHT: float = 6.0
 const AUTO_START_DELAY: float = 3.0
 const PERFECT_ORBIT_SOL_BONUS: int = 12
 const PERFECT_ORBIT_SCORE_BONUS: int = 75
+const REROUTE_ORBIT_COST: int = 20
 const KILL_COMBO_WINDOW: float = 2.6
 const KILL_COMBO_MIN_COUNT: int = 3
 const KILL_COMBO_SCORE_STEP: int = 5
@@ -119,6 +120,8 @@ var wave_library: RefCounted
 var selected_tower: String = "photon_splitter"
 var managed_tower_ring: int = -1
 var managed_tower_slot: int = -1
+var reroute_tower_ring: int = -1
+var reroute_tower_slot: int = -1
 var run_mode: String = "campaign"
 var endless_mode: bool = false
 var no_flare_mode: bool = false
@@ -365,6 +368,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _place_tower_from_screen_position(screen_position: Vector2) -> void:
 	if not _can_build_towers():
+		return
+	if _reroute_pending():
+		_finish_reroute_from_screen_position(screen_position)
 		return
 
 	var click_pos: Vector2 = _screen_to_world(screen_position)
@@ -634,6 +640,9 @@ func _draw_orbit_rings(sun: Vector2) -> void:
 			if occupied:
 				outline_color = Color(1.0, 0.80, 0.25, 0.86)
 				core_color = Color(1.0, 0.86, 0.34, 0.82)
+			elif _reroute_pending():
+				outline_color = Color(0.42, 1.0, 0.62, 0.86)
+				core_color = Color(0.56, 1.0, 0.66, 0.76)
 			elif ring_blinded:
 				outline_color = Color(0.36, 0.42, 0.50, 0.36)
 				core_color = Color(0.34, 0.40, 0.48, 0.40)
@@ -1011,6 +1020,7 @@ func _build_ui() -> void:
 		"menu_requested": Callable(self, "_on_menu_pressed"),
 		"tower_selected": Callable(self, "_select_tower"),
 		"tower_upgrade_requested": Callable(self, "_on_tower_upgrade_requested"),
+		"tower_reroute_requested": Callable(self, "_on_tower_reroute_requested"),
 		"tower_sell_requested": Callable(self, "_on_tower_sell_requested"),
 		"tower_manage_closed": Callable(self, "_on_tower_manage_closed"),
 		"recenter_requested": Callable(self, "_reset_view"),
@@ -1401,6 +1411,27 @@ func _on_tower_upgrade_requested(ring_index: int, slot_index: int) -> void:
 	queue_redraw()
 
 
+func _on_tower_reroute_requested(ring_index: int, slot_index: int) -> void:
+	if GameState.game_phase != GameState.BETWEEN_WAVE:
+		_set_message("Reroute Orbit is only available between waves.", 1.8)
+		return
+	if not GameState.can_afford(REROUTE_ORBIT_COST):
+		_play_sfx("ui_insufficient_sol", 0.18)
+		_show_insufficient_sol_feedback()
+		_set_message("Need %d Sol Credits to reroute this tower." % REROUTE_ORBIT_COST, 2.0)
+		_update_ui()
+		return
+	if _tower_index_for_slot(ring_index, slot_index) == -1:
+		_clear_managed_tower()
+		return
+	reroute_tower_ring = ring_index
+	reroute_tower_slot = slot_index
+	_set_message("Reroute armed. Click an empty orbital slot.", 2.2)
+	_play_sfx("ui_intel_update", 0.12)
+	_update_ui()
+	queue_redraw()
+
+
 func _on_tower_sell_requested(ring_index: int, slot_index: int) -> void:
 	var tower_index: int = _tower_index_for_slot(ring_index, slot_index)
 	if tower_index == -1:
@@ -1413,6 +1444,7 @@ func _on_tower_sell_requested(ring_index: int, slot_index: int) -> void:
 	var tower_label: String = str(_tower_config(str(tower["type"]))["label"])
 	var color: Color = _tower_config(str(tower["type"]))["color"]
 	towers.remove_at(tower_index)
+	_clear_reroute()
 	GameState.add_credits(refund)
 	_clear_managed_tower(false)
 	_add_visual_effect("sell", tower_pos, color, 0.50, 36.0)
@@ -1424,6 +1456,7 @@ func _on_tower_sell_requested(ring_index: int, slot_index: int) -> void:
 
 
 func _on_tower_manage_closed() -> void:
+	_clear_reroute()
 	_clear_managed_tower()
 
 
@@ -2607,6 +2640,7 @@ func _select_managed_tower_by_index(tower_index: int) -> void:
 func _clear_managed_tower(refresh_ui: bool = true) -> void:
 	if managed_tower_ring == -1 and managed_tower_slot == -1:
 		return
+	_clear_reroute()
 	managed_tower_ring = -1
 	managed_tower_slot = -1
 	if refresh_ui:
@@ -2627,6 +2661,64 @@ func _is_managed_tower(tower: Dictionary) -> bool:
 		and int(tower["ring"]) == managed_tower_ring
 		and int(tower["slot"]) == managed_tower_slot
 	)
+
+
+func _reroute_pending() -> bool:
+	return reroute_tower_ring >= 0 and reroute_tower_slot >= 0
+
+
+func _clear_reroute() -> void:
+	reroute_tower_ring = -1
+	reroute_tower_slot = -1
+
+
+func _finish_reroute_from_screen_position(screen_position: Vector2) -> void:
+	if GameState.game_phase != GameState.BETWEEN_WAVE:
+		_clear_reroute()
+		_set_message("Reroute canceled. Towers can only reroute between waves.", 1.8)
+		_update_ui()
+		queue_redraw()
+		return
+
+	var tower_index: int = _tower_index_for_slot(reroute_tower_ring, reroute_tower_slot)
+	if tower_index == -1:
+		_clear_reroute()
+		_clear_managed_tower()
+		return
+
+	var slot: Dictionary = _nearest_ring_slot(_screen_to_world(screen_position))
+	if slot.is_empty():
+		_set_message("Choose an empty orbital slot to reroute.", 1.8)
+		return
+	if bool(slot.get("occupied", false)):
+		_set_message("That slot is occupied. Pick an empty slot.", 1.8)
+		return
+	if not GameState.spend_credits(REROUTE_ORBIT_COST):
+		_play_sfx("ui_insufficient_sol", 0.18)
+		_show_insufficient_sol_feedback()
+		_set_message("Need %d Sol Credits to reroute this tower." % REROUTE_ORBIT_COST, 2.0)
+		_update_ui()
+		return
+
+	var tower: Dictionary = towers[tower_index]
+	var old_pos: Vector2 = _tower_position(tower)
+	tower["ring"] = int(slot["ring_index"])
+	tower["slot"] = int(slot["slot_index"])
+	tower["angle"] = float(slot["angle"])
+	towers[tower_index] = tower
+	managed_tower_ring = int(slot["ring_index"])
+	managed_tower_slot = int(slot["slot_index"])
+	_clear_reroute()
+
+	var new_pos: Vector2 = _tower_position(tower)
+	var color: Color = _tower_config(str(tower["type"]))["color"]
+	_add_shot(old_pos, new_pos, color, 0.34, 3.5, "beam")
+	_add_visual_effect("place", new_pos, color, 0.55, 38.0)
+	_add_text_effect("REROUTE  -%d SOL" % REROUTE_ORBIT_COST, new_pos + Vector2(0.0, -38.0), Color(1.0, 0.84, 0.34, 0.98), 0.86)
+	_play_sfx("upgrade", 0.45)
+	_set_message("%s rerouted to %s slot %d." % [_tower_config(str(tower["type"]))["label"], slot["ring_name"], int(slot["slot_index"]) + 1], 2.0)
+	_update_ui()
+	queue_redraw()
 
 
 func _tower_position(tower: Dictionary) -> Vector2:
@@ -2953,6 +3045,9 @@ func _draw_build_preview() -> void:
 	var occupied: bool = bool(slot.get("occupied", false))
 	var slot_pos: Vector2 = _ring_slot_position(int(slot["ring_index"]), int(slot["slot_index"]))
 	var accent: Color = cfg["color"]
+	if _reroute_pending():
+		can_afford = GameState.can_afford(REROUTE_ORBIT_COST)
+		accent = Color(0.42, 1.0, 0.62) if can_afford else Color(0.50, 0.58, 0.66)
 	if occupied:
 		accent = Color(1.0, 0.25, 0.16)
 	elif not can_afford:
@@ -2966,7 +3061,7 @@ func _draw_build_preview() -> void:
 		draw_line(slot_pos + Vector2(-13.0, 13.0), slot_pos + Vector2(13.0, -13.0), Color(1.0, 0.30, 0.18, 0.92), 2.0)
 		return
 
-	if can_afford:
+	if can_afford and not _reroute_pending():
 		draw_arc(slot_pos, float(cfg["range"]), 0.0, TAU, 160, Color(accent.r, accent.g, accent.b, 0.050), 1.2, true)
 		draw_circle(slot_pos, 22.0, Color(accent.r, accent.g, accent.b, 0.13))
 		var texture = _tower_texture(selected_tower)
@@ -3491,7 +3586,12 @@ func _managed_tower_view_data() -> Dictionary:
 		return {}
 
 	var tower: Dictionary = towers[tower_index]
-	return tower_library.call("managed_view_data", tower, RINGS, GameState.sol_credits) as Dictionary
+	var data: Dictionary = tower_library.call("managed_view_data", tower, RINGS, GameState.sol_credits) as Dictionary
+	var can_reroute: bool = GameState.game_phase == GameState.BETWEEN_WAVE and GameState.can_afford(REROUTE_ORBIT_COST)
+	data["reroute_text"] = "REROUTE\n%d SOL" % REROUTE_ORBIT_COST
+	data["reroute_disabled"] = not can_reroute
+	data["reroute_tip"] = "Move this tower to an empty slot between waves." if GameState.game_phase == GameState.BETWEEN_WAVE else "Reroute Orbit is only available between waves."
+	return data
 
 
 func _end_state_view_data() -> Dictionary:

@@ -77,6 +77,7 @@ private:
     Label* tower_manage_stats_label = nullptr;
     Label* tower_manage_economy_label = nullptr;
     Button* tower_manage_upgrade_button = nullptr;
+    Button* tower_manage_reroute_button = nullptr;
     Button* tower_manage_sell_button = nullptr;
     Button* tower_manage_close_button = nullptr;
     int managed_tower_ring = -1;
@@ -131,6 +132,7 @@ private:
     void on_menu_button_pressed();
     void on_tower_button_pressed(const String& tower_type);
     void on_tower_manage_upgrade_pressed();
+    void on_tower_manage_reroute_pressed();
     void on_tower_manage_sell_pressed();
     void on_tower_manage_close_pressed();
     void on_center_view_button_pressed();
