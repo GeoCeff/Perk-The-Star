@@ -5,7 +5,8 @@
     "spawn_interval": 1.1,
     "enemies": [
         { "variant": "drifter", "count": 36 },
-        { "variant": "bloom", "count": 10 },
+        { "variant": "bloom", "count": 6 },
+        { "variant": "splitter_bloom", "count": 4 },
         { "variant": "burrower", "count": 6 },
         { "variant": "mimic", "count": 6 },
         { "variant": "farmer", "count": 10 }
@@ -17,7 +18,7 @@
                 "drifter", "drifter", "drifter", "drifter", "drifter",
                 "drifter", "drifter", "drifter", "drifter", "drifter",
                 "drifter", "drifter", "drifter",
-                "bloom", "bloom", "bloom", "bloom", "bloom", "bloom"
+                "bloom", "bloom", "bloom", "bloom", "splitter_bloom", "splitter_bloom"
             ],
             "spawn_pattern": "ring",
             "delay_before": 0.0
@@ -38,7 +39,7 @@
                 "drifter", "drifter", "drifter", "drifter", "drifter",
                 "drifter", "drifter", "drifter",
                 "mimic", "mimic", "mimic", "mimic", "mimic", "mimic",
-                "bloom", "bloom", "bloom", "bloom",
+                "bloom", "bloom", "splitter_bloom", "splitter_bloom",
                 "farmer", "farmer", "farmer", "farmer"
             ],
             "spawn_pattern": "ring",
@@ -48,5 +49,5 @@
     "event": null,
     "reward_base": 190,
     "escalation_threshold_seconds": 70,
-    "tutorial_hint": "Final swarm before Prime. Upgrade slows first, then finish with Helios or Tardigrade."
+    "tutorial_hint": "Final swarm before Prime. Splitter Blooms break into two weak Drifters; burst or slow them before the lanes spread."
 }

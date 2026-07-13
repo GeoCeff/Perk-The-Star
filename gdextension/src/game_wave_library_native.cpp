@@ -19,6 +19,7 @@ Array variant_keys() {
     keys.append("mimic");
     keys.append("farmer");
     keys.append("prime");
+    keys.append("splitter_bloom");
     return keys;
 }
 
@@ -42,6 +43,7 @@ double float_value(const Variant& value, double fallback = 0.0) {
 
 String enemy_label(const String& variant) {
     if (variant == "bloom") return "Bloom";
+    if (variant == "splitter_bloom") return "Splitter Bloom";
     if (variant == "burrower") return "Coronal Burrower";
     if (variant == "mimic") return "Photon Mimic";
     if (variant == "farmer") return "Solar Farmer";
@@ -226,6 +228,7 @@ String GameWaveLibraryNative::variant_key(const Variant& raw) const {
     cleaned = cleaned.replace(" ", "_").replace("-", "_");
     if (cleaned == "drifter") return "drifter";
     if (cleaned == "bloom") return "bloom";
+    if (cleaned == "splitter_bloom" || cleaned == "splitter bloom") return "splitter_bloom";
     if (cleaned == "burrower" || cleaned == "coronal_burrower") return "burrower";
     if (cleaned == "mimic" || cleaned == "photon_mimic") return "mimic";
     if (cleaned == "farmer" || cleaned == "solar_farmer") return "farmer";
@@ -269,6 +272,7 @@ String GameWaveLibraryNative::warning_tags(const Dictionary& wave_data) const {
         }
         seen[variant] = true;
         if (variant == "bloom") tags.append("SPLIT");
+        else if (variant == "splitter_bloom") tags.append("SPLITTER");
         else if (variant == "burrower") tags.append("BURROW");
         else if (variant == "mimic") tags.append("MIMIC");
         else if (variant == "farmer") tags.append("ABSORB");
@@ -296,6 +300,7 @@ String GameWaveLibraryNative::counter_hint(const Dictionary& wave_data) const {
     if (variants.has("farmer")) return "COUNTER: Cryo or Magnetic first; avoid feeding Farmers with energy.";
     if (variants.has("mimic")) return "COUNTER: Mix Bio-Lab, Cryo, Magnetic, or Helios with Photon.";
     if (variants.has("burrower")) return "COUNTER: Build Bio-Lab before Burrowers reach the Sun.";
+    if (variants.has("splitter_bloom")) return "COUNTER: Burst Splitter Blooms before their Drifters spread.";
     if (variants.has("bloom")) return "COUNTER: Slow Blooms before they split into Drifters.";
     Variant event_value = wave_data.get("event", Dictionary());
     if (event_value.get_type() == Variant::DICTIONARY) {
@@ -334,6 +339,7 @@ String GameWaveLibraryNative::clean_hint(const String& text, const String& wave_
 
 String GameWaveLibraryNative::enemy_short_label(const String& variant) const {
     if (variant == "burrower") return "Burrower";
+    if (variant == "splitter_bloom") return "Splitter";
     if (variant == "mimic") return "Mimic";
     if (variant == "farmer") return "Farmer";
     if (variant == "prime") return "Prime";

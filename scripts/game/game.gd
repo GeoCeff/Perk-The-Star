@@ -38,6 +38,7 @@ const PERFECT_ORBIT_SOL_BONUS: int = 12
 const PERFECT_ORBIT_SCORE_BONUS: int = 75
 const REROUTE_ORBIT_COST: int = 20
 const COMET_CACHE_VARIANT: String = "comet_cache"
+const SPLITTER_BLOOM_VARIANT: String = "splitter_bloom"
 const KILL_COMBO_WINDOW: float = 2.6
 const KILL_COMBO_MIN_COUNT: int = 3
 const KILL_COMBO_SCORE_STEP: int = 5
@@ -2205,7 +2206,8 @@ func _show_wave_banner(title: String, subtitle: String, accent: Color, duration:
 
 func _spawn_enemy(variant: String, spawn_pos = null) -> void:
 	var key: String = _wave_variant_key(variant)
-	var cfg: Dictionary = _enemy_config(key)
+	var cfg_key: String = "bloom" if key == SPLITTER_BLOOM_VARIANT else key
+	var cfg: Dictionary = _enemy_config(cfg_key)
 	var sun: Vector2 = _sun_pos()
 	var angle: float = randf() * TAU
 	var distance: float = _outer_ring_radius() + ENEMY_SPAWN_PADDING
@@ -2214,14 +2216,14 @@ func _spawn_enemy(variant: String, spawn_pos = null) -> void:
 		pos = spawn_pos
 	var move_angle: float = (sun - pos).angle()
 	var initial_direction: Vector2 = (sun - pos).normalized() if sun.distance_squared_to(pos) > 0.001 else Vector2.ZERO
-	var mass: float = float(ENEMY_MASSES.get(key, 1.0))
+	var mass: float = float(ENEMY_MASSES.get(cfg_key, 1.0))
 	if gameplay_math != null:
-		mass = float(gameplay_math.call("get_enemy_mass", key))
+		mass = float(gameplay_math.call("get_enemy_mass", cfg_key))
 	var hp_scale: float = float(current_wave_data.get("enemy_hp_scale", 1.0))
 	var speed_scale: float = float(current_wave_data.get("enemy_speed_scale", 1.0))
 	var damage_scale: float = float(current_wave_data.get("enemy_damage_scale", 1.0))
 	var reward_scale: float = float(current_wave_data.get("enemy_reward_scale", 1.0))
-	var base_hp: float = float(cfg["hp"]) * hp_scale
+	var base_hp: float = float(cfg["hp"]) * hp_scale * (0.82 if key == SPLITTER_BLOOM_VARIANT else 1.0)
 	var base_speed: float = float(cfg["speed"]) * speed_scale
 	var breach_damage: float = float(cfg["damage"]) * damage_scale
 	var enemy_reward: int = max(1, int(round(float(cfg["reward"]) * reward_scale)))
@@ -2232,7 +2234,7 @@ func _spawn_enemy(variant: String, spawn_pos = null) -> void:
 		"uid": enemy_uid,
 		"variant": key,
 		"variant_id": cfg["variant_id"],
-		"label": cfg["label"],
+		"label": "Splitter Bloom" if key == SPLITTER_BLOOM_VARIANT else cfg["label"],
 		"pos": pos,
 		"hp": base_hp,
 		"max_hp": base_hp,
@@ -2241,10 +2243,10 @@ func _spawn_enemy(variant: String, spawn_pos = null) -> void:
 		"mass": mass,
 		"max_speed": base_speed * (2.25 if key != "prime" else 1.65),
 		"damage": breach_damage,
-		"reward": enemy_reward,
+		"reward": max(1, int(round(float(enemy_reward) * (0.85 if key == SPLITTER_BLOOM_VARIANT else 1.0)))),
 		"radius": cfg["radius"],
 		"draw_size": cfg["draw_size"],
-		"color": cfg["color"],
+		"color": Color(1.0, 0.72, 0.38) if key == SPLITTER_BLOOM_VARIANT else cfg["color"],
 		"endless_hp_scale": hp_scale,
 		"slow_timer": 0.0,
 		"hit_timer": 0.0,
@@ -2587,10 +2589,19 @@ func _defeat_enemy(enemy_index: int) -> void:
 
 	enemies.remove_at(enemy_index)
 
-	if variant == "bloom":
-		for i in range(3):
-			var offset: Vector2 = Vector2.RIGHT.rotated(TAU * float(i) / 3.0) * 24.0
+	if variant == "bloom" or variant == SPLITTER_BLOOM_VARIANT:
+		var split_count: int = 2 if variant == SPLITTER_BLOOM_VARIANT else 3
+		for i in range(split_count):
+			var offset: Vector2 = Vector2.RIGHT.rotated(TAU * float(i) / float(split_count)) * 24.0
 			_spawn_enemy("drifter", pos + offset)
+			if variant == SPLITTER_BLOOM_VARIANT and not enemies.is_empty():
+				var child: Dictionary = enemies[enemies.size() - 1]
+				child["hp"] = maxf(8.0, float(child["hp"]) * 0.55)
+				child["max_hp"] = child["hp"]
+				child["reward"] = max(1, int(round(float(child["reward"]) * 0.50)))
+				child["radius"] = float(child["radius"]) * 0.85
+				child["draw_size"] = float(child["draw_size"]) * 0.85
+				enemies[enemies.size() - 1] = child
 	elif variant == "prime":
 		prime_frenzy_interval = 0.0
 		prime_frenzy_timer = 0.0
@@ -3064,6 +3075,9 @@ func _draw_enemy_status_markers(enemy: Dictionary, pos: Vector2, radius: float) 
 	elif variant == "farmer":
 		draw_arc(pos, radius + 10.0, 0.0, TAU, 50, Color(0.66, 1.0, 0.42, 0.35), 1.4, true)
 		_draw_enemy_status_tag(Vector2(pos.x, tag_y), "ABSORB", Color(0.76, 1.0, 0.48, 0.94))
+	elif variant == SPLITTER_BLOOM_VARIANT:
+		draw_arc(pos, radius + 10.0, 0.0, TAU, 50, Color(1.0, 0.72, 0.38, 0.42), 1.4, true)
+		_draw_enemy_status_tag(Vector2(pos.x, tag_y), "SPLIT x2", Color(1.0, 0.78, 0.42, 0.95))
 	elif variant == COMET_CACHE_VARIANT:
 		draw_arc(pos, radius + 12.0, 0.0, TAU, 64, Color(0.38, 0.94, 1.0, 0.52), 1.8, true)
 		_draw_enemy_status_tag(Vector2(pos.x, tag_y), "CACHE", Color(0.46, 1.0, 1.0, 0.95))
@@ -3773,11 +3787,15 @@ func _tower_texture(tower_type: String):
 
 
 func _enemy_texture(variant: String):
+	if variant == SPLITTER_BLOOM_VARIANT:
+		return textures["enemies"].get("bloom", null)
 	return textures["enemies"].get(variant, null)
 
 
 func _enemy_animation_texture(enemy: Dictionary):
 	var variant: String = str(enemy.get("variant", "drifter"))
+	if variant == SPLITTER_BLOOM_VARIANT:
+		variant = "bloom"
 	var state: String = _enemy_animation_state(enemy)
 	var frames: Array = _enemy_animation_frames(variant, state)
 	if frames.is_empty() and state != "idle":
@@ -3827,6 +3845,8 @@ func _enemy_animation_fps(variant: String, state: String) -> float:
 
 
 func _enemy_sprite_draw_angle(enemy: Dictionary, variant: String) -> float:
+	if variant == SPLITTER_BLOOM_VARIANT:
+		variant = "bloom"
 	var move_angle: float = float(enemy.get("sprite_angle", enemy.get("move_angle", 0.0)))
 	var base_angle: float = float(ENEMY_ANIMATION_BASE_ANGLES.get(variant, 0.0))
 	if variant == "prime":
@@ -3837,6 +3857,8 @@ func _enemy_sprite_draw_angle(enemy: Dictionary, variant: String) -> float:
 
 
 func _enemy_preview_texture(variant: String):
+	if variant == SPLITTER_BLOOM_VARIANT:
+		variant = "bloom"
 	var idle_frames: Array = _enemy_animation_frames(variant, "idle")
 	if not idle_frames.is_empty():
 		return idle_frames[0]
@@ -4041,6 +4063,9 @@ func _endless_wave_data(wave_number: int) -> Dictionary:
 		spawns.append({"variant": "mimic", "count": mimics, "interval": interval + 0.20})
 	if farmers > 0:
 		spawns.append({"variant": "farmer", "count": farmers, "interval": interval + 0.25})
+	if wave >= 11 and blooms >= 3:
+		var splitter_blooms: int = max(1, int(floor(float(blooms) / 3.0)))
+		spawns.append({"variant": SPLITTER_BLOOM_VARIANT, "count": splitter_blooms, "interval": interval + 0.22})
 
 	var wave_type: String = "normal"
 	var wave_name: String = "Endless Contact"
