@@ -1035,17 +1035,6 @@ func _build_ui() -> void:
 		var callback: Callable = hud_connections[signal_name]
 		if game_hud.has_signal(signal_name) and not game_hud.is_connected(signal_name, callback):
 			game_hud.connect(signal_name, callback)
-	var tech_button := game_hud.get_node_or_null("Hud/ActionsPanel/ActionRow/TechButton") as Button
-	if tech_button != null:
-		var tech_callback := Callable(self, "_on_tech_tree_pressed")
-		if not tech_button.pressed.is_connected(tech_callback):
-			tech_button.pressed.connect(tech_callback)
-		var hover_callback := Callable(self, "_on_ui_hovered")
-		if not tech_button.mouse_entered.is_connected(hover_callback):
-			tech_button.mouse_entered.connect(hover_callback)
-		SpaceTheme.call("apply_secondary_button", tech_button)
-		tech_button.add_theme_font_size_override("font_size", 12)
-
 
 func _draft_packages() -> Array:
 	return [

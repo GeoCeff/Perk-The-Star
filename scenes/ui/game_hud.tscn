@@ -47,7 +47,7 @@ anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -1034.0
 offset_top = 18.0
-offset_right = -400.0
+offset_right = -460.0
 offset_bottom = 124.0
 grow_horizontal = 0
 
@@ -163,7 +163,7 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -498.0
+offset_left = -424.0
 offset_top = 18.0
 offset_right = -28.0
 offset_bottom = 124.0
@@ -194,12 +194,6 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "OVER\n45"
 clip_text = true
-
-[node name="TechButton" type="Button" parent="Hud/ActionsPanel/ActionRow"]
-custom_minimum_size = Vector2(68, 46)
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "TECH"
 
 [node name="MenuButton" type="Button" parent="Hud/ActionsPanel/ActionRow"]
 custom_minimum_size = Vector2(62, 46)

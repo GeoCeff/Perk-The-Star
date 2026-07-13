@@ -18,6 +18,7 @@ namespace {
 
 constexpr const char* CODEX_SCENE_PATH = "res://scenes/ui/codex.tscn";
 constexpr const char* SETTINGS_SCENE_PATH = "res://scenes/ui/settings_overlay.tscn";
+constexpr const char* TECH_TREE_OVERLAY_SCENE_PATH = "res://scenes/ui/tech_tree_overlay.tscn";
 constexpr const char* MAIN_MENU_SCENE_PATH = "res://scenes/main_menu.tscn";
 
 template <typename T>
@@ -30,6 +31,7 @@ T* node_as(Node* owner, const char* path) {
 void GamePauseMenuNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("_open_codex"), &GamePauseMenuNative::open_codex);
     ClassDB::bind_method(D_METHOD("_open_settings"), &GamePauseMenuNative::open_settings);
+    ClassDB::bind_method(D_METHOD("_open_tech_tree"), &GamePauseMenuNative::open_tech_tree);
     ClassDB::bind_method(D_METHOD("_return_to_main_menu"), &GamePauseMenuNative::return_to_main_menu);
     ClassDB::bind_method(D_METHOD("_retry_run"), &GamePauseMenuNative::retry_run);
     ClassDB::bind_method(D_METHOD("_close_pause_menu"), &GamePauseMenuNative::close_pause_menu);
@@ -42,6 +44,7 @@ void GamePauseMenuNative::_ready() {
     subtitle_label = node_as<Label>(this, "OverlayRoot/PausePanel/PauseMargin/PauseBox/SubtitleLabel");
     codex_button = node_as<Button>(this, "OverlayRoot/PausePanel/PauseMargin/PauseBox/ButtonBox/CodexButton");
     settings_button = node_as<Button>(this, "OverlayRoot/PausePanel/PauseMargin/PauseBox/ButtonBox/SettingsButton");
+    tech_tree_button = node_as<Button>(this, "OverlayRoot/PausePanel/PauseMargin/PauseBox/ButtonBox/TechTreeButton");
     retry_button = node_as<Button>(this, "OverlayRoot/PausePanel/PauseMargin/PauseBox/ButtonBox/RetryButton");
     main_menu_button = node_as<Button>(this, "OverlayRoot/PausePanel/PauseMargin/PauseBox/ButtonBox/MainMenuButton");
     back_button = node_as<Button>(this, "OverlayRoot/PausePanel/PauseMargin/PauseBox/ButtonBox/BackButton");
@@ -76,6 +79,7 @@ void GamePauseMenuNative::_unhandled_input(const Ref<InputEvent>& event) {
 void GamePauseMenuNative::bind_buttons() {
     if (codex_button != nullptr) codex_button->connect("pressed", Callable(this, "_open_codex"));
     if (settings_button != nullptr) settings_button->connect("pressed", Callable(this, "_open_settings"));
+    if (tech_tree_button != nullptr) tech_tree_button->connect("pressed", Callable(this, "_open_tech_tree"));
     if (retry_button != nullptr) retry_button->connect("pressed", Callable(this, "_retry_run"));
     if (main_menu_button != nullptr) main_menu_button->connect("pressed", Callable(this, "_return_to_main_menu"));
     if (back_button != nullptr) back_button->connect("pressed", Callable(this, "_close_pause_menu"));
@@ -93,10 +97,11 @@ void GamePauseMenuNative::apply_style() {
     if (subtitle_label != nullptr) subtitle_label->add_theme_color_override("font_color", Color(0.62, 0.88, 0.98, 0.96));
     theme->call("apply_secondary_button", codex_button, theme->get("ICON_CODEX_PATH"));
     theme->call("apply_secondary_button", settings_button, theme->get("ICON_SETTINGS_PATH"));
+    theme->call("apply_secondary_button", tech_tree_button, theme->get("ICON_CODEX_PATH"));
     theme->call("apply_secondary_button", retry_button, theme->get("ICON_PLAY_PATH"));
     theme->call("apply_danger_button", main_menu_button, theme->get("ICON_BACK_PATH"));
     theme->call("apply_primary_button", back_button, theme->get("ICON_PLAY_PATH"));
-    Button* buttons[] = {codex_button, settings_button, retry_button, main_menu_button, back_button};
+    Button* buttons[] = {codex_button, settings_button, tech_tree_button, retry_button, main_menu_button, back_button};
     for (Button* button : buttons) {
         if (button != nullptr) {
             button->add_theme_font_size_override("font_size", 20);
@@ -110,6 +115,10 @@ void GamePauseMenuNative::open_codex() {
 
 void GamePauseMenuNative::open_settings() {
     open_embedded_overlay(SETTINGS_SCENE_PATH);
+}
+
+void GamePauseMenuNative::open_tech_tree() {
+    open_embedded_overlay(TECH_TREE_OVERLAY_SCENE_PATH);
 }
 
 void GamePauseMenuNative::open_embedded_overlay(const String& scene_path) {
@@ -135,6 +144,9 @@ void GamePauseMenuNative::open_embedded_overlay(const String& scene_path) {
     Button* close_button = Object::cast_to<Button>(overlay->get_node_or_null(NodePath("panel/margin/root_box/content_box/nav_box/close_button")));
     if (close_button == nullptr) {
         close_button = Object::cast_to<Button>(overlay->get_node_or_null(NodePath("settings_panel/settings_margin/settings_box/settings_close")));
+    }
+    if (close_button == nullptr) {
+        close_button = Object::cast_to<Button>(overlay->get_node_or_null(NodePath("OverlayRoot/BackButton")));
     }
     if (close_button != nullptr) {
         close_button->grab_focus();

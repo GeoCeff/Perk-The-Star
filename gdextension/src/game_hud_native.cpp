@@ -720,9 +720,9 @@ void GameHudNative::fit_layout_to_viewport() {
     double viewport_width = get_viewport()->get_visible_rect().size.x;
     bool compact = viewport_width < 1500.0;
     if (compact) {
-        top_panel->set_offset(SIDE_RIGHT, std::max(460.0, std::min(660.0, viewport_width - 436.0)));
+        top_panel->set_offset(SIDE_RIGHT, std::max(460.0, std::min(660.0, viewport_width - 460.0)));
         status_panel->set_offset(SIDE_LEFT, -1060.0);
-        status_panel->set_offset(SIDE_RIGHT, -426.0);
+        status_panel->set_offset(SIDE_RIGHT, -460.0);
         status_panel->set_offset(SIDE_TOP, 140.0);
         status_panel->set_offset(SIDE_BOTTOM, 246.0);
         wave_intel_panel->set_offset(SIDE_TOP, 264.0);
@@ -730,7 +730,7 @@ void GameHudNative::fit_layout_to_viewport() {
     } else {
         top_panel->set_offset(SIDE_RIGHT, 820.0);
         status_panel->set_offset(SIDE_LEFT, -1060.0);
-        status_panel->set_offset(SIDE_RIGHT, -426.0);
+        status_panel->set_offset(SIDE_RIGHT, -460.0);
         status_panel->set_offset(SIDE_TOP, 18.0);
         status_panel->set_offset(SIDE_BOTTOM, 124.0);
         wave_intel_panel->set_offset(SIDE_TOP, 146.0);
