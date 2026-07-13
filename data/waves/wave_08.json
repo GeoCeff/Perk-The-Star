@@ -8,8 +8,15 @@
         { "variant": "bloom", "count": 6 },
         { "variant": "farmer", "count": 5 }
     ],
-    "event": null,
+    "event": {
+        "type": "comet_cache",
+        "trigger_at_percent": 0.32,
+        "hp": 135,
+        "reward": 75,
+        "duration": 18,
+        "expire_spawns": 5
+    },
     "reward_base": 120,
     "escalation_threshold_seconds": 50,
-    "tutorial_hint": "Solar Farmers gain HP from Photon or Helios hits. Slow them first; slowed Farmer kills pay bonus Sol."
+    "tutorial_hint": "Solar Farmers gain HP from Photon or Helios hits. Slow them first; a Comet Cache can pay bonus Sol if destroyed before it breaks open."
 }

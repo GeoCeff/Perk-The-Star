@@ -37,6 +37,7 @@ const AUTO_START_DELAY: float = 3.0
 const PERFECT_ORBIT_SOL_BONUS: int = 12
 const PERFECT_ORBIT_SCORE_BONUS: int = 75
 const REROUTE_ORBIT_COST: int = 20
+const COMET_CACHE_VARIANT: String = "comet_cache"
 const KILL_COMBO_WINDOW: float = 2.6
 const KILL_COMBO_MIN_COUNT: int = 3
 const KILL_COMBO_SCORE_STEP: int = 5
@@ -1519,6 +1520,8 @@ func _process_wave_event(_delta: float) -> void:
 			prime_frenzy_timer = prime_frenzy_interval
 			prime_frenzy_max_active = max(int(wave_event.get("max_active", 18)), 1)
 			_set_message("Prime frenzy armed. Drifters will keep arriving while Prime lives.", 4.0)
+		"comet_cache":
+			_spawn_comet_cache(wave_event)
 
 
 func _process_wave_modifiers(delta: float) -> void:
@@ -1801,8 +1804,23 @@ func _process_enemies(delta: float) -> void:
 	var survivors: Array = []
 	var reached_sun: bool = false
 	var direct_breach: bool = false
+	var cache_spawn_positions: Array = []
 	for enemy in enemies:
 		if float(enemy["hp"]) <= 0.0:
+			continue
+
+		if str(enemy["variant"]) == COMET_CACHE_VARIANT:
+			enemy["cache_timer"] = float(enemy.get("cache_timer", 0.0)) - delta
+			if float(enemy["cache_timer"]) <= 0.0:
+				var cache_pos: Vector2 = enemy["pos"]
+				var spawn_count: int = max(0, int(enemy.get("expire_spawns", 0)))
+				for i in range(spawn_count):
+					var offset: Vector2 = Vector2.RIGHT.rotated(TAU * float(i) / max(1.0, float(spawn_count))) * 24.0
+					cache_spawn_positions.append(cache_pos + offset)
+				_add_visual_effect("burst", cache_pos, Color(0.40, 0.92, 1.0), 0.55, float(enemy["radius"]) + 28.0)
+				_set_message("Comet Cache expired. Extra Drifters broke loose.", 2.4)
+			else:
+				survivors.append(enemy)
 			continue
 
 		var pos: Vector2 = enemy["pos"]
@@ -1859,6 +1877,8 @@ func _process_enemies(delta: float) -> void:
 		survivors.append(enemy)
 
 	enemies = survivors
+	for spawn_pos in cache_spawn_positions:
+		_spawn_enemy("drifter", spawn_pos)
 	if reached_sun and direct_breach:
 		_register_sun_hit()
 		_set_message("The corona was breached. Luminosity is falling.", 2.0)
@@ -2242,6 +2262,44 @@ func _spawn_enemy(variant: String, spawn_pos = null) -> void:
 		_update_ui()
 
 
+func _spawn_comet_cache(event: Dictionary) -> void:
+	var sun: Vector2 = _sun_pos()
+	var angle: float = randf() * TAU
+	var pos: Vector2 = sun + Vector2(cos(angle), sin(angle)) * (_outer_ring_radius() + float(event.get("distance", 56.0)))
+	var enemy_uid: int = next_enemy_uid
+	next_enemy_uid += 1
+	enemies.append({
+		"uid": enemy_uid,
+		"variant": COMET_CACHE_VARIANT,
+		"variant_id": -1,
+		"label": "Comet Cache",
+		"pos": pos,
+		"hp": float(event.get("hp", 125.0)),
+		"max_hp": float(event.get("hp", 125.0)),
+		"speed": 0.0,
+		"velocity": Vector2.ZERO,
+		"mass": 99.0,
+		"max_speed": 0.0,
+		"damage": 0.0,
+		"reward": int(event.get("reward", 65)),
+		"radius": 22.0,
+		"draw_size": 54.0,
+		"color": Color(0.38, 0.94, 1.0),
+		"slow_timer": 0.0,
+		"hit_timer": 0.0,
+		"heal_timer": 0.0,
+		"anim_offset": 0.0,
+		"move_angle": (sun - pos).angle(),
+		"sprite_angle": (sun - pos).angle(),
+		"cache_timer": float(event.get("duration", 18.0)),
+		"expire_spawns": int(event.get("expire_spawns", 4)),
+	})
+	_show_wave_banner("Comet Cache", "Destroy it for Sol before it breaks open.", Color(0.38, 0.94, 1.0), 3.2)
+	_set_message("Comet Cache detected outside the outer ring. Destroy it for bonus Sol.", 3.4)
+	_play_sfx("ui_intel_update", 0.18)
+	_update_ui()
+
+
 func _find_target_for_tower(tower: Dictionary) -> int:
 	var tower_pos: Vector2 = _tower_position(tower)
 	var sun: Vector2 = _sun_pos()
@@ -2502,6 +2560,17 @@ func _defeat_enemy(enemy_index: int) -> void:
 	var enemy: Dictionary = enemies[enemy_index]
 	var variant: String = str(enemy["variant"])
 	var pos: Vector2 = enemy["pos"]
+	if variant == COMET_CACHE_VARIANT:
+		var reward: int = int(enemy["reward"])
+		GameState.add_credits(reward)
+		GameState.add_score(reward)
+		_add_enemy_death_effect(enemy)
+		_add_text_effect("COMET CACHE  +%d SOL" % reward, pos + Vector2(0.0, -float(enemy["radius"]) - 24.0), Color(0.46, 1.0, 1.0, 0.98), 0.92, 15)
+		_play_sfx("wave_clear", 0.18)
+		enemies.remove_at(enemy_index)
+		_set_message("Comet Cache secured. +%d Sol Credits." % reward, 2.2)
+		_update_ui()
+		return
 
 	var reward: int = int(enemy["reward"])
 	if _has_tech("salvage_culture"):
@@ -2995,6 +3064,9 @@ func _draw_enemy_status_markers(enemy: Dictionary, pos: Vector2, radius: float) 
 	elif variant == "farmer":
 		draw_arc(pos, radius + 10.0, 0.0, TAU, 50, Color(0.66, 1.0, 0.42, 0.35), 1.4, true)
 		_draw_enemy_status_tag(Vector2(pos.x, tag_y), "ABSORB", Color(0.76, 1.0, 0.48, 0.94))
+	elif variant == COMET_CACHE_VARIANT:
+		draw_arc(pos, radius + 12.0, 0.0, TAU, 64, Color(0.38, 0.94, 1.0, 0.52), 1.8, true)
+		_draw_enemy_status_tag(Vector2(pos.x, tag_y), "CACHE", Color(0.46, 1.0, 1.0, 0.95))
 
 
 func _draw_enemy_status_tag(anchor: Vector2, text: String, color: Color) -> void:
@@ -4036,7 +4108,9 @@ func _endless_wave_data(wave_number: int) -> Dictionary:
 		}
 
 	var event: Dictionary = {}
-	if wave >= 9 and wave % 9 == 0:
+	if wave >= 7 and wave % 7 == 0:
+		event = {"type": "comet_cache", "trigger_at_percent": 0.28, "hp": 115.0 + float(wave) * 8.0, "reward": 55 + wave * 5, "duration": 18.0, "expire_spawns": 3 + int(wave / 7)}
+	elif wave >= 9 and wave % 9 == 0:
 		event = {"type": "bio_lab_boost", "multiplier": 2.0, "duration": 24.0, "trigger_at_percent": 0.0}
 	elif wave >= 6 and wave % 6 == 0:
 		event = {"type": "mid_wave_autoflare", "trigger_at_percent": 0.52, "cryo_disruption_seconds": 5.0}

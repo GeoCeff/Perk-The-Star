@@ -285,6 +285,7 @@ String GameWaveLibraryNative::warning_tags(const Dictionary& wave_data) const {
     else if (event_type == "ring_blind") tags.append("RING DARK");
     else if (event_type == "bio_lab_boost") tags.append("BIO BOOST");
     else if (event_type == "prime_frenzy") tags.append("FRENZY");
+    else if (event_type == "comet_cache") tags.append("CACHE");
 
     return tags.is_empty() ? String("TAGS: BASIC SWARM") : vformat("TAGS: %s", String("  |  ").join(tags));
 }
@@ -296,6 +297,11 @@ String GameWaveLibraryNative::counter_hint(const Dictionary& wave_data) const {
     if (variants.has("mimic")) return "COUNTER: Mix Bio-Lab, Cryo, Magnetic, or Helios with Photon.";
     if (variants.has("burrower")) return "COUNTER: Build Bio-Lab before Burrowers reach the Sun.";
     if (variants.has("bloom")) return "COUNTER: Slow Blooms before they split into Drifters.";
+    Variant event_value = wave_data.get("event", Dictionary());
+    if (event_value.get_type() == Variant::DICTIONARY) {
+        Dictionary event_data = event_value;
+        if (String(event_data.get("type", "")) == "comet_cache") return "COUNTER: Outer-ring fire can crack the Comet Cache for bonus Sol.";
+    }
     return "COUNTER: Photon Splitters handle the first swarm cleanly.";
 }
 
@@ -304,6 +310,11 @@ String GameWaveLibraryNative::intel_detail(const Dictionary& wave_data, int rewa
     lines.append(vformat("%s | CONTACTS %d | REWARD +%d SOL", type_label(wave_data), total_spawn_count(wave_data), reward));
     lines.append(warning_tags(wave_data));
     lines.append(counter_hint(wave_data));
+    Variant event_value = wave_data.get("event", Dictionary());
+    if (event_value.get_type() == Variant::DICTIONARY) {
+        Dictionary event_data = event_value;
+        if (String(event_data.get("type", "")) == "comet_cache") lines.append("EVENT: Destroy Comet Cache for Sol, or it breaks into Drifters.");
+    }
     if (active_count >= 0) {
         lines.insert(0, vformat("LIVE: %d ACTIVE | %d BURROWED | %d QUEUED", active_count, burrowed_count, queued_count));
     }
