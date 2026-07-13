@@ -127,6 +127,7 @@ var daily_seed_mode: bool = false
 var draft_defense_mode: bool = false
 var draft_package: Dictionary = {}
 var draft_overlay: CanvasLayer
+var flare_overcharged: bool = false
 var run_perfect_orbits: int = 0
 var run_best_combo: int = 0
 var run_tech_xp_awarded: int = 0
@@ -1549,23 +1550,53 @@ func _try_manual_flare() -> void:
 	if not GameState.try_trigger_flare():
 		_set_message("Solar flare is still charging.", 1.6)
 		return
-	_trigger_solar_flare()
-	_set_message("Manual solar flare fired.", 2.0)
+	var was_overcharged := flare_overcharged
+	_trigger_solar_flare(true)
+	_set_message("Overcharged solar flare fired." if was_overcharged else "Manual solar flare fired.", 2.0)
 	_update_ui()
 
 
-func _trigger_solar_flare() -> void:
+func _try_overcharge_flare() -> void:
+	if no_flare_mode:
+		_set_message("No-Flare Challenge disables Solar Flare.", 1.8)
+		return
+	if GameState.flare_charge <= 0:
+		_set_message("Solar flare must be charged before overcharge.", 1.8)
+		return
+	if flare_overcharged:
+		_set_message("Solar Flare is already overcharged.", 1.6)
+		return
+	if not GameState.spend_credits(FLARE_OVERCHARGE_COST):
+		_play_sfx("ui_insufficient_sol", 0.18)
+		_show_insufficient_sol_feedback()
+		_set_message("Need %d Sol Credits to overcharge Solar Flare." % FLARE_OVERCHARGE_COST, 2.0)
+		_update_ui()
+		return
+	flare_overcharged = true
+	_add_visual_effect("flare", _sun_pos(), Color(1.0, 0.38, 0.12, 0.92), 0.52, SUN_RADIUS + 24.0)
+	_add_text_effect("OVERCHARGE  -%d SOL" % FLARE_OVERCHARGE_COST, _sun_pos() + Vector2(0.0, -SUN_RADIUS - 44.0), Color(1.0, 0.72, 0.24, 0.98), 0.9, 15)
+	_play_sfx("flare", 0.24)
+	_set_message("Solar Flare overcharged. Press F during a wave to fire.", 2.2)
+	_update_ui()
+	queue_redraw()
+
+
+func _trigger_solar_flare(manual: bool = false) -> void:
 	if no_flare_mode:
 		return
 	var sun: Vector2 = _sun_pos()
 	var flare_damage: float = FLARE_DAMAGE + (10.0 if _has_tech("helios_apex") else 0.0)
-	_add_visual_effect("flare", sun, Color(1.0, 0.78, 0.24, 0.96), 0.74, SUN_RADIUS + 36.0)
+	var overcharged := manual and flare_overcharged
+	if overcharged:
+		flare_damage += FLARE_OVERCHARGE_DAMAGE_BONUS
+		flare_overcharged = false
+	_add_visual_effect("flare", sun, Color(1.0, 0.38, 0.12, 0.98) if overcharged else Color(1.0, 0.78, 0.24, 0.96), 0.86 if overcharged else 0.74, SUN_RADIUS + (52.0 if overcharged else 36.0))
 	_play_sfx("flare", 0.45)
 	for i in range(enemies.size() - 1, -1, -1):
 		if i >= enemies.size():
 			continue
 		var enemy_pos: Vector2 = enemies[i]["pos"]
-		_add_shot(sun, enemy_pos, Color(1.0, 0.78, 0.24, 0.96), 0.30, 5.0, "flare")
+		_add_shot(sun, enemy_pos, Color(1.0, 0.38, 0.12, 0.98) if overcharged else Color(1.0, 0.78, 0.24, 0.96), 0.34 if overcharged else 0.30, 6.5 if overcharged else 5.0, "flare")
 		_damage_enemy(i, flare_damage, "solar_flare")
 
 
@@ -4072,6 +4103,22 @@ func _update_ui() -> void:
 		intel_status = "AUTO %d" % max(1, int(ceil(auto_start_timer)))
 	elif GameState.auto_start_waves_enabled and not start_disabled:
 		intel_status = "AUTO START"
+	var flare_ready: bool = not no_flare_mode and GameState.flare_charge > 0
+	var overcharge_disabled: bool = no_flare_mode or not flare_ready or flare_overcharged or GameState.sol_credits < FLARE_OVERCHARGE_COST
+	var overcharge_text: String = "OVER\n%d" % FLARE_OVERCHARGE_COST
+	var overcharge_tip: String = "Spend %d Sol to boost the next manual Solar Flare." % FLARE_OVERCHARGE_COST
+	if no_flare_mode:
+		overcharge_text = "OVER\nOFF"
+		overcharge_tip = "No-Flare Challenge disables Solar Flare."
+	elif flare_overcharged:
+		overcharge_text = "OVER\nARMED"
+		overcharge_tip = "The next manual Solar Flare is overcharged."
+	elif not flare_ready:
+		overcharge_text = "OVER\nWAIT"
+		overcharge_tip = "Solar Flare must be charged first."
+	elif GameState.sol_credits < FLARE_OVERCHARGE_COST:
+		overcharge_text = "OVER\nNEED"
+		overcharge_tip = "Need %d Sol Credits to overcharge." % FLARE_OVERCHARGE_COST
 	game_hud.call("update_view", {
 		"wave_title": title_text,
 		"brief": _wave_clean_hint(str(wave_data.get("tutorial_hint", "Defend the Sun.")), wave_name),
@@ -4095,6 +4142,9 @@ func _update_ui() -> void:
 		"start_text": start_text,
 		"start_disabled": start_disabled,
 		"auto_start_enabled": GameState.auto_start_waves_enabled,
+		"overcharge_text": overcharge_text,
+		"overcharge_disabled": overcharge_disabled,
+		"overcharge_tip": overcharge_tip,
 		"message": message_text,
 		"selected_tower": _selected_tower_readout(),
 		"tower_buttons": _tower_button_view_data(),
