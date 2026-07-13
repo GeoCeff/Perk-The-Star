@@ -27,7 +27,7 @@ Color button_hover() { return Color(0.035, 0.085, 0.120, 1.0); }
 Color button_pressed() { return Color(0.052, 0.112, 0.138, 1.0); }
 Color button_disabled() { return Color(0.018, 0.026, 0.038, 0.78); }
 String icon_play() { return "res://assets/ui/icons/icon_play.png"; }
-String icon_codex() { return "res://assets/ui/icons/icon_codex.png"; }
+String icon_tech_tree() { return "res://assets/ui/icons/icon_tech_tree.png"; }
 String icon_back() { return "res://assets/ui/icons/icon_back.png"; }
 
 Dictionary tower_button_paths() {
@@ -681,7 +681,7 @@ void GameHudNative::apply_readability_overrides() {
         end_state_stats_label->add_theme_font_size_override("font_size", 13);
         end_state_tip_label->add_theme_font_size_override("font_size", 12);
         apply_action_button(end_state_retry_button, gold(), icon_play());
-        apply_action_button(end_state_tech_tree_button, cyan(), icon_codex());
+        apply_action_button(end_state_tech_tree_button, cyan(), icon_tech_tree());
         apply_action_button(end_state_main_menu_button, cyan(), icon_back());
     }
 }

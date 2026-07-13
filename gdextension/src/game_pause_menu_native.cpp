@@ -97,7 +97,7 @@ void GamePauseMenuNative::apply_style() {
     if (subtitle_label != nullptr) subtitle_label->add_theme_color_override("font_color", Color(0.62, 0.88, 0.98, 0.96));
     theme->call("apply_secondary_button", codex_button, theme->get("ICON_CODEX_PATH"));
     theme->call("apply_secondary_button", settings_button, theme->get("ICON_SETTINGS_PATH"));
-    theme->call("apply_secondary_button", tech_tree_button, theme->get("ICON_CODEX_PATH"));
+    theme->call("apply_secondary_button", tech_tree_button, theme->get("ICON_TECH_TREE_PATH"));
     theme->call("apply_secondary_button", retry_button, theme->get("ICON_PLAY_PATH"));
     theme->call("apply_danger_button", main_menu_button, theme->get("ICON_BACK_PATH"));
     theme->call("apply_primary_button", back_button, theme->get("ICON_PLAY_PATH"));

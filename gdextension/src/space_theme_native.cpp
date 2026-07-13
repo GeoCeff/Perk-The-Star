@@ -26,6 +26,7 @@ constexpr const char* ICON_CODEX_PATH = "res://assets/ui/icons/icon_codex.png";
 constexpr const char* ICON_CREDITS_PATH = "res://assets/ui/icons/icon_credits.svg";
 constexpr const char* ICON_PLAY_PATH = "res://assets/ui/icons/icon_play.png";
 constexpr const char* ICON_SETTINGS_PATH = "res://assets/ui/icons/icon_settings.png";
+constexpr const char* ICON_TECH_TREE_PATH = "res://assets/ui/icons/icon_tech_tree.png";
 
 Color panel_color() { return Color(0.016, 0.024, 0.038, 0.92); }
 Color deep_panel_color() { return Color(0.006, 0.012, 0.024, 0.94); }
@@ -50,6 +51,7 @@ void SpaceThemeNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_ICON_CREDITS_PATH"), &SpaceThemeNative::get_icon_credits_path);
     ClassDB::bind_method(D_METHOD("get_ICON_PLAY_PATH"), &SpaceThemeNative::get_icon_play_path);
     ClassDB::bind_method(D_METHOD("get_ICON_SETTINGS_PATH"), &SpaceThemeNative::get_icon_settings_path);
+    ClassDB::bind_method(D_METHOD("get_ICON_TECH_TREE_PATH"), &SpaceThemeNative::get_icon_tech_tree_path);
     ClassDB::bind_method(D_METHOD("get_COLOR_PANEL"), &SpaceThemeNative::get_color_panel);
     ClassDB::bind_method(D_METHOD("get_COLOR_PANEL_DEEP"), &SpaceThemeNative::get_color_panel_deep);
     ClassDB::bind_method(D_METHOD("get_COLOR_CYAN"), &SpaceThemeNative::get_color_cyan);
@@ -87,6 +89,7 @@ void SpaceThemeNative::_bind_methods() {
     ADD_PROPERTY(PropertyInfo(Variant::STRING, "ICON_CREDITS_PATH"), "", "get_ICON_CREDITS_PATH");
     ADD_PROPERTY(PropertyInfo(Variant::STRING, "ICON_PLAY_PATH"), "", "get_ICON_PLAY_PATH");
     ADD_PROPERTY(PropertyInfo(Variant::STRING, "ICON_SETTINGS_PATH"), "", "get_ICON_SETTINGS_PATH");
+    ADD_PROPERTY(PropertyInfo(Variant::STRING, "ICON_TECH_TREE_PATH"), "", "get_ICON_TECH_TREE_PATH");
     ADD_PROPERTY(PropertyInfo(Variant::COLOR, "COLOR_PANEL"), "", "get_COLOR_PANEL");
     ADD_PROPERTY(PropertyInfo(Variant::COLOR, "COLOR_PANEL_DEEP"), "", "get_COLOR_PANEL_DEEP");
     ADD_PROPERTY(PropertyInfo(Variant::COLOR, "COLOR_CYAN"), "", "get_COLOR_CYAN");
@@ -109,6 +112,7 @@ String SpaceThemeNative::get_icon_codex_path() const { return ICON_CODEX_PATH; }
 String SpaceThemeNative::get_icon_credits_path() const { return ICON_CREDITS_PATH; }
 String SpaceThemeNative::get_icon_play_path() const { return ICON_PLAY_PATH; }
 String SpaceThemeNative::get_icon_settings_path() const { return ICON_SETTINGS_PATH; }
+String SpaceThemeNative::get_icon_tech_tree_path() const { return ICON_TECH_TREE_PATH; }
 Color SpaceThemeNative::get_color_panel() const { return panel_color(); }
 Color SpaceThemeNative::get_color_panel_deep() const { return deep_panel_color(); }
 Color SpaceThemeNative::get_color_cyan() const { return cyan(); }

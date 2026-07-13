@@ -6,36 +6,42 @@ const TECH_TREE_OVERLAY_SCENE_PATH := "res://scenes/ui/tech_tree_overlay.tscn"
 const MODE_INFO := {
 	"campaign": {
 		"title": "Normal Defense",
+		"icon": "res://assets/ui/icons/icon_mode_campaign.png",
 		"kicker": "12-WAVE PRIME CAMPAIGN",
 		"body": "Classic defense run. Build a stable orbit, answer each enemy type, and survive the Prime finale.",
 		"note": "Best for steady Tech XP and learning tower paths.",
 	},
 	"boss_rush": {
 		"title": "Boss Rush",
+		"icon": "res://assets/ui/icons/icon_mode_boss_rush.png",
 		"kicker": "COMPRESSED PRIME PRESSURE",
 		"body": "Four heavy waves built around Prime-class threats. Less ramp-up, more immediate crisis control.",
 		"note": "Bio-Lab shell cracking matters early.",
 	},
 	"daily_seed": {
 		"title": "Daily Seed",
+		"icon": "res://assets/ui/icons/icon_mode_daily_seed.png",
 		"kicker": "FIXED DAILY CHALLENGE",
 		"body": "A six-wave formation locked to today's seed. Everyone gets the same enemy mix for cleaner replays.",
 		"note": "Good for routing and score chasing.",
 	},
 	"draft_defense": {
 		"title": "Draft Defense",
+		"icon": "res://assets/ui/icons/icon_mode_draft_defense.png",
 		"kicker": "CONTRACT BEFORE WAVE 1",
 		"body": "Pick a package before the first wave, then play around its tower bonuses and restrictions.",
 		"note": "Stronger identity, less autopilot.",
 	},
 	"endless": {
 		"title": "Endless Defense",
+		"icon": "res://assets/ui/icons/icon_mode_endless.png",
 		"kicker": "SCALING SURVIVAL",
 		"body": "Enemy count, speed, and health keep climbing after the normal campaign limit.",
 		"note": "Play for one more wave.",
 	},
 	"no_flare": {
 		"title": "No-Flare Challenge",
+		"icon": "res://assets/ui/icons/icon_mode_no_flare.png",
 		"kicker": "NO SOLAR FLARE SAFETY NET",
 		"body": "Clear the Prime mission without Solar Flare. Your tower placement has to solve every breach.",
 		"note": "Higher pressure, bonus Tech XP.",
@@ -59,7 +65,7 @@ func _ready() -> void:
 	if tech_button != null:
 		tech_button.pressed.connect(_show_tech_tree)
 		if SpaceTheme != null:
-			SpaceTheme.call("apply_secondary_button", tech_button, SpaceTheme.get("ICON_CODEX_PATH"))
+			SpaceTheme.call("apply_secondary_button", tech_button, SpaceTheme.get("ICON_TECH_TREE_PATH"))
 			tech_button.add_theme_font_size_override("font_size", 20)
 
 
@@ -156,10 +162,11 @@ func _add_mode_button(box: VBoxContainer, text: String, mode: String, primary: b
 	button.focus_entered.connect(_show_mode_info.bind(mode))
 	box.add_child(button)
 	if SpaceTheme != null:
+		var icon_path := str(MODE_INFO.get(mode, {}).get("icon", SpaceTheme.get("ICON_PLAY_PATH")))
 		if primary:
-			SpaceTheme.call("apply_primary_button", button, SpaceTheme.get("ICON_PLAY_PATH"))
+			SpaceTheme.call("apply_primary_button", button, icon_path)
 		else:
-			SpaceTheme.call("apply_secondary_button", button, SpaceTheme.get("ICON_PLAY_PATH"))
+			SpaceTheme.call("apply_secondary_button", button, icon_path)
 
 
 func _build_mode_info_panel() -> void:

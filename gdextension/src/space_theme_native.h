@@ -32,6 +32,7 @@ public:
     String get_icon_credits_path() const;
     String get_icon_play_path() const;
     String get_icon_settings_path() const;
+    String get_icon_tech_tree_path() const;
     Color get_color_panel() const;
     Color get_color_panel_deep() const;
     Color get_color_cyan() const;
