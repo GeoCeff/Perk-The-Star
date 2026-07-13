@@ -41,6 +41,26 @@ private:
     void update_value_label();
 };
 
+class MainMenuBrightnessSliderNative : public HSlider {
+    GDCLASS(MainMenuBrightnessSliderNative, HSlider)
+
+protected:
+    static void _bind_methods();
+
+public:
+    void _ready() override;
+    void set_value_label_path(const NodePath& path);
+    NodePath get_value_label_path() const;
+
+private:
+    NodePath value_label_path;
+    Object* value_label = nullptr;
+
+    void on_value_changed(double new_value);
+    void on_display_settings_changed(double brightness);
+    void update_value_label();
+};
+
 class SettingsOverlayCloseButtonNative : public Button {
     GDCLASS(SettingsOverlayCloseButtonNative, Button)
 

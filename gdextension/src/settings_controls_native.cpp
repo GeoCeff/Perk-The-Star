@@ -94,6 +94,58 @@ void MainMenuMusicVolumeSliderNative::update_value_label() {
     label->set_text(vformat("%d%%", static_cast<int>(std::round(get_value()))));
 }
 
+void MainMenuBrightnessSliderNative::_bind_methods() {
+    ClassDB::bind_method(D_METHOD("set_value_label_path", "path"), &MainMenuBrightnessSliderNative::set_value_label_path);
+    ClassDB::bind_method(D_METHOD("get_value_label_path"), &MainMenuBrightnessSliderNative::get_value_label_path);
+    ClassDB::bind_method(D_METHOD("_on_value_changed", "new_value"), &MainMenuBrightnessSliderNative::on_value_changed);
+    ClassDB::bind_method(D_METHOD("_on_display_settings_changed", "brightness"), &MainMenuBrightnessSliderNative::on_display_settings_changed);
+    ClassDB::bind_method(D_METHOD("_update_value_label"), &MainMenuBrightnessSliderNative::update_value_label);
+    ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "value_label_path", PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Label"), "set_value_label_path", "get_value_label_path");
+}
+
+void MainMenuBrightnessSliderNative::_ready() {
+    value_label = get_node_or_null(value_label_path);
+    set_min(50.0);
+    set_max(125.0);
+    set_step(1.0);
+    Node* state = game_state(this);
+    if (state != nullptr) {
+        set_value_no_signal(std::round(double(state->get("brightness")) * 100.0));
+        state->connect("display_settings_changed", Callable(this, "_on_display_settings_changed"));
+    }
+    update_value_label();
+    connect("value_changed", Callable(this, "_on_value_changed"));
+}
+
+void MainMenuBrightnessSliderNative::set_value_label_path(const NodePath& path) {
+    value_label_path = path;
+}
+
+NodePath MainMenuBrightnessSliderNative::get_value_label_path() const {
+    return value_label_path;
+}
+
+void MainMenuBrightnessSliderNative::on_value_changed(double new_value) {
+    update_value_label();
+    Node* state = game_state(this);
+    if (state != nullptr) {
+        state->call("set_brightness", new_value / 100.0);
+    }
+}
+
+void MainMenuBrightnessSliderNative::on_display_settings_changed(double brightness) {
+    set_value_no_signal(std::round(brightness * 100.0));
+    update_value_label();
+}
+
+void MainMenuBrightnessSliderNative::update_value_label() {
+    Label* label = Object::cast_to<Label>(value_label);
+    if (label == nullptr) {
+        return;
+    }
+    label->set_text(vformat("%d%%", static_cast<int>(std::round(get_value()))));
+}
+
 void SettingsOverlayCloseButtonNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_settings_overlay_path", "path"), &SettingsOverlayCloseButtonNative::set_settings_overlay_path);
     ClassDB::bind_method(D_METHOD("get_settings_overlay_path"), &SettingsOverlayCloseButtonNative::get_settings_overlay_path);

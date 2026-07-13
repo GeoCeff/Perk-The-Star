@@ -73,6 +73,7 @@ void GameHudNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("_fit_layout_to_viewport"), &GameHudNative::fit_layout_to_viewport);
     ClassDB::bind_method(D_METHOD("_on_start_button_pressed"), &GameHudNative::on_start_button_pressed);
     ClassDB::bind_method(D_METHOD("_on_auto_start_button_toggled", "enabled"), &GameHudNative::on_auto_start_button_toggled);
+    ClassDB::bind_method(D_METHOD("_on_overcharge_button_pressed"), &GameHudNative::on_overcharge_button_pressed);
     ClassDB::bind_method(D_METHOD("_on_menu_button_pressed"), &GameHudNative::on_menu_button_pressed);
     ClassDB::bind_method(D_METHOD("_on_tower_button_pressed", "tower_type"), &GameHudNative::on_tower_button_pressed);
     ClassDB::bind_method(D_METHOD("_show_tower_info", "tower_type"), &GameHudNative::show_tower_info);
@@ -88,6 +89,7 @@ void GameHudNative::_bind_methods() {
 
     ADD_SIGNAL(MethodInfo("start_wave_requested"));
     ADD_SIGNAL(MethodInfo("auto_start_toggled", PropertyInfo(Variant::BOOL, "enabled")));
+    ADD_SIGNAL(MethodInfo("flare_overcharge_requested"));
     ADD_SIGNAL(MethodInfo("menu_requested"));
     ADD_SIGNAL(MethodInfo("tower_selected", PropertyInfo(Variant::STRING, "tower_type")));
     ADD_SIGNAL(MethodInfo("tower_upgrade_requested", PropertyInfo(Variant::INT, "ring_index"), PropertyInfo(Variant::INT, "slot_index")));
@@ -126,6 +128,7 @@ void GameHudNative::bind_nodes() {
     luminosity_bar = node<ProgressBar>("Hud/StatusPanel/StatusRow/LuminosityBox/LuminosityBar");
     start_button = node<Button>("Hud/ActionsPanel/ActionRow/StartButton");
     auto_start_button = node<Button>("Hud/ActionsPanel/ActionRow/AutoStartButton");
+    overcharge_button = node<Button>("Hud/ActionsPanel/ActionRow/OverchargeButton");
     menu_button = node<Button>("Hud/ActionsPanel/ActionRow/MenuButton");
     top_panel = node<PanelContainer>("Hud/TopPanel");
     status_panel = node<PanelContainer>("Hud/StatusPanel");
@@ -149,9 +152,10 @@ void GameHudNative::bind_buttons() {
     tower_buttons.clear();
     if (start_button) start_button->connect("pressed", Callable(this, "_on_start_button_pressed"));
     if (auto_start_button) auto_start_button->connect("toggled", Callable(this, "_on_auto_start_button_toggled"));
+    if (overcharge_button) overcharge_button->connect("pressed", Callable(this, "_on_overcharge_button_pressed"));
     if (menu_button) menu_button->connect("pressed", Callable(this, "_on_menu_button_pressed"));
     if (center_view_button) center_view_button->connect("pressed", Callable(this, "_on_center_view_button_pressed"));
-    Button* hover_buttons[] = {start_button, auto_start_button, menu_button, center_view_button};
+    Button* hover_buttons[] = {start_button, auto_start_button, overcharge_button, menu_button, center_view_button};
     for (Button* button : hover_buttons) {
         connect_hover(button, this);
     }
@@ -190,6 +194,13 @@ void GameHudNative::update_view(const Dictionary& state) {
     set_text(ring_label, state.get("rings", ""));
     set_button_text(start_button, state.get("start_text", "START WAVE"));
     if (start_button) start_button->set_disabled(bool(state.get("start_disabled", false)));
+    set_button_text(overcharge_button, state.get("overcharge_text", "OVER"));
+    if (overcharge_button) {
+        overcharge_button->set_disabled(bool(state.get("overcharge_disabled", true)));
+        overcharge_button->set_tooltip_text(String(state.get("overcharge_tip", "Spend Sol to boost a ready Solar Flare.")));
+        apply_action_button(overcharge_button, overcharge_button->is_disabled() ? cyan() : gold(), "");
+        overcharge_button->add_theme_font_size_override("font_size", 9);
+    }
     set_auto_start_button(bool(state.get("auto_start_enabled", false)));
     set_text(message_label, state.get("message", ""));
     set_text(selected_tower_label, state.get("selected_tower", ""));
@@ -582,10 +593,12 @@ void GameHudNative::apply_styles() {
     apply_readability_overrides();
     apply_action_button(start_button, gold(), "");
     apply_action_button(auto_start_button, cyan(), "");
+    apply_action_button(overcharge_button, cyan(), "");
     apply_action_button(menu_button, cyan(), "");
     apply_action_button(center_view_button, cyan(), "");
     if (start_button) start_button->add_theme_font_size_override("font_size", 13);
     if (auto_start_button) auto_start_button->add_theme_font_size_override("font_size", 9);
+    if (overcharge_button) overcharge_button->add_theme_font_size_override("font_size", 9);
     if (menu_button) menu_button->add_theme_font_size_override("font_size", 12);
     if (center_view_button) center_view_button->add_theme_font_size_override("font_size", 10);
     Array keys = tower_buttons.keys();
@@ -854,6 +867,7 @@ Object* GameHudNative::space_theme() const {
 
 void GameHudNative::on_start_button_pressed() { emit_signal("start_wave_requested"); }
 void GameHudNative::on_auto_start_button_toggled(bool enabled) { emit_signal("auto_start_toggled", enabled); }
+void GameHudNative::on_overcharge_button_pressed() { emit_signal("flare_overcharge_requested"); }
 void GameHudNative::on_menu_button_pressed() { emit_signal("menu_requested"); }
 void GameHudNative::on_tower_button_pressed(const String& tower_type) { emit_signal("tower_selected", tower_type); }
 void GameHudNative::on_tower_manage_upgrade_pressed() {

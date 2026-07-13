@@ -1,10 +1,30 @@
 ﻿#include "game_state_native.h"
 
+#include <godot_cpp/classes/canvas_layer.hpp>
+#include <godot_cpp/classes/color_rect.hpp>
 #include <godot_cpp/classes/config_file.hpp>
+#include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
+
+namespace {
+
+bool is_apex_tech(const String& tech_id) {
+    return tech_id.ends_with("_apex");
+}
+
+bool has_any_apex_tech(const Array& unlocked_tech) {
+    for (int i = 0; i < unlocked_tech.size(); ++i) {
+        if (is_apex_tech(String(unlocked_tech[i]))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+}
 
 void GameStateNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("reset_state"), &GameStateNative::reset_state);
@@ -14,6 +34,7 @@ void GameStateNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_music_enabled", "enabled"), &GameStateNative::set_music_enabled);
     ClassDB::bind_method(D_METHOD("set_music_volume", "volume"), &GameStateNative::set_music_volume);
     ClassDB::bind_method(D_METHOD("get_music_volume_db"), &GameStateNative::get_music_volume_db);
+    ClassDB::bind_method(D_METHOD("set_brightness", "value"), &GameStateNative::set_brightness);
     ClassDB::bind_method(D_METHOD("set_tutorial_completed", "completed"), &GameStateNative::set_tutorial_completed, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("set_screen_shake_enabled", "enabled"), &GameStateNative::set_screen_shake_enabled);
     ClassDB::bind_method(D_METHOD("set_auto_start_waves_enabled", "enabled"), &GameStateNative::set_auto_start_waves_enabled);
@@ -70,6 +91,7 @@ void GameStateNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_burrowers_active"), &GameStateNative::get_burrowers_active);
     ClassDB::bind_method(D_METHOD("get_music_enabled"), &GameStateNative::get_music_enabled);
     ClassDB::bind_method(D_METHOD("get_music_volume"), &GameStateNative::get_music_volume);
+    ClassDB::bind_method(D_METHOD("get_brightness"), &GameStateNative::get_brightness);
     ClassDB::bind_method(D_METHOD("get_tutorial_completed"), &GameStateNative::get_tutorial_completed);
     ClassDB::bind_method(D_METHOD("get_screen_shake_enabled"), &GameStateNative::get_screen_shake_enabled);
     ClassDB::bind_method(D_METHOD("get_auto_start_waves_enabled"), &GameStateNative::get_auto_start_waves_enabled);
@@ -99,6 +121,7 @@ void GameStateNative::_bind_methods() {
     ADD_PROPERTY(PropertyInfo(Variant::INT, "burrowers_active"), "set_burrowers_active", "get_burrowers_active");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "music_enabled"), "", "get_music_enabled");
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "music_volume"), "", "get_music_volume");
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "brightness"), "set_brightness", "get_brightness");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "tutorial_completed"), "", "get_tutorial_completed");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "screen_shake_enabled"), "", "get_screen_shake_enabled");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "auto_start_waves_enabled"), "", "get_auto_start_waves_enabled");
@@ -119,6 +142,7 @@ void GameStateNative::_bind_methods() {
     ADD_SIGNAL(MethodInfo("burrower_count_changed", PropertyInfo(Variant::INT, "count")));
     ADD_SIGNAL(MethodInfo("phase_changed", PropertyInfo(Variant::INT, "new_phase")));
     ADD_SIGNAL(MethodInfo("music_settings_changed", PropertyInfo(Variant::BOOL, "enabled"), PropertyInfo(Variant::FLOAT, "volume")));
+    ADD_SIGNAL(MethodInfo("display_settings_changed", PropertyInfo(Variant::FLOAT, "brightness")));
     ADD_SIGNAL(MethodInfo("tutorial_settings_changed", PropertyInfo(Variant::BOOL, "completed")));
     ADD_SIGNAL(MethodInfo("game_feel_settings_changed", PropertyInfo(Variant::BOOL, "screen_shake_enabled")));
     ADD_SIGNAL(MethodInfo("auto_start_settings_changed", PropertyInfo(Variant::BOOL, "enabled")));
@@ -134,6 +158,7 @@ void GameStateNative::_bind_methods() {
 
 void GameStateNative::_ready() {
     reset_state();
+    ensure_brightness_overlay();
     load_audio_settings();
 }
 
@@ -157,6 +182,7 @@ void GameStateNative::load_audio_settings() {
     if (error == OK) {
         music_enabled = bool(config->get_value("audio", "music_enabled", music_enabled));
         music_volume = Math::clamp(double(config->get_value("audio", "music_volume", music_volume)), 0.0, 1.0);
+        brightness = Math::clamp(double(config->get_value("display", "brightness", brightness)), 0.5, 1.25);
         tutorial_completed = bool(config->get_value("tutorial", "completed", tutorial_completed));
         screen_shake_enabled = bool(config->get_value("gameplay", "screen_shake_enabled", screen_shake_enabled));
         auto_start_waves_enabled = bool(config->get_value("gameplay", "auto_start_waves_enabled", auto_start_waves_enabled));
@@ -182,7 +208,9 @@ void GameStateNative::load_audio_settings() {
         best_draft_defense_waves = int(config->get_value("records", "draft_defense_waves", best_draft_defense_waves));
         best_draft_defense_score = int(config->get_value("records", "draft_defense_score", best_draft_defense_score));
     }
+    apply_brightness_overlay();
     emit_signal("music_settings_changed", music_enabled, music_volume);
+    emit_signal("display_settings_changed", brightness);
     emit_signal("tutorial_settings_changed", tutorial_completed);
     emit_signal("game_feel_settings_changed", screen_shake_enabled);
     emit_signal("auto_start_settings_changed", auto_start_waves_enabled);
@@ -234,6 +262,13 @@ double GameStateNative::get_music_volume_db() const {
     return UtilityFunctions::linear_to_db(music_volume);
 }
 
+void GameStateNative::set_brightness(double value) {
+    brightness = Math::clamp(value, 0.5, 1.25);
+    save_display_settings();
+    apply_brightness_overlay();
+    emit_signal("display_settings_changed", brightness);
+}
+
 void GameStateNative::set_tutorial_completed(bool completed) {
     tutorial_completed = completed;
     Ref<ConfigFile> config = settings_config();
@@ -283,6 +318,12 @@ bool GameStateNative::unlock_tech(const String& tech_id, int cost, const Array& 
     if (has_tech(tech_id)) {
         return true;
     }
+    if (tech_id == "apex_master") {
+        return false;
+    }
+    if (is_apex_tech(tech_id) && has_any_apex_tech(unlocked_tech)) {
+        return false;
+    }
     for (int i = 0; i < requirements.size(); ++i) {
         if (!has_tech(String(requirements[i]))) {
             return false;
@@ -301,6 +342,15 @@ bool GameStateNative::unlock_tech(const String& tech_id, int cost, const Array& 
 }
 
 bool GameStateNative::has_tech(const String& tech_id) const {
+    if (is_apex_tech(tech_id)) {
+        for (int i = 0; i < unlocked_tech.size(); ++i) {
+            const String unlocked_id = String(unlocked_tech[i]);
+            if (is_apex_tech(unlocked_id)) {
+                return unlocked_id == tech_id;
+            }
+        }
+        return false;
+    }
     for (int i = 0; i < unlocked_tech.size(); ++i) {
         if (String(unlocked_tech[i]) == tech_id) {
             return true;
@@ -560,6 +610,7 @@ int GameStateNative::get_burrowers_active() const { return burrowers_active; }
 void GameStateNative::set_burrowers_active(int value) { burrowers_active = value; }
 bool GameStateNative::get_music_enabled() const { return music_enabled; }
 double GameStateNative::get_music_volume() const { return music_volume; }
+double GameStateNative::get_brightness() const { return brightness; }
 bool GameStateNative::get_tutorial_completed() const { return tutorial_completed; }
 bool GameStateNative::get_screen_shake_enabled() const { return screen_shake_enabled; }
 bool GameStateNative::get_auto_start_waves_enabled() const { return auto_start_waves_enabled; }
@@ -576,6 +627,51 @@ Ref<ConfigFile> GameStateNative::settings_config() const {
     config.instantiate();
     config->load(SETTINGS_PATH);
     return config;
+}
+
+void GameStateNative::ensure_brightness_overlay() {
+    if (brightness_layer != nullptr && brightness_dimmer != nullptr) {
+        return;
+    }
+
+    brightness_layer = memnew(CanvasLayer);
+    brightness_layer->set_name("BrightnessLayer");
+    brightness_layer->set_layer(128);
+    brightness_layer->set_process_mode(Node::PROCESS_MODE_ALWAYS);
+    add_child(brightness_layer);
+
+    brightness_dimmer = memnew(ColorRect);
+    brightness_dimmer->set_name("BrightnessDimmer");
+    brightness_dimmer->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+    brightness_dimmer->set_anchors_preset(Control::PRESET_FULL_RECT);
+    brightness_dimmer->set_offset(SIDE_LEFT, 0.0);
+    brightness_dimmer->set_offset(SIDE_TOP, 0.0);
+    brightness_dimmer->set_offset(SIDE_RIGHT, 0.0);
+    brightness_dimmer->set_offset(SIDE_BOTTOM, 0.0);
+    brightness_layer->add_child(brightness_dimmer);
+    apply_brightness_overlay();
+}
+
+void GameStateNative::apply_brightness_overlay() {
+    if (brightness_dimmer == nullptr) {
+        return;
+    }
+    // ponytail: overlay brightness, swap for a shader/gamma pass if color accuracy matters.
+    if (brightness < 1.0) {
+        brightness_dimmer->set_color(Color(0.0, 0.0, 0.0, 1.0 - brightness));
+        brightness_dimmer->set_visible(true);
+    } else if (brightness > 1.0) {
+        brightness_dimmer->set_color(Color(1.0, 1.0, 1.0, (brightness - 1.0) * 0.65));
+        brightness_dimmer->set_visible(true);
+    } else {
+        brightness_dimmer->set_visible(false);
+    }
+}
+
+void GameStateNative::save_display_settings() {
+    Ref<ConfigFile> config = settings_config();
+    config->set_value("display", "brightness", brightness);
+    config->save(SETTINGS_PATH);
 }
 
 void GameStateNative::save_tech_progress() {

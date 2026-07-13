@@ -108,6 +108,7 @@ void SettingsOverlayNative::_ready() {
     settings_scroll = node_as<ScrollContainer>(this, "settings_panel/settings_margin/settings_box/settings_scroll");
     settings_body = node_as<RichTextLabel>(this, "settings_panel/settings_margin/settings_box/settings_scroll/settings_body");
     music_volume_slider = node_as<HSlider>(this, "settings_panel/settings_margin/settings_box/audio_panel/audio_margin/audio_box/volume_row/music_volume_slider");
+    brightness_slider = node_as<HSlider>(this, "settings_panel/settings_margin/settings_box/audio_panel/audio_margin/audio_box/brightness_row/brightness_slider");
     credits_button = node_as<Button>(this, "settings_panel/settings_margin/settings_box/credits_button");
 
     set_visible(true);
@@ -353,6 +354,7 @@ void SettingsOverlayNative::apply_style() {
     theme->call("apply_scroll_container", settings_scroll);
     theme->call("apply_rich_text_body", settings_body, 16);
     theme->call("apply_slider", music_volume_slider);
+    theme->call("apply_slider", brightness_slider);
     apply_check_button(screen_shake_toggle);
     theme->call("apply_secondary_button", test_wave_button);
     theme->call("apply_secondary_button", tutorial_replay_button);

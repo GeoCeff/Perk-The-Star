@@ -7,6 +7,9 @@
 
 namespace godot {
 
+class CanvasLayer;
+class ColorRect;
+
 class GameStateNative : public Node {
     GDCLASS(GameStateNative, Node)
 
@@ -32,6 +35,7 @@ public:
     void set_music_enabled(bool enabled);
     void set_music_volume(double volume);
     double get_music_volume_db() const;
+    void set_brightness(double value);
     void set_tutorial_completed(bool completed = true);
     void set_screen_shake_enabled(bool enabled);
     void set_auto_start_waves_enabled(bool enabled);
@@ -89,6 +93,7 @@ public:
     void set_burrowers_active(int value);
     bool get_music_enabled() const;
     double get_music_volume() const;
+    double get_brightness() const;
     bool get_tutorial_completed() const;
     bool get_screen_shake_enabled() const;
     bool get_auto_start_waves_enabled() const;
@@ -116,6 +121,9 @@ private:
     int burrowers_active = 0;
     bool music_enabled = true;
     double music_volume = 0.72;
+    double brightness = 1.0;
+    CanvasLayer* brightness_layer = nullptr;
+    ColorRect* brightness_dimmer = nullptr;
     bool tutorial_completed = false;
     bool screen_shake_enabled = true;
     bool auto_start_waves_enabled = false;
@@ -142,6 +150,9 @@ private:
     int game_phase = MENU;
 
     Ref<ConfigFile> settings_config() const;
+    void ensure_brightness_overlay();
+    void apply_brightness_overlay();
+    void save_display_settings();
     void save_tech_progress();
     void save_records();
     void trigger_game_over();

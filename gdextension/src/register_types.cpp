@@ -55,6 +55,7 @@ void initialize_perk_module(ModuleInitializationLevel p_level) {
     ClassDB::register_class<MainMenuExitButtonNative>();
     ClassDB::register_class<MainMenuMusicToggleNative>();
     ClassDB::register_class<MainMenuMusicVolumeSliderNative>();
+    ClassDB::register_class<MainMenuBrightnessSliderNative>();
     ClassDB::register_class<SettingsOverlayCloseButtonNative>();
     ClassDB::register_class<AnimatedSpaceBackgroundNative>();
     ClassDB::register_class<HudPanelFxNative>();

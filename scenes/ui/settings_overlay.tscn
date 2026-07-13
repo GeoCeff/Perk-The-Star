@@ -134,6 +134,36 @@ theme_override_font_sizes/font_size = 16
 text = "72%"
 vertical_alignment = 1
 
+[node name="brightness_row" type="HBoxContainer" parent="settings_panel/settings_margin/settings_box/audio_panel/audio_margin/audio_box"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="brightness_label" type="Label" parent="settings_panel/settings_margin/settings_box/audio_panel/audio_margin/audio_box/brightness_row"]
+custom_minimum_size = Vector2(92, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Brightness"
+vertical_alignment = 1
+
+[node name="brightness_slider" type="MainMenuBrightnessSliderNative" parent="settings_panel/settings_margin/settings_box/audio_panel/audio_margin/audio_box/brightness_row"]
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 50.0
+max_value = 125.0
+step = 1.0
+value = 100.0
+value_label_path = NodePath("../brightness_value")
+
+[node name="brightness_value" type="Label" parent="settings_panel/settings_margin/settings_box/audio_panel/audio_margin/audio_box/brightness_row"]
+custom_minimum_size = Vector2(64, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "100%"
+vertical_alignment = 1
+
 [node name="credits_button" type="MainMenuCreditsButtonNative" parent="settings_panel/settings_margin/settings_box"]
 custom_minimum_size = Vector2(220, 38)
 layout_mode = 2

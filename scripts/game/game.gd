@@ -9,6 +9,8 @@ var SUN_RADIUS: float = float(game_catalog.get("sun_radius"))
 var SUN_DAMAGE_RADIUS: float = float(game_catalog.get("sun_damage_radius"))
 var ENEMY_SPAWN_PADDING: float = float(game_catalog.get("enemy_spawn_padding"))
 var FLARE_DAMAGE: float = float(game_catalog.get("flare_damage"))
+var FLARE_OVERCHARGE_COST: int = int(game_catalog.get("flare_overcharge_cost"))
+var FLARE_OVERCHARGE_DAMAGE_BONUS: float = float(game_catalog.get("flare_overcharge_damage_bonus"))
 var BURROWER_DIG_RADIUS: float = float(game_catalog.get("burrower_dig_radius"))
 var BURROWER_EXCAVATION_HP: float = float(game_catalog.get("burrower_excavation_hp"))
 var BURROWER_DRAIN_INTERVAL: float = float(game_catalog.get("burrower_drain_interval"))
@@ -1004,6 +1006,7 @@ func _build_ui() -> void:
 	var hud_connections: Dictionary = {
 		"start_wave_requested": Callable(self, "_on_start_wave_pressed"),
 		"auto_start_toggled": Callable(self, "_on_auto_start_toggled"),
+		"flare_overcharge_requested": Callable(self, "_try_overcharge_flare"),
 		"menu_requested": Callable(self, "_on_menu_pressed"),
 		"tower_selected": Callable(self, "_select_tower"),
 		"tower_upgrade_requested": Callable(self, "_on_tower_upgrade_requested"),
@@ -1555,7 +1558,7 @@ func _trigger_solar_flare() -> void:
 	if no_flare_mode:
 		return
 	var sun: Vector2 = _sun_pos()
-	var flare_damage: float = FLARE_DAMAGE + (10.0 if _has_tech("helios_apex") or _has_tech("apex_master") else 0.0)
+	var flare_damage: float = FLARE_DAMAGE + (10.0 if _has_tech("helios_apex") else 0.0)
 	_add_visual_effect("flare", sun, Color(1.0, 0.78, 0.24, 0.96), 0.74, SUN_RADIUS + 36.0)
 	_play_sfx("flare", 0.45)
 	for i in range(enemies.size() - 1, -1, -1):
@@ -3324,7 +3327,7 @@ func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
 				stats["rate"] = float(stats["rate"]) * 1.08
 			if _has_tech("resilient_bloom"):
 				stats["damage"] = float(stats["damage"]) * 1.14
-	if _has_tech(apex_id) or _has_tech("apex_master"):
+	if _has_tech(apex_id):
 		stats["damage"] = float(stats["damage"]) * 1.08
 		stats["rate"] = float(stats["rate"]) * 1.08
 		stats["range"] = float(stats["range"]) * 1.08
@@ -3355,7 +3358,7 @@ func _tech_slow_duration(source: String) -> float:
 		duration *= 1.25
 	elif source == "magnetic_net" and _has_tech("gravitic_payload"):
 		duration *= 1.25
-	if _has_tech("apex_master") or (source == "cryo_probe" and _has_tech("cryo_apex")) or (source == "magnetic_net" and _has_tech("magnetic_apex")):
+	if (source == "cryo_probe" and _has_tech("cryo_apex")) or (source == "magnetic_net" and _has_tech("magnetic_apex")):
 		duration += 0.4
 	return duration
 

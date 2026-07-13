@@ -331,7 +331,7 @@ Solar Flare
 The flare is a manual radial burst charged by cleared waves. It punishes packed lanes and becomes stronger through Helios research. It is not available in No-Flare Challenge.
 
 Tech Tree
-Tech XP is permanent. Each tower has a three-step research path and an Apex endpoint. Research upgrades damage, range, fire rate, reward flow, flare cadence, and special tower behavior.
+Tech XP is permanent. Each tower has a three-step research path, then one white Apex choice can be claimed. Research upgrades damage, range, fire rate, reward flow, flare cadence, and special tower behavior.
 
 HUD intelligence
 - Wave Intel previews enemy mix, warning tags, ring pressure, and rewards.
@@ -344,7 +344,7 @@ The system is not asking for perfect towers. It is asking for time: more seconds
             sprite("Tier I", "res://assets/ui/tech_tiers/photon_splitter_tier_1.png"),
             sprite("Tier II", "res://assets/ui/tech_tiers/cryo_probe_tier_2.png"),
             sprite("Tier III", "res://assets/ui/tech_tiers/helios_cannon_tier_3.png"),
-            sprite("Apex", "res://assets/ui/tech_tiers/bio_lab_tier_4.png"),
+            sprite("Apex", "res://assets/ui/tech_tiers/apex_tier.png"),
         }),
         "Tech icons: every finished run can become permanent research."
     );

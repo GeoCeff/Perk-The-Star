@@ -49,6 +49,8 @@ void GameCatalogNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_enemy_spawn_padding"), &GameCatalogNative::get_enemy_spawn_padding);
     ClassDB::bind_method(D_METHOD("get_slot_angle_offset"), &GameCatalogNative::get_slot_angle_offset);
     ClassDB::bind_method(D_METHOD("get_flare_damage"), &GameCatalogNative::get_flare_damage);
+    ClassDB::bind_method(D_METHOD("get_flare_overcharge_cost"), &GameCatalogNative::get_flare_overcharge_cost);
+    ClassDB::bind_method(D_METHOD("get_flare_overcharge_damage_bonus"), &GameCatalogNative::get_flare_overcharge_damage_bonus);
     ClassDB::bind_method(D_METHOD("get_burrower_dig_radius"), &GameCatalogNative::get_burrower_dig_radius);
     ClassDB::bind_method(D_METHOD("get_burrower_excavation_hp"), &GameCatalogNative::get_burrower_excavation_hp);
     ClassDB::bind_method(D_METHOD("get_burrower_drain_interval"), &GameCatalogNative::get_burrower_drain_interval);
@@ -75,6 +77,8 @@ void GameCatalogNative::_bind_methods() {
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "enemy_spawn_padding"), "", "get_enemy_spawn_padding");
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "slot_angle_offset"), "", "get_slot_angle_offset");
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "flare_damage"), "", "get_flare_damage");
+    ADD_PROPERTY(PropertyInfo(Variant::INT, "flare_overcharge_cost"), "", "get_flare_overcharge_cost");
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "flare_overcharge_damage_bonus"), "", "get_flare_overcharge_damage_bonus");
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "burrower_dig_radius"), "", "get_burrower_dig_radius");
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "burrower_excavation_hp"), "", "get_burrower_excavation_hp");
     ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "burrower_drain_interval"), "", "get_burrower_drain_interval");

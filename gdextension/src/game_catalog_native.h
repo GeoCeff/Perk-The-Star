@@ -19,6 +19,8 @@ public:
     double get_enemy_spawn_padding() const { return 260.0; }
     double get_slot_angle_offset() const { return -1.57079632679489661923; }
     double get_flare_damage() const { return 110.0; }
+    int get_flare_overcharge_cost() const { return 45; }
+    double get_flare_overcharge_damage_bonus() const { return 75.0; }
     double get_burrower_dig_radius() const { return 74.0; }
     double get_burrower_excavation_hp() const { return 42.0; }
     double get_burrower_drain_interval() const { return 1.0; }

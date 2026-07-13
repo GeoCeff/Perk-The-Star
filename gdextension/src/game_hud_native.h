@@ -50,6 +50,7 @@ private:
     ProgressBar* luminosity_bar = nullptr;
     Button* start_button = nullptr;
     Button* auto_start_button = nullptr;
+    Button* overcharge_button = nullptr;
     Button* menu_button = nullptr;
     PanelContainer* top_panel = nullptr;
     PanelContainer* status_panel = nullptr;
@@ -126,6 +127,7 @@ private:
 
     void on_start_button_pressed();
     void on_auto_start_button_toggled(bool enabled);
+    void on_overcharge_button_pressed();
     void on_menu_button_pressed();
     void on_tower_button_pressed(const String& tower_type);
     void on_tower_manage_upgrade_pressed();

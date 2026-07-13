@@ -31,6 +31,81 @@ class TechTreeBoard:
 			draw_circle(to_pos, 5.0, color)
 
 
+class TechTreeTooltipButton:
+	extends Button
+
+	var tooltip_data: Dictionary = {}
+
+	func _make_custom_tooltip(_for_text: String) -> Control:
+		var accent: Color = tooltip_data.get("accent", Color(0.22, 0.84, 0.94, 0.88))
+		var panel := PanelContainer.new()
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_theme_stylebox_override("panel", _tooltip_panel_style(accent))
+
+		var box := VBoxContainer.new()
+		box.custom_minimum_size = Vector2(280.0, 0.0)
+		box.add_theme_constant_override("separation", 6)
+		panel.add_child(box)
+
+		var top := HBoxContainer.new()
+		top.add_theme_constant_override("separation", 8)
+		box.add_child(top)
+
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(42.0, 42.0)
+		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = tooltip_data.get("icon", null)
+		top.add_child(icon)
+
+		var title_box := VBoxContainer.new()
+		title_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title_box.add_theme_constant_override("separation", 2)
+		top.add_child(title_box)
+
+		var title := Label.new()
+		title.text = str(tooltip_data.get("title", "")).to_upper()
+		title.add_theme_font_size_override("font_size", 15)
+		title.add_theme_color_override("font_color", Color(1.0, 0.78, 0.26, 0.96))
+		title_box.add_child(title)
+
+		var state := Label.new()
+		state.text = str(tooltip_data.get("state", ""))
+		state.add_theme_font_size_override("font_size", 10)
+		state.add_theme_color_override("font_color", accent)
+		title_box.add_child(state)
+
+		var desc := Label.new()
+		desc.text = str(tooltip_data.get("desc", ""))
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc.add_theme_font_size_override("font_size", 12)
+		desc.add_theme_color_override("font_color", Color(0.84, 0.91, 1.0, 0.94))
+		box.add_child(desc)
+
+		var req := Label.new()
+		req.text = str(tooltip_data.get("req", ""))
+		req.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		req.add_theme_font_size_override("font_size", 11)
+		req.add_theme_color_override("font_color", Color(0.58, 0.70, 0.82, 0.92))
+		box.add_child(req)
+		return panel
+
+	func _tooltip_panel_style(border: Color) -> StyleBoxFlat:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.014, 0.020, 0.036, 0.98)
+		style.border_color = border
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(8)
+		style.set_content_margin(SIDE_LEFT, 12.0)
+		style.set_content_margin(SIDE_RIGHT, 12.0)
+		style.set_content_margin(SIDE_TOP, 10.0)
+		style.set_content_margin(SIDE_BOTTOM, 10.0)
+		style.shadow_color = Color(0.0, 0.0, 0.0, 0.50)
+		style.shadow_size = 9
+		style.shadow_offset = Vector2(0.0, 2.0)
+		return style
+
+
 const UPGRADES: Array = [
 	{
 		"id": "solar_lens",
@@ -272,16 +347,6 @@ const UPGRADES: Array = [
 		"req": ["resilient_bloom"],
 		"desc": "Tardigrade Bombs gain 8% damage, rate, and range.",
 	},
-	{
-		"id": "apex_master",
-		"title": "Apex Master",
-		"row": 2.5,
-		"col": 4,
-		"tower": "bio_lab",
-		"cost": 3000,
-		"req": ["photon_apex", "cryo_apex", "bio_apex", "magnetic_apex", "helios_apex", "tardigrade_apex"],
-		"desc": "All towers count as apex-tuned. Control slows last longer and Solar Flare hits harder.",
-	},
 ]
 
 const LINKS: Array = [
@@ -303,12 +368,6 @@ const LINKS: Array = [
 	["pressure_hull", "spore_nests"],
 	["spore_nests", "resilient_bloom"],
 	["resilient_bloom", "tardigrade_apex"],
-	["photon_apex", "apex_master"],
-	["cryo_apex", "apex_master"],
-	["bio_apex", "apex_master"],
-	["magnetic_apex", "apex_master"],
-	["helios_apex", "apex_master"],
-	["tardigrade_apex", "apex_master"],
 ]
 
 const TOWER_ICONS: Dictionary = {
@@ -321,13 +380,15 @@ const TOWER_ICONS: Dictionary = {
 }
 
 const TECH_TIER_ICON_PATH := "res://assets/ui/tech_tiers/%s_tier_%d.png"
+const APEX_ICON_PATH := "res://assets/ui/tech_tiers/apex_tier.png"
+const APEX_TECH_IDS := ["photon_apex", "cryo_apex", "bio_apex", "magnetic_apex", "helios_apex", "tardigrade_apex"]
 
 const COLOR_DEEP := Color(0.006, 0.012, 0.024, 0.95)
 const COLOR_CYAN := Color(0.22, 0.84, 0.94, 0.88)
 const COLOR_GOLD := Color(1.0, 0.78, 0.26, 0.92)
 const COLOR_MUTED := Color(0.58, 0.70, 0.82, 0.86)
 const COLOR_TEXT := Color(0.90, 0.96, 1.0, 1.0)
-const TREE_COLS := 5.0
+const TREE_COLS := 4.0
 const TREE_ROWS := 6.0
 
 var SpaceTheme: RefCounted = ClassDB.instantiate("SpaceThemeNative") as RefCounted
@@ -437,7 +498,7 @@ func _build_overlay() -> void:
 
 	subtitle_label = Label.new()
 	subtitle_label.name = "SubtitleLabel"
-	subtitle_label.text = "Each tower has its own path and apex version."
+	subtitle_label.text = "Each tower has its own path. Choose one apex."
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle_label.add_theme_font_size_override("font_size", 15)
 	subtitle_label.add_theme_color_override("font_color", Color(0.82, 0.90, 1.0, 0.94))
@@ -554,11 +615,12 @@ func _build_upgrade_nodes() -> void:
 		tree_board.add_child(card)
 		node_cards[id] = card
 
-		var button := Button.new()
+		var button := TechTreeTooltipButton.new()
 		button.name = "IconButton"
 		button.text = ""
 		button.focus_mode = Control.FOCUS_ALL
-		button.tooltip_text = _upgrade_tooltip(upgrade)
+		button.tooltip_text = str(upgrade["id"])
+		button.tooltip_data = _upgrade_tooltip_data(upgrade)
 		button.expand_icon = true
 		button.set_button_icon(_load_upgrade_icon(upgrade))
 		button.pressed.connect(_select_upgrade.bind(id))
@@ -704,6 +766,8 @@ func _refresh_tree() -> void:
 		var label := card.get_node("NodeLabel") as Label
 		var tag := card.get_node("NodeTag") as Label
 		_style_upgrade_button(button, "selected" if id == selected_id else state)
+		if button is TechTreeTooltipButton:
+			button.tooltip_data = _upgrade_tooltip_data(upgrade)
 		label.add_theme_color_override("font_color", COLOR_TEXT if state != "locked" else COLOR_MUTED)
 		tag.text = _upgrade_tag(upgrade)
 		tag.add_theme_color_override("font_color", _state_color(state))
@@ -745,6 +809,8 @@ func _tech_effects_enabled() -> bool:
 
 func _update_unlock_button(upgrade: Dictionary) -> void:
 	var state: String = _upgrade_state(upgrade)
+	var id: String = str(upgrade["id"])
+	var apex_blocked := _is_apex_upgrade(id) and _apex_choice_unlocked(id)
 	var cost: int = int(upgrade["cost"])
 	unlock_button.disabled = state != "ready"
 	match state:
@@ -754,7 +820,10 @@ func _update_unlock_button(upgrade: Dictionary) -> void:
 			unlock_button.text = "UNLOCK\n%s XP" % _format_number(cost)
 		"locked":
 			if _requirements_met(upgrade):
-				unlock_button.text = "NEED\n%s MORE" % _format_number(max(0, cost - _tech_xp()))
+				if apex_blocked:
+					unlock_button.text = "APEX\nCHOSEN"
+				else:
+					unlock_button.text = "COST %s XP\nNEED %s MORE" % [_format_number(cost), _format_number(max(0, cost - _tech_xp()))]
 			else:
 				unlock_button.text = "LOCKED"
 		_:
@@ -764,7 +833,9 @@ func _update_unlock_button(upgrade: Dictionary) -> void:
 func _upgrade_state(upgrade: Dictionary) -> String:
 	var id: String = str(upgrade["id"])
 	if bool(GameState.call("has_tech", id)):
-		return "master" if id == "apex_master" or id.ends_with("_apex") else "unlocked"
+		return "master" if _is_apex_upgrade(id) else "unlocked"
+	if _is_apex_upgrade(id) and _apex_choice_unlocked(id):
+		return "locked"
 	if not _requirements_met(upgrade):
 		return "locked"
 	return "ready" if _tech_xp() >= int(upgrade["cost"]) else "locked"
@@ -780,10 +851,14 @@ func _upgrade_tag(upgrade: Dictionary) -> String:
 		"ready":
 			return "READY"
 		_:
+			if _is_apex_upgrade(str(upgrade["id"])) and _apex_choice_unlocked(str(upgrade["id"])):
+				return "CHOSEN"
 			return "%s XP" % _format_number(int(upgrade["cost"])) if _requirements_met(upgrade) else "LOCKED"
 
 
 func _requirement_text(upgrade: Dictionary) -> String:
+	if _is_apex_upgrade(str(upgrade["id"])) and _apex_choice_unlocked(str(upgrade["id"])):
+		return "Apex already chosen"
 	var reqs := _requirements(upgrade)
 	if reqs.is_empty():
 		return "No prerequisite"
@@ -796,15 +871,22 @@ func _requirement_text(upgrade: Dictionary) -> String:
 
 
 func _upgrade_description(upgrade: Dictionary) -> String:
-	return "Tier %d - %s" % [_upgrade_tier(upgrade), str(upgrade.get("desc", ""))]
+	var desc := str(upgrade.get("desc", ""))
+	if _is_apex_upgrade(str(upgrade["id"])):
+		desc += " Only one apex can be chosen."
+	return "Tier %d - %s" % [_upgrade_tier(upgrade), desc]
 
 
-func _upgrade_tooltip(upgrade: Dictionary) -> String:
-	return "%s\n%s\n%s" % [
-		str(upgrade["title"]),
-		_upgrade_description(upgrade),
-		_requirement_text(upgrade),
-	]
+func _upgrade_tooltip_data(upgrade: Dictionary) -> Dictionary:
+	var state := _upgrade_state(upgrade)
+	return {
+		"title": str(upgrade["title"]),
+		"state": _upgrade_tag(upgrade),
+		"desc": _upgrade_description(upgrade),
+		"req": _requirement_text(upgrade),
+		"accent": _state_color(state),
+		"icon": _load_upgrade_icon(upgrade),
+	}
 
 
 func _requirements_met(upgrade: Dictionary) -> bool:
@@ -861,7 +943,22 @@ func _format_number(value: int) -> String:
 func _load_upgrade_icon(upgrade: Dictionary) -> Texture2D:
 	var tower := str(upgrade["tower"])
 	var fallback := str(TOWER_ICONS.get(tower, TOWER_ICONS["photon_splitter"]))
+	if _is_apex_upgrade(str(upgrade["id"])):
+		return _load_texture(APEX_ICON_PATH, fallback)
 	return _load_texture(TECH_TIER_ICON_PATH % [tower, _upgrade_tier(upgrade)], fallback)
+
+
+func _is_apex_upgrade(id: String) -> bool:
+	return APEX_TECH_IDS.has(id)
+
+
+func _apex_choice_unlocked(except_id: String = "") -> bool:
+	if not _is_apex_upgrade(except_id):
+		except_id = ""
+	for id in APEX_TECH_IDS:
+		if id != except_id and bool(GameState.call("has_tech", id)):
+			return true
+	return false
 
 
 func _load_icon(tower: String) -> Texture2D:

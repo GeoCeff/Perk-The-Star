@@ -48,6 +48,7 @@ private:
     ScrollContainer* settings_scroll = nullptr;
     RichTextLabel* settings_body = nullptr;
     HSlider* music_volume_slider = nullptr;
+    HSlider* brightness_slider = nullptr;
     PanelContainer* tutorial_panel = nullptr;
     Label* tutorial_status_label = nullptr;
     Button* tutorial_replay_button = nullptr;
