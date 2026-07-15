@@ -3482,13 +3482,18 @@ func _tower_level(tower: Dictionary) -> int:
 	return int(tower_library.call("level", tower))
 
 
-func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
+func _active_tech_ids() -> Array:
 	var tech_ids: Array = []
 	var tech_effects_enabled: bool = true
 	if GameState.has_method("get_tech_effects_enabled"):
 		tech_effects_enabled = bool(GameState.call("get_tech_effects_enabled"))
 	if tech_effects_enabled and GameState.has_method("get_unlocked_tech"):
 		tech_ids = GameState.call("get_unlocked_tech") as Array
+	return tech_ids
+
+
+func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
+	var tech_ids: Array = _active_tech_ids()
 	var active_draft_package: Dictionary = draft_package if draft_defense_mode else {}
 	return tower_library.call("runtime_stats_with_modifiers", tower, tech_ids, active_draft_package) as Dictionary
 
@@ -3500,18 +3505,11 @@ func _has_tech(tech_id: String) -> bool:
 
 
 func _tech_slow_duration(source: String) -> float:
-	var duration: float = 2.8
-	if source == "cryo_probe" and _has_tech("far_sight"):
-		duration *= 1.25
-	elif source == "magnetic_net" and _has_tech("gravitic_payload"):
-		duration *= 1.25
-	if (source == "cryo_probe" and _has_tech("cryo_apex")) or (source == "magnetic_net" and _has_tech("magnetic_apex")):
-		duration += 0.4
-	return duration
+	return float(tower_library.call("tech_slow_duration", source, _active_tech_ids()))
 
 
 func _slingshot_cost() -> int:
-	return 30 if _has_tech("slingshot_coils") else SLINGSHOT_COST
+	return int(tower_library.call("slingshot_cost", SLINGSHOT_COST, _active_tech_ids()))
 
 
 func _award_run_tech_xp_once(victory: bool) -> int:

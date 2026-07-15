@@ -29,6 +29,8 @@ public:
     Dictionary stats_for_level(const String& tower_type, int tower_level) const;
     Dictionary runtime_stats(const Dictionary& tower) const;
     Dictionary runtime_stats_with_modifiers(const Dictionary& tower, const Array& unlocked_tech, const Dictionary& draft_package) const;
+    double tech_slow_duration(const String& source, const Array& unlocked_tech) const;
+    int slingshot_cost(int base_cost, const Array& unlocked_tech) const;
     int tower_cost(const String& tower_type) const;
     int upgrade_cost(const Dictionary& tower) const;
     int total_spent(const Dictionary& tower) const;

@@ -130,6 +130,8 @@ void GameTowerLibraryNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("stats_for_level", "tower_type", "tower_level"), &GameTowerLibraryNative::stats_for_level);
     ClassDB::bind_method(D_METHOD("runtime_stats", "tower"), &GameTowerLibraryNative::runtime_stats);
     ClassDB::bind_method(D_METHOD("runtime_stats_with_modifiers", "tower", "unlocked_tech", "draft_package"), &GameTowerLibraryNative::runtime_stats_with_modifiers);
+    ClassDB::bind_method(D_METHOD("tech_slow_duration", "source", "unlocked_tech"), &GameTowerLibraryNative::tech_slow_duration);
+    ClassDB::bind_method(D_METHOD("slingshot_cost", "base_cost", "unlocked_tech"), &GameTowerLibraryNative::slingshot_cost);
     ClassDB::bind_method(D_METHOD("tower_cost", "tower_type"), &GameTowerLibraryNative::tower_cost);
     ClassDB::bind_method(D_METHOD("upgrade_cost", "tower"), &GameTowerLibraryNative::upgrade_cost);
     ClassDB::bind_method(D_METHOD("total_spent", "tower"), &GameTowerLibraryNative::total_spent);
@@ -228,6 +230,23 @@ Dictionary GameTowerLibraryNative::runtime_stats_with_modifiers(const Dictionary
         scale_stat(stats, "range", number_from_dict(draft_package, "range", 1.0));
     }
     return stats;
+}
+
+double GameTowerLibraryNative::tech_slow_duration(const String& source, const Array& unlocked_tech) const {
+    double duration = 2.8;
+    if (source == "cryo_probe" && has_string(unlocked_tech, "far_sight")) {
+        duration *= 1.25;
+    } else if (source == "magnetic_net" && has_string(unlocked_tech, "gravitic_payload")) {
+        duration *= 1.25;
+    }
+    if ((source == "cryo_probe" && has_string(unlocked_tech, "cryo_apex")) || (source == "magnetic_net" && has_string(unlocked_tech, "magnetic_apex"))) {
+        duration += 0.4;
+    }
+    return duration;
+}
+
+int GameTowerLibraryNative::slingshot_cost(int base_cost, const Array& unlocked_tech) const {
+    return has_string(unlocked_tech, "slingshot_coils") ? 30 : base_cost;
 }
 
 int GameTowerLibraryNative::tower_cost(const String& tower_type) const {
