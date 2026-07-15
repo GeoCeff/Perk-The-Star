@@ -3741,19 +3741,7 @@ func _wave_array_value(value) -> Array:
 
 
 func _active_modifier_summary() -> String:
-	var parts: Array = []
-	if cryo_disruption_timer > 0.0:
-		parts.append("Cryo offline %.0fs" % cryo_disruption_timer)
-	if bio_lab_boost_timer > 0.0:
-		parts.append("Bio %.0fx" % bio_lab_boost_multiplier)
-	if not ring_blind_timers.is_empty():
-		var ring_parts: Array = []
-		for ring_index in ring_blind_timers.keys():
-			ring_parts.append("R%d %.0fs" % [int(ring_index) + 1, float(ring_blind_timers[ring_index])])
-		parts.append("Dark %s" % ", ".join(ring_parts))
-	if not parts.is_empty():
-		return "\n%s" % " / ".join(parts)
-	return ""
+	return str(runtime_native.call("active_modifier_summary", cryo_disruption_timer, bio_lab_boost_timer, bio_lab_boost_multiplier, ring_blind_timers))
 
 
 func _selected_tower_readout() -> String:

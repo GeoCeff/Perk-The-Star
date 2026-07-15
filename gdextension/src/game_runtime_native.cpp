@@ -41,6 +41,7 @@ void GameRuntimeNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("run_record_text", "summary", "fallback_run_mode", "boss_rush_waves", "daily_seed_waves", "draft_defense_waves"), &GameRuntimeNative::run_record_text);
     ClassDB::bind_method(D_METHOD("end_state_view_data", "state"), &GameRuntimeNative::end_state_view_data);
     ClassDB::bind_method(D_METHOD("wave_clear_message", "prefix", "reward", "perfect_orbit", "perfect_orbit_sol_bonus", "perfect_orbit_score_bonus"), &GameRuntimeNative::wave_clear_message);
+    ClassDB::bind_method(D_METHOD("active_modifier_summary", "cryo_disruption_timer", "bio_lab_boost_timer", "bio_lab_boost_multiplier", "ring_blind_timers"), &GameRuntimeNative::active_modifier_summary);
     ClassDB::bind_method(
         D_METHOD("physics_projectile_hit_index", "enemies", "pos", "previous_pos", "base_hit_radius"),
         &GameRuntimeNative::physics_projectile_hit_index);
@@ -242,6 +243,26 @@ String GameRuntimeNative::wave_clear_message(const String& prefix, int reward, b
         text += vformat(" Perfect Orbit: +%d Sol, +%d score.", perfect_orbit_sol_bonus, perfect_orbit_score_bonus);
     }
     return text;
+}
+
+String GameRuntimeNative::active_modifier_summary(double cryo_disruption_timer, double bio_lab_boost_timer, double bio_lab_boost_multiplier, const Dictionary& ring_blind_timers) const {
+    Array parts;
+    if (cryo_disruption_timer > 0.0) {
+        parts.append(vformat("Cryo offline %.0fs", cryo_disruption_timer));
+    }
+    if (bio_lab_boost_timer > 0.0) {
+        parts.append(vformat("Bio %.0fx", bio_lab_boost_multiplier));
+    }
+    if (!ring_blind_timers.is_empty()) {
+        Array ring_parts;
+        const Array keys = ring_blind_timers.keys();
+        for (int i = 0; i < keys.size(); ++i) {
+            const Variant key = keys[i];
+            ring_parts.append(vformat("R%d %.0fs", static_cast<int>(key) + 1, static_cast<double>(ring_blind_timers[key])));
+        }
+        parts.append(vformat("Dark %s", String(", ").join(ring_parts)));
+    }
+    return parts.is_empty() ? String("") : vformat("\n%s", String(" / ").join(parts));
 }
 
 int GameRuntimeNative::physics_projectile_hit_index(const Array& enemies, const Vector2& pos, const Vector2& previous_pos, double base_hit_radius) const {
