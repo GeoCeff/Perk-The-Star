@@ -3483,68 +3483,14 @@ func _tower_level(tower: Dictionary) -> int:
 
 
 func _tower_runtime_stats(tower: Dictionary) -> Dictionary:
-	var stats: Dictionary = tower_library.call("runtime_stats", tower) as Dictionary
-	var tower_type: String = str(tower.get("type", "photon_splitter"))
-	var apex_id := ""
-	match tower_type:
-		"photon_splitter":
-			apex_id = "photon_apex"
-			if _has_tech("solar_lens"):
-				stats["range"] = float(stats["range"]) * 1.10
-			if _has_tech("split_beam"):
-				stats["damage"] = float(stats["damage"]) * 1.12
-			if _has_tech("plasma_core"):
-				stats["rate"] = float(stats["rate"]) * 1.10
-		"cryo_probe":
-			apex_id = "cryo_apex"
-			if _has_tech("long_orbit"):
-				stats["range"] = float(stats["range"]) * 1.05
-			if _has_tech("far_sight"):
-				stats["range"] = float(stats["range"]) * 1.12
-		"bio_lab":
-			apex_id = "bio_apex"
-			if _has_tech("bio_splice"):
-				stats["rate"] = float(stats["rate"]) * 1.12
-			if _has_tech("solar_choir"):
-				stats["damage"] = float(stats["damage"]) * 1.10
-				stats["range"] = float(stats["range"]) * 1.10
-		"magnetic_net":
-			apex_id = "magnetic_apex"
-			if _has_tech("rapid_charge"):
-				stats["rate"] = float(stats["rate"]) * 1.05
-			if _has_tech("magnetic_lattice"):
-				stats["range"] = float(stats["range"]) * 1.10
-			if _has_tech("gravitic_payload"):
-				stats["range"] = float(stats["range"]) * 1.10
-		"helios_cannon":
-			apex_id = "helios_apex"
-			if _has_tech("stellar_lance"):
-				stats["damage"] = float(stats["damage"]) * 1.14
-		"tardigrade_bomb":
-			apex_id = "tardigrade_apex"
-			if _has_tech("pressure_hull"):
-				stats["range"] = float(stats["range"]) * 1.10
-			if _has_tech("spore_nests"):
-				stats["rate"] = float(stats["rate"]) * 1.08
-			if _has_tech("resilient_bloom"):
-				stats["damage"] = float(stats["damage"]) * 1.14
-	if _has_tech(apex_id):
-		stats["damage"] = float(stats["damage"]) * 1.08
-		stats["rate"] = float(stats["rate"]) * 1.08
-		stats["range"] = float(stats["range"]) * 1.08
-	_apply_draft_package_stats(tower_type, stats)
-	return stats
-
-
-func _apply_draft_package_stats(tower_type: String, stats: Dictionary) -> void:
-	if not draft_defense_mode or draft_package.is_empty():
-		return
-	var draft_towers: Array = draft_package.get("towers", [])
-	if not draft_towers.has(tower_type):
-		return
-	stats["damage"] = float(stats["damage"]) * float(draft_package.get("damage", 1.0))
-	stats["rate"] = float(stats["rate"]) * float(draft_package.get("rate", 1.0))
-	stats["range"] = float(stats["range"]) * float(draft_package.get("range", 1.0))
+	var tech_ids: Array = []
+	var tech_effects_enabled: bool = true
+	if GameState.has_method("get_tech_effects_enabled"):
+		tech_effects_enabled = bool(GameState.call("get_tech_effects_enabled"))
+	if tech_effects_enabled and GameState.has_method("get_unlocked_tech"):
+		tech_ids = GameState.call("get_unlocked_tech") as Array
+	var active_draft_package: Dictionary = draft_package if draft_defense_mode else {}
+	return tower_library.call("runtime_stats_with_modifiers", tower, tech_ids, active_draft_package) as Dictionary
 
 
 func _has_tech(tech_id: String) -> bool:

@@ -106,6 +106,19 @@ double number_from_dict(const Dictionary& dict, const String& key, double fallba
     return fallback;
 }
 
+bool has_string(const Array& values, const String& expected) {
+    for (int i = 0; i < values.size(); ++i) {
+        if (String(values[i]) == expected) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void scale_stat(Dictionary& stats, const String& key, double multiplier) {
+    stats[key] = number_from_dict(stats, key, 0.0) * multiplier;
+}
+
 }
 
 void GameTowerLibraryNative::_bind_methods() {
@@ -116,6 +129,7 @@ void GameTowerLibraryNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("level", "tower"), &GameTowerLibraryNative::level);
     ClassDB::bind_method(D_METHOD("stats_for_level", "tower_type", "tower_level"), &GameTowerLibraryNative::stats_for_level);
     ClassDB::bind_method(D_METHOD("runtime_stats", "tower"), &GameTowerLibraryNative::runtime_stats);
+    ClassDB::bind_method(D_METHOD("runtime_stats_with_modifiers", "tower", "unlocked_tech", "draft_package"), &GameTowerLibraryNative::runtime_stats_with_modifiers);
     ClassDB::bind_method(D_METHOD("tower_cost", "tower_type"), &GameTowerLibraryNative::tower_cost);
     ClassDB::bind_method(D_METHOD("upgrade_cost", "tower"), &GameTowerLibraryNative::upgrade_cost);
     ClassDB::bind_method(D_METHOD("total_spent", "tower"), &GameTowerLibraryNative::total_spent);
@@ -164,6 +178,56 @@ Dictionary GameTowerLibraryNative::stats_for_level(const String& tower_type, int
 
 Dictionary GameTowerLibraryNative::runtime_stats(const Dictionary& tower) const {
     return stats_for_level(string_from_dict(tower, "type", "photon_splitter"), level(tower));
+}
+
+Dictionary GameTowerLibraryNative::runtime_stats_with_modifiers(const Dictionary& tower, const Array& unlocked_tech, const Dictionary& draft_package) const {
+    Dictionary stats = runtime_stats(tower);
+    const String tower_type = string_from_dict(tower, "type", "photon_splitter");
+    String apex_id;
+    if (tower_type == "photon_splitter") {
+        apex_id = "photon_apex";
+        if (has_string(unlocked_tech, "solar_lens")) scale_stat(stats, "range", 1.10);
+        if (has_string(unlocked_tech, "split_beam")) scale_stat(stats, "damage", 1.12);
+        if (has_string(unlocked_tech, "plasma_core")) scale_stat(stats, "rate", 1.10);
+    } else if (tower_type == "cryo_probe") {
+        apex_id = "cryo_apex";
+        if (has_string(unlocked_tech, "long_orbit")) scale_stat(stats, "range", 1.05);
+        if (has_string(unlocked_tech, "far_sight")) scale_stat(stats, "range", 1.12);
+    } else if (tower_type == "bio_lab") {
+        apex_id = "bio_apex";
+        if (has_string(unlocked_tech, "bio_splice")) scale_stat(stats, "rate", 1.12);
+        if (has_string(unlocked_tech, "solar_choir")) {
+            scale_stat(stats, "damage", 1.10);
+            scale_stat(stats, "range", 1.10);
+        }
+    } else if (tower_type == "magnetic_net") {
+        apex_id = "magnetic_apex";
+        if (has_string(unlocked_tech, "rapid_charge")) scale_stat(stats, "rate", 1.05);
+        if (has_string(unlocked_tech, "magnetic_lattice")) scale_stat(stats, "range", 1.10);
+        if (has_string(unlocked_tech, "gravitic_payload")) scale_stat(stats, "range", 1.10);
+    } else if (tower_type == "helios_cannon") {
+        apex_id = "helios_apex";
+        if (has_string(unlocked_tech, "stellar_lance")) scale_stat(stats, "damage", 1.14);
+    } else if (tower_type == "tardigrade_bomb") {
+        apex_id = "tardigrade_apex";
+        if (has_string(unlocked_tech, "pressure_hull")) scale_stat(stats, "range", 1.10);
+        if (has_string(unlocked_tech, "spore_nests")) scale_stat(stats, "rate", 1.08);
+        if (has_string(unlocked_tech, "resilient_bloom")) scale_stat(stats, "damage", 1.14);
+    }
+    if (!apex_id.is_empty() && has_string(unlocked_tech, apex_id)) {
+        scale_stat(stats, "damage", 1.08);
+        scale_stat(stats, "rate", 1.08);
+        scale_stat(stats, "range", 1.08);
+    }
+
+    const Variant raw_draft_towers = draft_package.get("towers", Array());
+    const Array draft_towers = raw_draft_towers.get_type() == Variant::ARRAY ? Array(raw_draft_towers) : Array();
+    if (draft_towers.has(tower_type)) {
+        scale_stat(stats, "damage", number_from_dict(draft_package, "damage", 1.0));
+        scale_stat(stats, "rate", number_from_dict(draft_package, "rate", 1.0));
+        scale_stat(stats, "range", number_from_dict(draft_package, "range", 1.0));
+    }
+    return stats;
 }
 
 int GameTowerLibraryNative::tower_cost(const String& tower_type) const {
