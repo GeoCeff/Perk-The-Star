@@ -8,6 +8,7 @@ namespace godot {
 class Button;
 class Label;
 class PanelContainer;
+class VBoxContainer;
 
 class MainMenuNative : public Control {
     GDCLASS(MainMenuNative, Control)
@@ -18,9 +19,11 @@ protected:
 public:
     void _ready() override;
     void _input(const Ref<InputEvent>& event) override;
+    void _unhandled_input(const Ref<InputEvent>& event) override;
 
 private:
     Button* btn_play = nullptr;
+    Button* btn_tech_tree = nullptr;
     Button* btn_codex = nullptr;
     Button* btn_settings = nullptr;
     Button* btn_credits = nullptr;
@@ -32,8 +35,21 @@ private:
     Label* description_label = nullptr;
     Label* version_label = nullptr;
     Label* author_label = nullptr;
+    Control* mode_overlay = nullptr;
+    PanelContainer* mode_info_panel = nullptr;
+    Label* mode_info_title = nullptr;
+    Label* mode_info_kicker = nullptr;
+    Label* mode_info_body = nullptr;
+    Label* mode_info_note = nullptr;
 
     void apply_menu_style();
+    void show_mode_overlay();
+    void add_mode_button(VBoxContainer* box, const String& mode, bool primary);
+    void build_mode_info_panel();
+    void show_mode_info(const String& mode);
+    void close_mode_overlay();
+    void show_tech_tree();
+    void start_mode(const String& mode);
     Object* space_theme() const;
 };
 

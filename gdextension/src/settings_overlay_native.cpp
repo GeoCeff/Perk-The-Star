@@ -35,7 +35,7 @@ constexpr const char* SETTINGS_BODY =
     "Gameplay Files\n"
     "- Gameplay HUD lives in res://scenes/ui/game_hud.tscn.\n"
     "- Wave data lives in res://data/waves/wave_01.json through wave_12.json.\n"
-    "- Main menu mode selection is handled by res://scripts/ui/main_menu_mode_router.gd.\n\n"
+    "- Main menu mode selection is handled by gdextension/src/main_menu_native.cpp.\n\n"
     "Audio\n"
     "- Use this settings panel to toggle music or change music volume.\n"
     "- Main menu, wave, boss, and ending music all read the same saved music setting.\n"

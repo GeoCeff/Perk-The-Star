@@ -9,7 +9,6 @@
 [ext_resource type="Texture2D" uid="uid://bc5265q8mnp70" path="res://assets/ui/icons/icon_settings.png" id="7_rcqid"]
 [ext_resource type="Texture2D" uid="uid://bbq21rshirdgk" path="res://assets/ui/icons/icon_back.png" id="8_1ajci"]
 [ext_resource type="Texture2D" uid="uid://dkwmyvmnmwvcr" path="res://assets/ui/icons/icon_credits.svg" id="9_credits"]
-[ext_resource type="Script" path="res://scripts/ui/main_menu_mode_router.gd" id="10_modes"]
 
 [sub_resource type="Shader" id="Shader_7b55j"]
 code = "
@@ -739,6 +738,3 @@ theme_override_fonts/font = ExtResource("3_jk1qb")
 theme_override_font_sizes/font_size = 16
 text = "Geo Ceff Gabaisen & Dexter Juevesano"
 horizontal_alignment = 2
-
-[node name="ModeRouter" type="Node" parent="."]
-script = ExtResource("10_modes")
