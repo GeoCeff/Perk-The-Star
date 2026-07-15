@@ -23,6 +23,7 @@ public:
     Dictionary run_tech_xp_award(int performance_score, int enemies_killed_total, int waves_cleared, int luminosity_percent, int max_waves, bool victory, const String& run_mode) const;
     String run_record_text(const Dictionary& summary, const String& fallback_run_mode, int boss_rush_waves, int daily_seed_waves, int draft_defense_waves) const;
     Dictionary end_state_view_data(const Dictionary& state) const;
+    String wave_clear_message(const String& prefix, int reward, bool perfect_orbit, int perfect_orbit_sol_bonus, int perfect_orbit_score_bonus) const;
     int physics_projectile_hit_index(const Array& enemies, const Vector2& pos, const Vector2& previous_pos, double base_hit_radius) const;
     int enemy_index_by_uid(const Array& enemies, int enemy_uid) const;
     bool projectile_segment_hits_point(const Vector2& previous_pos, const Vector2& pos, const Vector2& target_pos, double hit_radius) const;

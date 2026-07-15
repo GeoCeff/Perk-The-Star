@@ -40,6 +40,7 @@ void GameRuntimeNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("run_tech_xp_award", "performance_score", "enemies_killed_total", "waves_cleared", "luminosity_percent", "max_waves", "victory", "run_mode"), &GameRuntimeNative::run_tech_xp_award);
     ClassDB::bind_method(D_METHOD("run_record_text", "summary", "fallback_run_mode", "boss_rush_waves", "daily_seed_waves", "draft_defense_waves"), &GameRuntimeNative::run_record_text);
     ClassDB::bind_method(D_METHOD("end_state_view_data", "state"), &GameRuntimeNative::end_state_view_data);
+    ClassDB::bind_method(D_METHOD("wave_clear_message", "prefix", "reward", "perfect_orbit", "perfect_orbit_sol_bonus", "perfect_orbit_score_bonus"), &GameRuntimeNative::wave_clear_message);
     ClassDB::bind_method(
         D_METHOD("physics_projectile_hit_index", "enemies", "pos", "previous_pos", "base_hit_radius"),
         &GameRuntimeNative::physics_projectile_hit_index);
@@ -233,6 +234,14 @@ Dictionary GameRuntimeNative::end_state_view_data(const Dictionary& state) const
     data["stats"] = stats;
     data["tip"] = tip;
     return data;
+}
+
+String GameRuntimeNative::wave_clear_message(const String& prefix, int reward, bool perfect_orbit, int perfect_orbit_sol_bonus, int perfect_orbit_score_bonus) const {
+    String text = vformat("%s. Corps reward: %d Sol Credits.", prefix, reward);
+    if (perfect_orbit) {
+        text += vformat(" Perfect Orbit: +%d Sol, +%d score.", perfect_orbit_sol_bonus, perfect_orbit_score_bonus);
+    }
+    return text;
 }
 
 int GameRuntimeNative::physics_projectile_hit_index(const Array& enemies, const Vector2& pos, const Vector2& previous_pos, double base_hit_radius) const {

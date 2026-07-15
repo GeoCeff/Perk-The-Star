@@ -2107,10 +2107,7 @@ func _check_wave_clear() -> void:
 
 
 func _wave_clear_message(prefix: String, reward: int, perfect_orbit: bool) -> String:
-	var text: String = "%s. Corps reward: %d Sol Credits." % [prefix, reward]
-	if perfect_orbit:
-		text += " Perfect Orbit: +%d Sol, +%d score." % [PERFECT_ORBIT_SOL_BONUS, PERFECT_ORBIT_SCORE_BONUS]
-	return text
+	return str(runtime_native.call("wave_clear_message", prefix, reward, perfect_orbit, PERFECT_ORBIT_SOL_BONUS, PERFECT_ORBIT_SCORE_BONUS))
 
 
 func _try_launch_counter_attack() -> bool:
