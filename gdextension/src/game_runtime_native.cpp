@@ -17,6 +17,7 @@ void GameRuntimeNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("can_build_towers", "phase", "between_wave", "wave_active"), &GameRuntimeNative::can_build_towers);
     ClassDB::bind_method(D_METHOD("bgm_path_for_wave", "wave_number", "early", "mid", "late", "boss"), &GameRuntimeNative::bgm_path_for_wave);
     ClassDB::bind_method(D_METHOD("run_tech_xp_award", "performance_score", "enemies_killed_total", "waves_cleared", "luminosity_percent", "max_waves", "victory", "run_mode"), &GameRuntimeNative::run_tech_xp_award);
+    ClassDB::bind_method(D_METHOD("run_record_text", "summary", "fallback_run_mode", "boss_rush_waves", "daily_seed_waves", "draft_defense_waves"), &GameRuntimeNative::run_record_text);
     ClassDB::bind_method(
         D_METHOD("physics_projectile_hit_index", "enemies", "pos", "previous_pos", "base_hit_radius"),
         &GameRuntimeNative::physics_projectile_hit_index);
@@ -89,6 +90,34 @@ Dictionary GameRuntimeNative::run_tech_xp_award(int performance_score, int enemi
     award["amount"] = amount;
     award["breakdown"] = vformat("XP: %s = %d", String(" + ").join(xp_parts), amount);
     return award;
+}
+
+String GameRuntimeNative::run_record_text(const Dictionary& summary, const String& fallback_run_mode, int boss_rush_waves, int daily_seed_waves, int draft_defense_waves) const {
+    if (summary.is_empty()) {
+        return "";
+    }
+    const String label = bool(summary.get("new_best", false)) ? "NEW BEST" : "BEST";
+    const String mode = String(summary.get("mode", fallback_run_mode));
+    const int waves = static_cast<int>(summary.get("waves", 0));
+    const int score = static_cast<int>(summary.get("score", 0));
+    const String rank = String(summary.get("rank", "UNRANKED"));
+    const int luminosity = static_cast<int>(summary.get("luminosity", 0));
+    if (mode == "endless") {
+        return waves <= 0 && score <= 0 ? String("") : vformat("%s ENDLESS: WAVE %d | SCORE %d", label, waves, score);
+    }
+    if (mode == "boss_rush") {
+        return waves <= 0 && score <= 0 ? String("") : vformat("%s BOSS RUSH: WAVE %d/%d | SCORE %d", label, waves, boss_rush_waves, score);
+    }
+    if (mode == "daily_seed") {
+        return waves <= 0 && score <= 0 ? String("") : vformat("%s DAILY: WAVE %d/%d | SCORE %d", label, waves, daily_seed_waves, score);
+    }
+    if (mode == "draft_defense") {
+        return waves <= 0 && score <= 0 ? String("") : vformat("%s DRAFT: WAVE %d/%d | SCORE %d", label, waves, draft_defense_waves, score);
+    }
+    if (mode == "no_flare") {
+        return vformat("%s NO-FLARE: SCORE %d | %s | LUM %d%%", label, score, rank, luminosity);
+    }
+    return vformat("%s CAMPAIGN: SCORE %d | %s | LUM %d%%", label, score, rank, luminosity);
 }
 
 int GameRuntimeNative::physics_projectile_hit_index(const Array& enemies, const Vector2& pos, const Vector2& previous_pos, double base_hit_radius) const {

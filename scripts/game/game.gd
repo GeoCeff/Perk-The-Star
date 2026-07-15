@@ -3548,28 +3548,7 @@ func _run_record_text() -> String:
 		summary = GameState.call("best_run_summary", run_mode) as Dictionary
 	if summary.is_empty():
 		return ""
-	var label: String = "NEW BEST" if bool(summary.get("new_best", false)) else "BEST"
-	match str(summary.get("mode", run_mode)):
-		"endless":
-			if int(summary.get("waves", 0)) <= 0 and int(summary.get("score", 0)) <= 0:
-				return ""
-			return "%s ENDLESS: WAVE %d | SCORE %d" % [label, int(summary.get("waves", 0)), int(summary.get("score", 0))]
-		"boss_rush":
-			if int(summary.get("waves", 0)) <= 0 and int(summary.get("score", 0)) <= 0:
-				return ""
-			return "%s BOSS RUSH: WAVE %d/%d | SCORE %d" % [label, int(summary.get("waves", 0)), BOSS_RUSH_WAVES, int(summary.get("score", 0))]
-		"daily_seed":
-			if int(summary.get("waves", 0)) <= 0 and int(summary.get("score", 0)) <= 0:
-				return ""
-			return "%s DAILY: WAVE %d/%d | SCORE %d" % [label, int(summary.get("waves", 0)), DAILY_SEED_WAVES, int(summary.get("score", 0))]
-		"draft_defense":
-			if int(summary.get("waves", 0)) <= 0 and int(summary.get("score", 0)) <= 0:
-				return ""
-			return "%s DRAFT: WAVE %d/%d | SCORE %d" % [label, int(summary.get("waves", 0)), DRAFT_DEFENSE_WAVES, int(summary.get("score", 0))]
-		"no_flare":
-			return "%s NO-FLARE: SCORE %d | %s | LUM %d%%" % [label, int(summary.get("score", 0)), str(summary.get("rank", "UNRANKED")), int(summary.get("luminosity", 0))]
-		_:
-			return "%s CAMPAIGN: SCORE %d | %s | LUM %d%%" % [label, int(summary.get("score", 0)), str(summary.get("rank", "UNRANKED")), int(summary.get("luminosity", 0))]
+	return str(runtime_native.call("run_record_text", summary, run_mode, BOSS_RUSH_WAVES, DAILY_SEED_WAVES, DRAFT_DEFENSE_WAVES))
 
 
 func _tower_upgrade_cost(tower: Dictionary) -> int:
