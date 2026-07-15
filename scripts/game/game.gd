@@ -3577,98 +3577,27 @@ func _end_state_view_data() -> Dictionary:
 	if GameState.game_phase != GameState.GAME_OVER and GameState.game_phase != GameState.VICTORY:
 		return {}
 
-	var victory: bool = GameState.game_phase == GameState.VICTORY
-	var title: String = "SOL SAVED" if victory else "LUMINOSITY COLLAPSE"
-	var subtitle: String = "Mission complete. The defense grid held." if victory else "The defense grid failed. The sun went dark."
-	var rank: String = "RANK  %s" % GameState.get_rank()
-	var stats: String
-	var tip: String = "Open Tech Tree, retry the run, return to the main menu, or press R/M."
-	if endless_mode:
-		title = "ENDLESS RUN ENDED"
-		subtitle = "The swarm finally broke through."
-		rank = "SURVIVED %d WAVES" % GameState.waves_cleared
-		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-			GameState.enemies_killed_total,
-			GameState.performance_score,
-			GameState.get_luminosity_percent(),
-		]
-	elif boss_rush_mode:
-		title = "BOSS RUSH COMPLETE" if victory else "BOSS RUSH ENDED"
-		subtitle = "The Prime echoes collapsed." if victory else "The compressed Prime assault broke through."
-		rank = "RUSH %d/%d WAVES" % [GameState.waves_cleared, BOSS_RUSH_WAVES]
-		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-			GameState.enemies_killed_total,
-			GameState.performance_score,
-			GameState.get_luminosity_percent(),
-		]
-	elif daily_seed_mode:
-		title = "DAILY SEED COMPLETE" if victory else "DAILY SEED ENDED"
-		subtitle = "Today's fixed challenge is clear." if victory else "Today's seed held the line."
-		rank = "SEED %s  |  %d/%d WAVES" % [_daily_seed_label(), GameState.waves_cleared, DAILY_SEED_WAVES]
-		stats = "KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-			GameState.enemies_killed_total,
-			GameState.performance_score,
-			GameState.get_luminosity_percent(),
-		]
-	elif draft_defense_mode:
-		title = "DRAFT DEFENSE COMPLETE" if victory else "DRAFT DEFENSE ENDED"
-		if victory:
-			subtitle = "%s carried the run." % _draft_package_title()
-		else:
-			subtitle = "%s was not enough this time." % _draft_package_title()
-		rank = "DRAFT %d/%d WAVES" % [GameState.waves_cleared, DRAFT_DEFENSE_WAVES]
-		stats = "CONTRACT %s  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-			_draft_package_title().to_upper(),
-			GameState.enemies_killed_total,
-			GameState.performance_score,
-			GameState.get_luminosity_percent(),
-		]
-	elif no_flare_mode:
-		title = "NO-FLARE COMPLETE" if victory else "NO-FLARE RUN ENDED"
-		subtitle = "Prime fell without Solar Flare." if victory else "The no-flare defense line collapsed."
-		stats = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-			GameState.waves_cleared,
-			MAX_WAVES,
-			GameState.enemies_killed_total,
-			GameState.performance_score,
-			GameState.get_luminosity_percent(),
-		]
-	elif victory:
-		stats = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-			GameState.waves_cleared,
-			MAX_WAVES,
-			GameState.enemies_killed_total,
-			GameState.performance_score,
-			GameState.get_luminosity_percent(),
-		]
-		tip = "Run secured. Open Tech Tree, retry for a stronger rank, return to menu, or press R/M."
-	else:
-		stats = "WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%" % [
-			GameState.waves_cleared,
-			MAX_WAVES,
-			GameState.enemies_killed_total,
-			GameState.performance_score,
-			GameState.get_luminosity_percent(),
-		]
-	if run_tech_xp_awarded > 0:
-		stats += "  |  TECH XP +%d" % run_tech_xp_awarded
-		if not run_tech_xp_breakdown.is_empty():
-			stats += "\n%s" % run_tech_xp_breakdown
-	if run_perfect_orbits > 0:
-		stats += "\nPERFECT ORBITS %d" % run_perfect_orbits
-	if run_best_combo >= KILL_COMBO_MIN_COUNT:
-		stats += "\nBEST COMBO x%d" % run_best_combo
-	var record_text: String = _run_record_text()
-	if not record_text.is_empty():
-		stats += "\n%s" % record_text
-	return {
-		"victory": victory,
-		"title": title,
-		"subtitle": subtitle,
-		"rank": rank,
-		"stats": stats,
-		"tip": tip,
-	}
+	return runtime_native.call("end_state_view_data", {
+		"victory": GameState.game_phase == GameState.VICTORY,
+		"run_mode": run_mode,
+		"rank": GameState.get_rank(),
+		"waves_cleared": GameState.waves_cleared,
+		"kills": GameState.enemies_killed_total,
+		"score": GameState.performance_score,
+		"luminosity": GameState.get_luminosity_percent(),
+		"max_waves": MAX_WAVES,
+		"boss_rush_waves": BOSS_RUSH_WAVES,
+		"daily_seed_waves": DAILY_SEED_WAVES,
+		"daily_seed_label": _daily_seed_label(),
+		"draft_defense_waves": DRAFT_DEFENSE_WAVES,
+		"draft_package_title": _draft_package_title(),
+		"tech_xp_awarded": run_tech_xp_awarded,
+		"tech_xp_breakdown": run_tech_xp_breakdown,
+		"perfect_orbits": run_perfect_orbits,
+		"best_combo": run_best_combo,
+		"combo_min_count": KILL_COMBO_MIN_COUNT,
+		"record_text": _run_record_text(),
+	}) as Dictionary
 
 
 func _enemy_config(variant: String) -> Dictionary:

@@ -9,6 +9,27 @@
 
 using namespace godot;
 
+namespace {
+
+int int_from_dict(const Dictionary& dict, const String& key, int fallback) {
+    const Variant value = dict.get(key, fallback);
+    if (value.get_type() == Variant::INT || value.get_type() == Variant::FLOAT) {
+        return static_cast<int>(value);
+    }
+    return fallback;
+}
+
+String string_from_dict(const Dictionary& dict, const String& key, const String& fallback) {
+    return String(dict.get(key, fallback));
+}
+
+bool bool_from_dict(const Dictionary& dict, const String& key, bool fallback) {
+    const Variant value = dict.get(key, fallback);
+    return value.get_type() == Variant::BOOL ? bool(value) : fallback;
+}
+
+}
+
 void GameRuntimeNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("ease_out_cubic", "value"), &GameRuntimeNative::ease_out_cubic);
     ClassDB::bind_method(D_METHOD("ease_in_out_sine", "value"), &GameRuntimeNative::ease_in_out_sine);
@@ -18,6 +39,7 @@ void GameRuntimeNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("bgm_path_for_wave", "wave_number", "early", "mid", "late", "boss"), &GameRuntimeNative::bgm_path_for_wave);
     ClassDB::bind_method(D_METHOD("run_tech_xp_award", "performance_score", "enemies_killed_total", "waves_cleared", "luminosity_percent", "max_waves", "victory", "run_mode"), &GameRuntimeNative::run_tech_xp_award);
     ClassDB::bind_method(D_METHOD("run_record_text", "summary", "fallback_run_mode", "boss_rush_waves", "daily_seed_waves", "draft_defense_waves"), &GameRuntimeNative::run_record_text);
+    ClassDB::bind_method(D_METHOD("end_state_view_data", "state"), &GameRuntimeNative::end_state_view_data);
     ClassDB::bind_method(
         D_METHOD("physics_projectile_hit_index", "enemies", "pos", "previous_pos", "base_hit_radius"),
         &GameRuntimeNative::physics_projectile_hit_index);
@@ -118,6 +140,99 @@ String GameRuntimeNative::run_record_text(const Dictionary& summary, const Strin
         return vformat("%s NO-FLARE: SCORE %d | %s | LUM %d%%", label, score, rank, luminosity);
     }
     return vformat("%s CAMPAIGN: SCORE %d | %s | LUM %d%%", label, score, rank, luminosity);
+}
+
+Dictionary GameRuntimeNative::end_state_view_data(const Dictionary& state) const {
+    if (state.is_empty()) {
+        return Dictionary();
+    }
+    const bool victory = bool_from_dict(state, "victory", false);
+    const String run_mode = string_from_dict(state, "run_mode", "campaign");
+    const int waves_cleared = int_from_dict(state, "waves_cleared", 0);
+    const int kills = int_from_dict(state, "kills", 0);
+    const int score = int_from_dict(state, "score", 0);
+    const int luminosity = int_from_dict(state, "luminosity", 0);
+    const int max_waves = int_from_dict(state, "max_waves", 12);
+    const int boss_rush_waves = int_from_dict(state, "boss_rush_waves", 4);
+    const int daily_seed_waves = int_from_dict(state, "daily_seed_waves", 6);
+    const int draft_defense_waves = int_from_dict(state, "draft_defense_waves", 6);
+    const String game_rank = string_from_dict(state, "rank", "UNRANKED");
+    const String daily_seed_label = string_from_dict(state, "daily_seed_label", "");
+    const String draft_package_title = string_from_dict(state, "draft_package_title", "Pick a contract");
+
+    String title = victory ? "SOL SAVED" : "LUMINOSITY COLLAPSE";
+    String subtitle = victory ? "Mission complete. The defense grid held." : "The defense grid failed. The sun went dark.";
+    String rank = vformat("RANK  %s", game_rank);
+    String stats;
+    String tip = "Open Tech Tree, retry the run, return to the main menu, or press R/M.";
+
+    const auto kill_score_stats = [&]() {
+        return vformat("KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%", kills, score, luminosity);
+    };
+    const auto wave_stats = [&](int wave_limit) {
+        return vformat("WAVES %d/%d  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%", waves_cleared, wave_limit, kills, score, luminosity);
+    };
+
+    if (run_mode == "endless") {
+        title = "ENDLESS RUN ENDED";
+        subtitle = "The swarm finally broke through.";
+        rank = vformat("SURVIVED %d WAVES", waves_cleared);
+        stats = kill_score_stats();
+    } else if (run_mode == "boss_rush") {
+        title = victory ? "BOSS RUSH COMPLETE" : "BOSS RUSH ENDED";
+        subtitle = victory ? "The Prime echoes collapsed." : "The compressed Prime assault broke through.";
+        rank = vformat("RUSH %d/%d WAVES", waves_cleared, boss_rush_waves);
+        stats = kill_score_stats();
+    } else if (run_mode == "daily_seed") {
+        title = victory ? "DAILY SEED COMPLETE" : "DAILY SEED ENDED";
+        subtitle = victory ? "Today's fixed challenge is clear." : "Today's seed held the line.";
+        rank = vformat("SEED %s  |  %d/%d WAVES", daily_seed_label, waves_cleared, daily_seed_waves);
+        stats = kill_score_stats();
+    } else if (run_mode == "draft_defense") {
+        title = victory ? "DRAFT DEFENSE COMPLETE" : "DRAFT DEFENSE ENDED";
+        subtitle = victory ? vformat("%s carried the run.", draft_package_title) : vformat("%s was not enough this time.", draft_package_title);
+        rank = vformat("DRAFT %d/%d WAVES", waves_cleared, draft_defense_waves);
+        stats = vformat("CONTRACT %s  |  KILLS %d  |  SCORE %d  |  LUMINOSITY %d%%", draft_package_title.to_upper(), kills, score, luminosity);
+    } else if (run_mode == "no_flare") {
+        title = victory ? "NO-FLARE COMPLETE" : "NO-FLARE RUN ENDED";
+        subtitle = victory ? "Prime fell without Solar Flare." : "The no-flare defense line collapsed.";
+        stats = wave_stats(max_waves);
+    } else if (victory) {
+        stats = wave_stats(max_waves);
+        tip = "Run secured. Open Tech Tree, retry for a stronger rank, return to menu, or press R/M.";
+    } else {
+        stats = wave_stats(max_waves);
+    }
+
+    const int tech_xp_awarded = int_from_dict(state, "tech_xp_awarded", 0);
+    if (tech_xp_awarded > 0) {
+        stats += vformat("  |  TECH XP +%d", tech_xp_awarded);
+        const String tech_xp_breakdown = string_from_dict(state, "tech_xp_breakdown", "");
+        if (!tech_xp_breakdown.is_empty()) {
+            stats += vformat("\n%s", tech_xp_breakdown);
+        }
+    }
+    const int perfect_orbits = int_from_dict(state, "perfect_orbits", 0);
+    if (perfect_orbits > 0) {
+        stats += vformat("\nPERFECT ORBITS %d", perfect_orbits);
+    }
+    const int best_combo = int_from_dict(state, "best_combo", 0);
+    if (best_combo >= int_from_dict(state, "combo_min_count", 3)) {
+        stats += vformat("\nBEST COMBO x%d", best_combo);
+    }
+    const String record_text = string_from_dict(state, "record_text", "");
+    if (!record_text.is_empty()) {
+        stats += vformat("\n%s", record_text);
+    }
+
+    Dictionary data;
+    data["victory"] = victory;
+    data["title"] = title;
+    data["subtitle"] = subtitle;
+    data["rank"] = rank;
+    data["stats"] = stats;
+    data["tip"] = tip;
+    return data;
 }
 
 int GameRuntimeNative::physics_projectile_hit_index(const Array& enemies, const Vector2& pos, const Vector2& previous_pos, double base_hit_radius) const {
