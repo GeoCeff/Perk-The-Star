@@ -3517,37 +3517,18 @@ func _slingshot_cost() -> int:
 func _award_run_tech_xp_once(victory: bool) -> int:
 	if run_tech_xp_awarded > 0:
 		return run_tech_xp_awarded
-	var score_xp: int = int(floor(float(GameState.performance_score) / 10.0))
-	var kill_xp: int = GameState.enemies_killed_total * 3
-	var wave_xp: int = GameState.waves_cleared * 75
-	var luminosity_bonus: int = max(0, GameState.get_luminosity_percent())
-	var endless_bonus: int = max(0, GameState.waves_cleared - MAX_WAVES) * 35 if endless_mode else 0
-	var victory_bonus: int = 400 if victory else 0
-	var no_flare_bonus: int = (GameState.waves_cleared * 25 + (250 if victory else 0)) if no_flare_mode else 0
-	var boss_rush_bonus: int = (GameState.waves_cleared * 60 + (300 if victory else 0)) if boss_rush_mode else 0
-	var daily_bonus: int = (GameState.waves_cleared * 35 + (180 if victory else 0)) if daily_seed_mode else 0
-	var draft_bonus: int = (GameState.waves_cleared * 45 + (220 if victory else 0)) if draft_defense_mode else 0
-	var amount: int = score_xp + kill_xp + wave_xp + luminosity_bonus + endless_bonus + victory_bonus + no_flare_bonus + boss_rush_bonus + daily_bonus + draft_bonus
-	run_tech_xp_awarded = max(1, amount)
-	var xp_parts: Array = [
-		"SCORE %d" % score_xp,
-		"KILLS %d" % kill_xp,
-		"WAVES %d" % wave_xp,
-		"LUM %d" % luminosity_bonus,
-	]
-	if endless_bonus > 0:
-		xp_parts.append("ENDLESS %d" % endless_bonus)
-	if no_flare_bonus > 0:
-		xp_parts.append("NO-FLARE %d" % no_flare_bonus)
-	if boss_rush_bonus > 0:
-		xp_parts.append("BOSS RUSH %d" % boss_rush_bonus)
-	if daily_bonus > 0:
-		xp_parts.append("DAILY %d" % daily_bonus)
-	if draft_bonus > 0:
-		xp_parts.append("DRAFT %d" % draft_bonus)
-	if victory_bonus > 0:
-		xp_parts.append("VICTORY %d" % victory_bonus)
-	run_tech_xp_breakdown = "XP: %s = %d" % [" + ".join(xp_parts), run_tech_xp_awarded]
+	var award: Dictionary = runtime_native.call(
+		"run_tech_xp_award",
+		GameState.performance_score,
+		GameState.enemies_killed_total,
+		GameState.waves_cleared,
+		GameState.get_luminosity_percent(),
+		MAX_WAVES,
+		victory,
+		run_mode
+	) as Dictionary
+	run_tech_xp_awarded = int(award.get("amount", 1))
+	run_tech_xp_breakdown = str(award.get("breakdown", ""))
 	GameState.call("add_tech_xp", run_tech_xp_awarded)
 	if GameState.has_method("record_run"):
 		run_record_summary = GameState.call(

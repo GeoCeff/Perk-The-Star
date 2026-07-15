@@ -85,7 +85,7 @@ Copy one prompt at a time. These are written for the existing Godot 4.6 + GDExte
 
 35. Tune Endless so waves 1-5 onboard, 6-12 pressure, 13+ scale, and every 5th/7th/10th wave feels different. Keep formulas readable in `GameWaveLibraryNative::endless_wave_data`.
 
-36. Balance Tech XP earnings so a failed early run still unlocks something soon, but apex upgrades still require repeat play. Adjust `_award_run_tech_xp_once` only if needed.
+36. Balance Tech XP earnings so a failed early run still unlocks something soon, but apex upgrades still require repeat play. Adjust `GameRuntimeNative::run_tech_xp_award` only if needed.
 
 37. Audit tower costs and upgrade costs across Photon, Cryo, Bio-Lab, Magnetic, Helios, and Tardigrade. Make one focused balance pass and explain the intended role of each.
 

@@ -3,6 +3,8 @@
 #include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/core/class_db.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 
 using namespace godot;
@@ -14,6 +16,7 @@ void GameRuntimeNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("screen_shake_offset", "timer", "enabled", "strength"), &GameRuntimeNative::screen_shake_offset);
     ClassDB::bind_method(D_METHOD("can_build_towers", "phase", "between_wave", "wave_active"), &GameRuntimeNative::can_build_towers);
     ClassDB::bind_method(D_METHOD("bgm_path_for_wave", "wave_number", "early", "mid", "late", "boss"), &GameRuntimeNative::bgm_path_for_wave);
+    ClassDB::bind_method(D_METHOD("run_tech_xp_award", "performance_score", "enemies_killed_total", "waves_cleared", "luminosity_percent", "max_waves", "victory", "run_mode"), &GameRuntimeNative::run_tech_xp_award);
     ClassDB::bind_method(
         D_METHOD("physics_projectile_hit_index", "enemies", "pos", "previous_pos", "base_hit_radius"),
         &GameRuntimeNative::physics_projectile_hit_index);
@@ -55,6 +58,37 @@ String GameRuntimeNative::bgm_path_for_wave(int wave_number, const String& early
     if (wave_number >= 9) return late;
     if (wave_number >= 5) return mid;
     return early;
+}
+
+Dictionary GameRuntimeNative::run_tech_xp_award(int performance_score, int enemies_killed_total, int waves_cleared, int luminosity_percent, int max_waves, bool victory, const String& run_mode) const {
+    const int score_xp = static_cast<int>(std::floor(static_cast<double>(performance_score) / 10.0));
+    const int kill_xp = enemies_killed_total * 3;
+    const int wave_xp = waves_cleared * 75;
+    const int luminosity_bonus = std::max(0, luminosity_percent);
+    const int endless_bonus = run_mode == "endless" ? std::max(0, waves_cleared - max_waves) * 35 : 0;
+    const int victory_bonus = victory ? 400 : 0;
+    const int no_flare_bonus = run_mode == "no_flare" ? waves_cleared * 25 + (victory ? 250 : 0) : 0;
+    const int boss_rush_bonus = run_mode == "boss_rush" ? waves_cleared * 60 + (victory ? 300 : 0) : 0;
+    const int daily_bonus = run_mode == "daily_seed" ? waves_cleared * 35 + (victory ? 180 : 0) : 0;
+    const int draft_bonus = run_mode == "draft_defense" ? waves_cleared * 45 + (victory ? 220 : 0) : 0;
+    const int amount = std::max(1, score_xp + kill_xp + wave_xp + luminosity_bonus + endless_bonus + victory_bonus + no_flare_bonus + boss_rush_bonus + daily_bonus + draft_bonus);
+
+    Array xp_parts;
+    xp_parts.append(vformat("SCORE %d", score_xp));
+    xp_parts.append(vformat("KILLS %d", kill_xp));
+    xp_parts.append(vformat("WAVES %d", wave_xp));
+    xp_parts.append(vformat("LUM %d", luminosity_bonus));
+    if (endless_bonus > 0) xp_parts.append(vformat("ENDLESS %d", endless_bonus));
+    if (no_flare_bonus > 0) xp_parts.append(vformat("NO-FLARE %d", no_flare_bonus));
+    if (boss_rush_bonus > 0) xp_parts.append(vformat("BOSS RUSH %d", boss_rush_bonus));
+    if (daily_bonus > 0) xp_parts.append(vformat("DAILY %d", daily_bonus));
+    if (draft_bonus > 0) xp_parts.append(vformat("DRAFT %d", draft_bonus));
+    if (victory_bonus > 0) xp_parts.append(vformat("VICTORY %d", victory_bonus));
+
+    Dictionary award;
+    award["amount"] = amount;
+    award["breakdown"] = vformat("XP: %s = %d", String(" + ").join(xp_parts), amount);
+    return award;
 }
 
 int GameRuntimeNative::physics_projectile_hit_index(const Array& enemies, const Vector2& pos, const Vector2& previous_pos, double base_hit_radius) const {
