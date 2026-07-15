@@ -19,6 +19,7 @@
 #include "game_pause_menu_native.h"
 #include "settings_overlay_native.h"
 #include "tutorial_overlay_native.h"
+#include "tech_tree_overlay_native.h"
 #include "music_manager_native.h"
 #include "codex_native.h"
 #include "credits_overlay_native.h"
@@ -64,6 +65,9 @@ void initialize_perk_module(ModuleInitializationLevel p_level) {
     ClassDB::register_class<GamePauseMenuNative>();
     ClassDB::register_class<SettingsOverlayNative>();
     ClassDB::register_class<TutorialOverlayNative>();
+    ClassDB::register_class<TechTreeBoardNative>();
+    ClassDB::register_class<TechTreeTooltipButtonNative>();
+    ClassDB::register_class<TechTreeOverlayNative>();
     ClassDB::register_class<MusicManagerNative>();
     ClassDB::register_class<CodexNative>();
     ClassDB::register_class<CreditsOverlayNative>();

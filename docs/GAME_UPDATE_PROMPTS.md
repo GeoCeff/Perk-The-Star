@@ -25,7 +25,7 @@ Copy one prompt at a time. These are written for the existing Godot 4.6 + GDExte
 
 7. Add one tiny quality-of-life improvement to controls. Candidates: clearer Helios Slingshot hint, hotkey reminder, better recenter feedback, or safer click handling near HUD.
 
-8. Make the Tech Tree easier to understand without redesigning it. Improve selected-node text, requirements, affordability state, and tower-path labels in `tech_tree_overlay.gd`.
+8. Make the Tech Tree easier to understand without redesigning it. Improve selected-node text, requirements, affordability state, and tower-path labels in `tech_tree_overlay_native.cpp`.
 
 9. Improve No-Flare Challenge messaging so it feels like a real mode, not Campaign with a disabled button. Update menu/mode brief, end text, and Tech XP explanation.
 
