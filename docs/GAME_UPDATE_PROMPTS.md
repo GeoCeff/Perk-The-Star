@@ -83,7 +83,7 @@ Copy one prompt at a time. These are written for the existing Godot 4.6 + GDExte
 
 34. Add one new campaign wave variant pattern using existing `ring`, `v_shape`, `spiral`, `center_top`, and `random` spawn logic. Prefer data changes first.
 
-35. Tune Endless so waves 1-5 onboard, 6-12 pressure, 13+ scale, and every 5th/7th/10th wave feels different. Keep formulas readable in `_endless_wave_data`.
+35. Tune Endless so waves 1-5 onboard, 6-12 pressure, 13+ scale, and every 5th/7th/10th wave feels different. Keep formulas readable in `GameWaveLibraryNative::endless_wave_data`.
 
 36. Balance Tech XP earnings so a failed early run still unlocks something soon, but apex upgrades still require repeat play. Adjust `_award_run_tech_xp_once` only if needed.
 

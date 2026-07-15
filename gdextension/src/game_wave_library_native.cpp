@@ -2,10 +2,12 @@
 
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/json.hpp>
+#include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <algorithm>
+#include <cmath>
 
 using namespace godot;
 
@@ -68,6 +70,13 @@ void GameWaveLibraryNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("total_spawn_count", "wave_data"), &GameWaveLibraryNative::total_spawn_count);
     ClassDB::bind_method(D_METHOD("preview_label", "wave_data"), &GameWaveLibraryNative::preview_label);
     ClassDB::bind_method(D_METHOD("array_value", "value"), &GameWaveLibraryNative::array_value);
+    ClassDB::bind_method(D_METHOD("draft_defense_wave_data", "wave_number", "draft_package_title", "max_waves"), &GameWaveLibraryNative::draft_defense_wave_data, DEFVAL(12));
+    ClassDB::bind_method(D_METHOD("daily_seed_label"), &GameWaveLibraryNative::daily_seed_label);
+    ClassDB::bind_method(D_METHOD("daily_seed_value"), &GameWaveLibraryNative::daily_seed_value);
+    ClassDB::bind_method(D_METHOD("daily_seed_wave_data", "wave_number"), &GameWaveLibraryNative::daily_seed_wave_data);
+    ClassDB::bind_method(D_METHOD("boss_rush_wave_data", "wave_number"), &GameWaveLibraryNative::boss_rush_wave_data);
+    ClassDB::bind_method(D_METHOD("endless_wave_data", "wave_number"), &GameWaveLibraryNative::endless_wave_data);
+    ClassDB::bind_method(D_METHOD("repeat_variant", "variant", "count"), &GameWaveLibraryNative::repeat_variant);
 }
 
 Dictionary GameWaveLibraryNative::load_wave(int wave_number) const {
@@ -372,6 +381,356 @@ Array GameWaveLibraryNative::array_value(const Variant& value) const {
         return value;
     }
     return Array();
+}
+
+Dictionary GameWaveLibraryNative::draft_defense_wave_data(int wave_number, const String& draft_package_title, int max_waves) const {
+    const int wave = std::max(1, std::min(6, wave_number));
+    if (wave == 6) {
+        Dictionary finale = boss_rush_wave_data(2).duplicate(true);
+        finale["index"] = wave;
+        finale["name"] = "Draft Prime";
+        finale["credit_reward"] = 175;
+        finale["enemy_hp_scale"] = 1.08;
+        finale["enemy_speed_scale"] = 1.06;
+        finale["enemy_damage_scale"] = 1.02;
+        finale["enemy_reward_scale"] = 1.18;
+        finale["tutorial_hint"] = vformat("Draft finale: %s must carry you through a Prime Echo and its escorts.", draft_package_title);
+        return finale;
+    }
+
+    Dictionary data = load_wave(std::min(wave + 1, std::max(1, max_waves - 1))).duplicate(true);
+    data["index"] = wave;
+    data["name"] = vformat("Draft %s", String(data.get("name", vformat("Contact %d", wave))));
+    data["credit_reward"] = int_value(data.get("credit_reward", 0)) + 18 + wave * 4;
+    data["enemy_hp_scale"] = float_value(data.get("enemy_hp_scale", 1.0), 1.0) * (0.88 + double(wave) * 0.045);
+    data["enemy_speed_scale"] = float_value(data.get("enemy_speed_scale", 1.0), 1.0) * (0.96 + double(wave) * 0.015);
+    data["enemy_reward_scale"] = float_value(data.get("enemy_reward_scale", 1.0), 1.0) * 1.08;
+    data["tutorial_hint"] = vformat("Draft Defense: %s active. %s", draft_package_title, String(data.get("tutorial_hint", "Hold the six-wave line.")));
+    return data;
+}
+
+String GameWaveLibraryNative::daily_seed_label() const {
+    const Dictionary date = Time::get_singleton()->get_date_dict_from_system();
+    return vformat("%04d%02d%02d", int_value(date.get("year", 0)), int_value(date.get("month", 1)), int_value(date.get("day", 1)));
+}
+
+int GameWaveLibraryNative::daily_seed_value() const {
+    return daily_seed_label().to_int();
+}
+
+Dictionary GameWaveLibraryNative::daily_seed_wave_data(int wave_number) const {
+    const int wave = std::max(1, std::min(6, wave_number));
+    const Array pool = Array::make("drifter", "bloom", "burrower", "mimic", "farmer");
+    const String primary = String(daily_pick(pool, wave, 1));
+    const String secondary = String(daily_pick(pool, wave, 2));
+    const double hp_scale = 0.92 + double(wave) * 0.07;
+    const double speed_scale = 0.96 + double(wave) * 0.025;
+    const int reward = 52 + wave * 22;
+    Dictionary data;
+    data["index"] = wave;
+    data["enemy_hp_scale"] = hp_scale;
+    data["enemy_speed_scale"] = speed_scale;
+    data["escalation_threshold_seconds"] = Variant();
+    if (wave == 6) {
+        data["name"] = vformat("Daily Prime %s", daily_seed_label());
+        data["wave_type"] = "boss";
+        data["spawn_interval"] = 0.72;
+        data["credit_reward"] = reward + 80;
+        Array groups;
+        Dictionary group;
+        group["variants"] = repeat_variant(primary, 10) + repeat_variant(secondary, 8);
+        group["spawn_pattern"] = "ring";
+        group["delay_before"] = 0.0;
+        groups.append(group);
+        group = Dictionary();
+        group["variants"] = repeat_variant("burrower", 3) + repeat_variant("mimic", 4) + repeat_variant("farmer", 3);
+        group["spawn_pattern"] = "v_shape";
+        group["spread_angle_deg"] = 58;
+        group["delay_before"] = 8.0;
+        groups.append(group);
+        group = Dictionary();
+        group["variants"] = Array::make("prime");
+        group["spawn_pattern"] = "center_top";
+        group["delay_before"] = 20.0;
+        groups.append(group);
+        data["clash_groups"] = groups;
+        Dictionary event;
+        event["type"] = "bio_lab_boost";
+        event["multiplier"] = 2.0;
+        event["duration"] = 20.0;
+        event["trigger_at_percent"] = 0.0;
+        data["event"] = event;
+        data["enemy_damage_scale"] = 1.0;
+        data["enemy_reward_scale"] = 1.1;
+        data["tutorial_hint"] = vformat("Daily finale %s: Prime arrives with today's fixed escort mix.", daily_seed_label());
+        return data;
+    }
+    if (wave % 3 == 0) {
+        data["name"] = vformat("Daily Vector %d", wave);
+        data["wave_type"] = "formation";
+        data["spawn_interval"] = 1.55;
+        data["credit_reward"] = reward;
+        Dictionary spawn;
+        spawn["variant"] = primary;
+        spawn["count"] = 8 + wave;
+        spawn["interval"] = 1.15;
+        data["spawns"] = Array::make(spawn);
+        Dictionary formation;
+        formation["type"] = "spiral";
+        formation["variants"] = Array::make(primary, secondary);
+        formation["count"] = 8 + wave;
+        formation["spiral_arms"] = 2;
+        data["formation"] = formation;
+        data["event"] = Dictionary();
+        data["enemy_damage_scale"] = 0.90 + double(wave) * 0.03;
+        data["enemy_reward_scale"] = 1.0;
+        data["tutorial_hint"] = vformat("Daily Seed %s: same formation all day, so adapt and replay for a cleaner clear.", daily_seed_label());
+        return data;
+    }
+    data["name"] = vformat("Daily Contact %d", wave);
+    data["wave_type"] = "normal";
+    data["spawn_interval"] = std::max(0.9, 2.2 - double(wave) * 0.18);
+    data["credit_reward"] = reward;
+    Dictionary spawn_a;
+    spawn_a["variant"] = primary;
+    spawn_a["count"] = 7 + wave * 2;
+    spawn_a["interval"] = std::max(0.9, 2.0 - double(wave) * 0.12);
+    Dictionary spawn_b;
+    spawn_b["variant"] = secondary;
+    spawn_b["count"] = std::max(2, wave + 1);
+    spawn_b["interval"] = 1.25;
+    data["spawns"] = Array::make(spawn_a, spawn_b);
+    Dictionary event;
+    if (wave == 4) {
+        event["type"] = "ring_blind";
+        event["rings"] = Array::make(wave % 4);
+        event["duration"] = 8.0;
+        event["trigger_at_percent"] = 0.3;
+    }
+    data["event"] = event;
+    data["enemy_damage_scale"] = 0.86 + double(wave) * 0.03;
+    data["enemy_reward_scale"] = 1.0;
+    data["tutorial_hint"] = vformat("Daily Seed %s: today's fixed enemy mix is %s plus %s.", daily_seed_label(), primary.capitalize(), secondary.capitalize());
+    return data;
+}
+
+Dictionary GameWaveLibraryNative::boss_rush_wave_data(int wave_number) const {
+    const int wave = std::max(1, std::min(4, wave_number));
+    const int escort_count = 8 + wave * 4;
+    const double prime_delay = 12.0 + double(wave) * 2.0;
+    const double hp_scale = 0.62 + double(wave) * 0.16;
+    const double speed_scale = 1.0 + double(wave - 1) * 0.05;
+    Array groups;
+    Dictionary group;
+    group["variants"] = repeat_variant("drifter", escort_count) + repeat_variant("bloom", wave + 1);
+    group["spawn_pattern"] = "ring";
+    group["delay_before"] = 0.0;
+    groups.append(group);
+    group = Dictionary();
+    group["variants"] = repeat_variant("burrower", std::max(0, wave - 1)) + repeat_variant("mimic", wave) + repeat_variant("farmer", std::max(0, wave - 2));
+    group["spawn_pattern"] = "v_shape";
+    group["spread_angle_deg"] = 48 + wave * 3;
+    group["delay_before"] = 6.0;
+    groups.append(group);
+    group = Dictionary();
+    group["variants"] = Array::make("prime");
+    group["spawn_pattern"] = "center_top";
+    group["delay_before"] = prime_delay;
+    groups.append(group);
+
+    Dictionary data;
+    data["index"] = wave;
+    data["name"] = vformat("Prime Echo %d", wave);
+    data["wave_type"] = "boss";
+    data["spawn_interval"] = std::max(0.55, 1.25 - double(wave) * 0.12);
+    data["credit_reward"] = 90 + wave * 35;
+    data["clash_groups"] = groups;
+    Dictionary event;
+    if (wave >= 3) {
+        event["type"] = "bio_lab_boost";
+        event["multiplier"] = 1.5 + double(wave) * 0.25;
+        event["duration"] = 14.0 + double(wave) * 2.0;
+        event["trigger_at_percent"] = 0.0;
+    }
+    data["event"] = event;
+    data["enemy_hp_scale"] = hp_scale;
+    data["enemy_speed_scale"] = speed_scale;
+    data["enemy_damage_scale"] = 0.78 + double(wave) * 0.08;
+    data["enemy_reward_scale"] = 1.2;
+    data["escalation_threshold_seconds"] = Variant();
+    data["tutorial_hint"] = vformat("Boss Rush: Prime Echo %d arrives fast. Crack the shell with Bio-Lab, then finish with Helios or Tardigrade.", wave);
+    return data;
+}
+
+Dictionary GameWaveLibraryNative::endless_wave_data(int wave_number) const {
+    const int wave = std::max(1, wave_number);
+    const int drifters = 6 + wave * 2;
+    const int blooms = std::max(0, wave - 2);
+    const int burrowers = wave >= 5 ? 1 + int(std::floor(double(wave - 5) / 2.0)) : 0;
+    const int mimics = wave >= 6 ? 1 + int(std::floor(double(wave - 6) / 2.0)) : 0;
+    const int farmers = wave >= 8 ? 1 + int(std::floor(double(wave - 8) / 2.0)) : 0;
+    const double interval = std::max(0.72, 2.8 - double(wave) * 0.075);
+    const double hp_scale = 1.0 + std::max(0.0, double(wave - 6)) * 0.035;
+    const double speed_scale = 1.0 + std::max(0.0, double(wave - 8)) * 0.012;
+    const double damage_scale = 1.0 + std::max(0.0, double(wave - 10)) * 0.012;
+    const double reward_scale = 1.0 + std::max(0.0, double(wave - 1)) * 0.012;
+    const int credit_reward = 24 + wave * 10 + int(std::floor(double(wave) / 5.0)) * 18;
+
+    Array spawns;
+    Dictionary spawn;
+    spawn["variant"] = "drifter";
+    spawn["count"] = drifters;
+    spawn["interval"] = interval;
+    spawns.append(spawn);
+    if (blooms > 0) {
+        spawn = Dictionary();
+        spawn["variant"] = "bloom";
+        spawn["count"] = blooms;
+        spawn["interval"] = interval + 0.15;
+        spawns.append(spawn);
+    }
+    if (burrowers > 0) {
+        spawn = Dictionary();
+        spawn["variant"] = "burrower";
+        spawn["count"] = burrowers;
+        spawn["interval"] = interval + 0.30;
+        spawns.append(spawn);
+    }
+    if (mimics > 0) {
+        spawn = Dictionary();
+        spawn["variant"] = "mimic";
+        spawn["count"] = mimics;
+        spawn["interval"] = interval + 0.20;
+        spawns.append(spawn);
+    }
+    if (farmers > 0) {
+        spawn = Dictionary();
+        spawn["variant"] = "farmer";
+        spawn["count"] = farmers;
+        spawn["interval"] = interval + 0.25;
+        spawns.append(spawn);
+    }
+    if (wave >= 11 && blooms >= 3) {
+        spawn = Dictionary();
+        spawn["variant"] = "splitter_bloom";
+        spawn["count"] = std::max(1, int(std::floor(double(blooms) / 3.0)));
+        spawn["interval"] = interval + 0.22;
+        spawns.append(spawn);
+    }
+
+    String wave_type = "normal";
+    String wave_name = "Endless Contact";
+    Array clash_groups;
+    Dictionary formation;
+    if (wave % 10 == 0) {
+        wave_type = "boss";
+        wave_name = "Prime Echo";
+        const int first_drifters = int(std::round(double(drifters) * 0.55));
+        const int first_blooms = int(std::round(double(blooms) * 0.45));
+        Dictionary group;
+        group["variants"] = repeat_variant("drifter", first_drifters) + repeat_variant("bloom", first_blooms);
+        group["spawn_pattern"] = "ring";
+        group["delay_before"] = 0.0;
+        clash_groups.append(group);
+        group = Dictionary();
+        group["variants"] = repeat_variant("burrower", burrowers) + repeat_variant("mimic", mimics) + repeat_variant("farmer", farmers);
+        group["spawn_pattern"] = "v_shape";
+        group["spread_angle_deg"] = 55;
+        group["delay_before"] = 8.0;
+        clash_groups.append(group);
+        group = Dictionary();
+        group["variants"] = repeat_variant("drifter", std::max(0, drifters - first_drifters)) + repeat_variant("bloom", std::max(0, blooms - first_blooms));
+        group["spawn_pattern"] = "ring";
+        group["delay_before"] = 17.0;
+        clash_groups.append(group);
+        group = Dictionary();
+        group["variants"] = Array::make("prime");
+        group["spawn_pattern"] = "center_top";
+        group["delay_before"] = 26.0;
+        clash_groups.append(group);
+    } else if (wave % 5 == 0) {
+        wave_type = "clash";
+        wave_name = "Clash Surge";
+        const int lead_drifters = int(std::round(double(drifters) * 0.60));
+        Dictionary group;
+        group["variants"] = repeat_variant("drifter", lead_drifters) + repeat_variant("bloom", int(std::round(double(blooms) * 0.50)));
+        group["spawn_pattern"] = "ring";
+        group["delay_before"] = 0.0;
+        clash_groups.append(group);
+        group = Dictionary();
+        group["variants"] = repeat_variant("burrower", burrowers) + repeat_variant("mimic", mimics) + repeat_variant("farmer", farmers);
+        group["spawn_pattern"] = "v_shape";
+        group["spread_angle_deg"] = 50;
+        group["delay_before"] = 8.0;
+        clash_groups.append(group);
+        group = Dictionary();
+        group["variants"] = repeat_variant("drifter", std::max(0, drifters - lead_drifters)) + repeat_variant("bloom", int(std::floor(double(blooms) * 0.50)));
+        group["spawn_pattern"] = "random";
+        group["delay_before"] = 16.0;
+        clash_groups.append(group);
+    } else if (wave % 7 == 0) {
+        wave_type = "formation";
+        wave_name = "Vector Swarm";
+        formation["type"] = wave >= 14 ? "spiral" : "v_shape";
+        formation["variants"] = wave >= 7 ? Array::make("burrower", "mimic") : Array::make("drifter", "bloom");
+        formation["count"] = std::min(18, 6 + int(std::floor(double(wave) * 0.55)));
+        formation["spread_angle_deg"] = 52;
+        formation["spiral_arms"] = 2 + (wave >= 21 ? 1 : 0);
+    }
+
+    Dictionary event;
+    if (wave >= 7 && wave % 7 == 0) {
+        event["type"] = "comet_cache";
+        event["trigger_at_percent"] = 0.28;
+        event["hp"] = 115.0 + double(wave) * 8.0;
+        event["reward"] = 55 + wave * 5;
+        event["duration"] = 18.0;
+        event["expire_spawns"] = 3 + int(wave / 7);
+    } else if (wave >= 9 && wave % 9 == 0) {
+        event["type"] = "bio_lab_boost";
+        event["multiplier"] = 2.0;
+        event["duration"] = 24.0;
+        event["trigger_at_percent"] = 0.0;
+    } else if (wave >= 6 && wave % 6 == 0) {
+        event["type"] = "mid_wave_autoflare";
+        event["trigger_at_percent"] = 0.52;
+        event["cryo_disruption_seconds"] = 5.0;
+    } else if (wave >= 8 && wave % 8 == 0) {
+        event["type"] = "ring_blind";
+        event["rings"] = Array::make(int(wave / 8) % 4);
+        event["duration"] = 12.0;
+        event["trigger_at_percent"] = 0.18;
+    }
+
+    Dictionary data;
+    data["index"] = wave;
+    data["name"] = vformat("%s %02d", wave_name, wave);
+    data["wave_type"] = wave_type;
+    data["spawn_interval"] = interval;
+    data["credit_reward"] = credit_reward;
+    data["spawns"] = spawns;
+    data["clash_groups"] = clash_groups;
+    data["formation"] = formation;
+    data["event"] = event;
+    data["enemy_hp_scale"] = hp_scale;
+    data["enemy_speed_scale"] = speed_scale;
+    data["enemy_damage_scale"] = damage_scale;
+    data["enemy_reward_scale"] = reward_scale;
+    data["escalation_threshold_seconds"] = std::max(28.0, 44.0 - double(wave) * 0.35);
+    data["tutorial_hint"] = "Endless mode: enemy mix, count, speed, and HP scale every wave. Clear one more.";
+    return data;
+}
+
+Array GameWaveLibraryNative::repeat_variant(const String& variant, int count) const {
+    Array values;
+    for (int i = 0; i < std::max(0, count); ++i) {
+        values.append(variant);
+    }
+    return values;
+}
+
+Variant GameWaveLibraryNative::daily_pick(const Array& pool, int wave, int salt) const {
+    return pool[(daily_seed_value() + wave * 17 + salt * 31) % pool.size()];
 }
 
 Array GameWaveLibraryNative::spawn_entries(const Dictionary& wave_data) const {

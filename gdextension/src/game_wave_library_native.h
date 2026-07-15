@@ -30,8 +30,16 @@ public:
     int total_spawn_count(const Dictionary& wave_data) const;
     String preview_label(const Dictionary& wave_data) const;
     Array array_value(const Variant& value) const;
+    Dictionary draft_defense_wave_data(int wave_number, const String& draft_package_title, int max_waves = 12) const;
+    String daily_seed_label() const;
+    int daily_seed_value() const;
+    Dictionary daily_seed_wave_data(int wave_number) const;
+    Dictionary boss_rush_wave_data(int wave_number) const;
+    Dictionary endless_wave_data(int wave_number) const;
+    Array repeat_variant(const String& variant, int count) const;
 
 private:
+    Variant daily_pick(const Array& pool, int wave, int salt) const;
     Array spawn_entries(const Dictionary& wave_data) const;
     Dictionary variant_counts(const Dictionary& wave_data) const;
     void add_variant_count(Dictionary& counts, const String& variant, int amount) const;
