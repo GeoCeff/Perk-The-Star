@@ -1037,12 +1037,7 @@ func _build_ui() -> void:
 			game_hud.connect(signal_name, callback)
 
 func _draft_packages() -> Array:
-	return [
-		{"id": "sol", "title": "Sol Windfall", "body": "+55 Sol Credits before Wave 1.", "sol": 55},
-		{"id": "control", "title": "Control Grid", "body": "Cryo and Magnetic gain +10% range.", "towers": ["cryo_probe", "magnetic_net"], "range": 1.10},
-		{"id": "burst", "title": "Burst Lenses", "body": "Photon and Helios gain +10% damage.", "towers": ["photon_splitter", "helios_cannon"], "damage": 1.10},
-		{"id": "bio", "title": "Bio Bloom", "body": "Bio-Lab and Tardigrade gain +10% rate.", "towers": ["bio_lab", "tardigrade_bomb"], "rate": 1.10},
-	]
+	return game_catalog.call("draft_packages") as Array
 
 
 func _draft_choices() -> Array:
@@ -1058,7 +1053,7 @@ func _draft_needs_pick() -> bool:
 
 
 func _draft_package_title() -> String:
-	return str(draft_package.get("title", "Pick a contract"))
+	return str(game_catalog.call("draft_package_title", draft_package))
 
 
 func _show_draft_overlay() -> void:

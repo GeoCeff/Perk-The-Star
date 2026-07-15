@@ -3,6 +3,7 @@
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
+#include <godot_cpp/variant/string.hpp>
 
 namespace godot {
 
@@ -40,6 +41,8 @@ public:
     Dictionary enemy_masses() const;
     Dictionary tower_asset_paths() const;
     Array rings() const;
+    Array draft_packages() const;
+    String draft_package_title(const Dictionary& draft_package) const;
     Dictionary enemy_configs() const;
 };
 

@@ -40,6 +40,23 @@ Dictionary enemy(int variant_id, const String& label, double hp, double speed, d
     return data;
 }
 
+Dictionary draft_package(const String& id, const String& title, const String& body, const Array& towers = Array(), const String& stat = "", double multiplier = 1.0, int sol = 0) {
+    Dictionary data;
+    data["id"] = id;
+    data["title"] = title;
+    data["body"] = body;
+    if (!towers.is_empty()) {
+        data["towers"] = towers;
+    }
+    if (!stat.is_empty()) {
+        data[stat] = multiplier;
+    }
+    if (sol > 0) {
+        data["sol"] = sol;
+    }
+    return data;
+}
+
 }
 
 void GameCatalogNative::_bind_methods() {
@@ -69,6 +86,8 @@ void GameCatalogNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("enemy_masses"), &GameCatalogNative::enemy_masses);
     ClassDB::bind_method(D_METHOD("tower_asset_paths"), &GameCatalogNative::tower_asset_paths);
     ClassDB::bind_method(D_METHOD("rings"), &GameCatalogNative::rings);
+    ClassDB::bind_method(D_METHOD("draft_packages"), &GameCatalogNative::draft_packages);
+    ClassDB::bind_method(D_METHOD("draft_package_title", "draft_package"), &GameCatalogNative::draft_package_title);
     ClassDB::bind_method(D_METHOD("enemy_configs"), &GameCatalogNative::enemy_configs);
 
     ADD_PROPERTY(PropertyInfo(Variant::INT, "max_waves"), "", "get_max_waves");
@@ -181,6 +200,19 @@ Array GameCatalogNative::rings() const {
     data.append(ring(3, "Photosphere Arc", 210.0, 17.0, 8, "Bio-Lab Station, Magnetic Net"));
     data.append(ring(4, "Outer Veil", 290.0, 26.0, 10, "Early intercept"));
     return data;
+}
+
+Array GameCatalogNative::draft_packages() const {
+    Array data;
+    data.append(draft_package("sol", "Sol Windfall", "+55 Sol Credits before Wave 1.", Array(), "", 1.0, 55));
+    data.append(draft_package("control", "Control Grid", "Cryo and Magnetic gain +10% range.", Array::make("cryo_probe", "magnetic_net"), "range", 1.10));
+    data.append(draft_package("burst", "Burst Lenses", "Photon and Helios gain +10% damage.", Array::make("photon_splitter", "helios_cannon"), "damage", 1.10));
+    data.append(draft_package("bio", "Bio Bloom", "Bio-Lab and Tardigrade gain +10% rate.", Array::make("bio_lab", "tardigrade_bomb"), "rate", 1.10));
+    return data;
+}
+
+String GameCatalogNative::draft_package_title(const Dictionary& draft_package) const {
+    return String(draft_package.get("title", "Pick a contract"));
 }
 
 Dictionary GameCatalogNative::enemy_configs() const {
