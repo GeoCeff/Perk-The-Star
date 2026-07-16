@@ -5,6 +5,7 @@
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/string.hpp>
+#include <godot_cpp/variant/vector2.hpp>
 
 namespace godot {
 
@@ -31,6 +32,8 @@ public:
     Dictionary runtime_stats_with_modifiers(const Dictionary& tower, const Array& unlocked_tech, const Dictionary& draft_package) const;
     double tech_slow_duration(const String& source, const Array& unlocked_tech) const;
     int slingshot_cost(int base_cost, const Array& unlocked_tech) const;
+    bool can_damage_enemy(const String& tower_type, const Dictionary& enemy) const;
+    int target_index(const Array& enemies, const Vector2& tower_pos, const Vector2& sun_pos, const String& tower_type, double tower_range) const;
     int tower_cost(const String& tower_type) const;
     int upgrade_cost(const Dictionary& tower) const;
     int total_spent(const Dictionary& tower) const;

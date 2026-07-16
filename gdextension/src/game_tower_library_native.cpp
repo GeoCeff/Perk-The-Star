@@ -132,6 +132,8 @@ void GameTowerLibraryNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("runtime_stats_with_modifiers", "tower", "unlocked_tech", "draft_package"), &GameTowerLibraryNative::runtime_stats_with_modifiers);
     ClassDB::bind_method(D_METHOD("tech_slow_duration", "source", "unlocked_tech"), &GameTowerLibraryNative::tech_slow_duration);
     ClassDB::bind_method(D_METHOD("slingshot_cost", "base_cost", "unlocked_tech"), &GameTowerLibraryNative::slingshot_cost);
+    ClassDB::bind_method(D_METHOD("can_damage_enemy", "tower_type", "enemy"), &GameTowerLibraryNative::can_damage_enemy);
+    ClassDB::bind_method(D_METHOD("target_index", "enemies", "tower_pos", "sun_pos", "tower_type", "tower_range"), &GameTowerLibraryNative::target_index);
     ClassDB::bind_method(D_METHOD("tower_cost", "tower_type"), &GameTowerLibraryNative::tower_cost);
     ClassDB::bind_method(D_METHOD("upgrade_cost", "tower"), &GameTowerLibraryNative::upgrade_cost);
     ClassDB::bind_method(D_METHOD("total_spent", "tower"), &GameTowerLibraryNative::total_spent);
@@ -247,6 +249,43 @@ double GameTowerLibraryNative::tech_slow_duration(const String& source, const Ar
 
 int GameTowerLibraryNative::slingshot_cost(int base_cost, const Array& unlocked_tech) const {
     return has_string(unlocked_tech, "slingshot_coils") ? 30 : base_cost;
+}
+
+bool GameTowerLibraryNative::can_damage_enemy(const String& tower_type, const Dictionary& enemy) const {
+    const String variant = String(enemy.get("variant", ""));
+    if (variant == "mimic" && tower_type == "photon_splitter") {
+        return false;
+    }
+    if (variant == "farmer" && (tower_type == "photon_splitter" || tower_type == "helios_cannon")) {
+        return false;
+    }
+    if (variant == "prime" && int_from_dict(enemy, "prime_phase", 0) == 0 && tower_type != "bio_lab") {
+        return false;
+    }
+    return true;
+}
+
+int GameTowerLibraryNative::target_index(const Array& enemies, const Vector2& tower_pos, const Vector2& sun_pos, const String& tower_type, double tower_range) const {
+    const double range_squared = tower_range * tower_range;
+    int best_index = -1;
+    double best_sun_dist_squared = 1.0e20;
+    for (int i = 0; i < enemies.size(); ++i) {
+        if (enemies[i].get_type() != Variant::DICTIONARY) {
+            continue;
+        }
+        const Dictionary enemy = enemies[i];
+        if (!can_damage_enemy(tower_type, enemy)) {
+            continue;
+        }
+        const Vector2 enemy_pos = enemy.get("pos", Vector2());
+        const double tower_dist_squared = static_cast<double>(tower_pos.distance_squared_to(enemy_pos));
+        const double sun_dist_squared = static_cast<double>(sun_pos.distance_squared_to(enemy_pos));
+        if (tower_dist_squared <= range_squared && sun_dist_squared < best_sun_dist_squared) {
+            best_index = i;
+            best_sun_dist_squared = sun_dist_squared;
+        }
+    }
+    return best_index;
 }
 
 int GameTowerLibraryNative::tower_cost(const String& tower_type) const {

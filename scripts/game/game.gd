@@ -2262,33 +2262,12 @@ func _find_target_for_tower(tower: Dictionary) -> int:
 	var sun: Vector2 = _sun_pos()
 	var stats: Dictionary = _tower_runtime_stats(tower)
 	var tower_range: float = float(stats["range"])
-	var range_squared: float = tower_range * tower_range
 	var tower_type: String = str(tower.get("type", ""))
-	var best_index: int = -1
-	var best_sun_dist_squared: float = INF
-
-	for i in range(enemies.size()):
-		var enemy: Dictionary = enemies[i]
-		if not _can_tower_damage_enemy(tower_type, enemy):
-			continue
-		var tower_dist_squared: float = tower_pos.distance_squared_to(enemy["pos"])
-		var sun_dist_squared: float = sun.distance_squared_to(enemy["pos"])
-		if tower_dist_squared <= range_squared and sun_dist_squared < best_sun_dist_squared:
-			best_index = i
-			best_sun_dist_squared = sun_dist_squared
-
-	return best_index
+	return int(tower_library.call("target_index", enemies, tower_pos, sun, tower_type, tower_range))
 
 
 func _can_tower_damage_enemy(tower_type: String, enemy: Dictionary) -> bool:
-	var variant: String = str(enemy.get("variant", ""))
-	if variant == "mimic" and tower_type == "photon_splitter":
-		return false
-	if variant == "farmer" and (tower_type == "photon_splitter" or tower_type == "helios_cannon"):
-		return false
-	if variant == "prime" and int(enemy.get("prime_phase", 0)) == 0 and tower_type != "bio_lab":
-		return false
-	return true
+	return bool(tower_library.call("can_damage_enemy", tower_type, enemy))
 
 
 func _fire_tower(tower: Dictionary, enemy_index: int) -> void:
