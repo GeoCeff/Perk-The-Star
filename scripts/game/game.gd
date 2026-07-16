@@ -2140,15 +2140,8 @@ func _show_next_wave_banner() -> void:
 	var next_data: Dictionary = _wave_load(next_wave)
 	if next_data.is_empty():
 		return
-	var accent: Color = Color(1.0, 0.86, 0.34)
-	match str(next_data.get("wave_type", "normal")):
-		"clash":
-			accent = Color(1.0, 0.32, 0.12)
-		"boss":
-			accent = Color(1.0, 0.12, 0.12)
-		"formation":
-			accent = Color(0.42, 0.90, 1.0)
-	_show_wave_banner(_wave_preview_label(next_data), str(next_data.get("name", "Next Wave")), accent, 4.0)
+	var banner: Dictionary = wave_library.call("banner_data", next_data) as Dictionary
+	_show_wave_banner(str(banner.get("title", "")), str(banner.get("subtitle", "")), banner.get("accent", Color(1.0, 0.86, 0.34)), float(banner.get("duration", 4.0)))
 
 
 func _show_wave_banner(title: String, subtitle: String, accent: Color, duration: float = 4.0) -> void:

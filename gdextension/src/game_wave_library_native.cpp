@@ -4,6 +4,7 @@
 #include <godot_cpp/classes/json.hpp>
 #include <godot_cpp/classes/time.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <algorithm>
@@ -69,6 +70,7 @@ void GameWaveLibraryNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("enemy_short_label", "variant"), &GameWaveLibraryNative::enemy_short_label);
     ClassDB::bind_method(D_METHOD("total_spawn_count", "wave_data"), &GameWaveLibraryNative::total_spawn_count);
     ClassDB::bind_method(D_METHOD("preview_label", "wave_data"), &GameWaveLibraryNative::preview_label);
+    ClassDB::bind_method(D_METHOD("banner_data", "wave_data"), &GameWaveLibraryNative::banner_data);
     ClassDB::bind_method(D_METHOD("array_value", "value"), &GameWaveLibraryNative::array_value);
     ClassDB::bind_method(D_METHOD("draft_defense_wave_data", "wave_number", "draft_package_title", "max_waves"), &GameWaveLibraryNative::draft_defense_wave_data, DEFVAL(12));
     ClassDB::bind_method(D_METHOD("daily_seed_label"), &GameWaveLibraryNative::daily_seed_label);
@@ -374,6 +376,25 @@ String GameWaveLibraryNative::preview_label(const Dictionary& wave_data) const {
     if (wave_type == "boss") return vformat("Astrophage Prime detected - %d contacts", count);
     if (wave_type == "formation") return vformat("Formation wave incoming - %d enemies", count);
     return vformat("Wave incoming - %d enemies", count);
+}
+
+Dictionary GameWaveLibraryNative::banner_data(const Dictionary& wave_data) const {
+    Color accent(1.0, 0.86, 0.34);
+    const String wave_type = String(wave_data.get("wave_type", "normal"));
+    if (wave_type == "clash") {
+        accent = Color(1.0, 0.32, 0.12);
+    } else if (wave_type == "boss") {
+        accent = Color(1.0, 0.12, 0.12);
+    } else if (wave_type == "formation") {
+        accent = Color(0.42, 0.90, 1.0);
+    }
+
+    Dictionary data;
+    data["title"] = preview_label(wave_data);
+    data["subtitle"] = String(wave_data.get("name", "Next Wave"));
+    data["accent"] = accent;
+    data["duration"] = 4.0;
+    return data;
 }
 
 Array GameWaveLibraryNative::array_value(const Variant& value) const {
