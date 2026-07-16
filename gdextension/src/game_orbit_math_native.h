@@ -28,10 +28,10 @@ public:
     double outer_ring_radius() const;
     Vector2 tower_position(const Vector2& sun_pos, const Dictionary& tower) const;
     Vector2 burrower_position(const Vector2& sun_pos, const Dictionary& burrower, double dig_radius) const;
-    String ring_summary() const;
-
-private:
     bool is_slot_taken(const Array& towers, int ring_index, int slot_index) const;
+    int tower_index_for_slot(const Array& towers, int ring_index, int slot_index) const;
+    int tower_index_at_world_position(const Array& towers, const Vector2& pos, const Vector2& sun_pos, double hit_radius) const;
+    String ring_summary() const;
 };
 
 }

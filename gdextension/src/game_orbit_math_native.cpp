@@ -74,6 +74,9 @@ void GameOrbitMathNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("outer_ring_radius"), &GameOrbitMathNative::outer_ring_radius);
     ClassDB::bind_method(D_METHOD("tower_position", "sun_pos", "tower"), &GameOrbitMathNative::tower_position);
     ClassDB::bind_method(D_METHOD("burrower_position", "sun_pos", "burrower", "dig_radius"), &GameOrbitMathNative::burrower_position);
+    ClassDB::bind_method(D_METHOD("is_slot_taken", "towers", "ring_index", "slot_index"), &GameOrbitMathNative::is_slot_taken);
+    ClassDB::bind_method(D_METHOD("tower_index_for_slot", "towers", "ring_index", "slot_index"), &GameOrbitMathNative::tower_index_for_slot);
+    ClassDB::bind_method(D_METHOD("tower_index_at_world_position", "towers", "pos", "sun_pos", "hit_radius"), &GameOrbitMathNative::tower_index_at_world_position);
     ClassDB::bind_method(D_METHOD("ring_summary"), &GameOrbitMathNative::ring_summary);
 }
 
@@ -144,6 +147,10 @@ String GameOrbitMathNative::ring_summary() const {
 }
 
 bool GameOrbitMathNative::is_slot_taken(const Array& towers, int ring_index, int slot_index) const {
+    return tower_index_for_slot(towers, ring_index, slot_index) >= 0;
+}
+
+int GameOrbitMathNative::tower_index_for_slot(const Array& towers, int ring_index, int slot_index) const {
     for (int i = 0; i < towers.size(); ++i) {
         Variant value = towers[i];
         if (value.get_type() != Variant::DICTIONARY) {
@@ -151,8 +158,26 @@ bool GameOrbitMathNative::is_slot_taken(const Array& towers, int ring_index, int
         }
         Dictionary tower = value;
         if (int_from_dict(tower, "ring", -1) == ring_index && int_from_dict(tower, "slot", -1) == slot_index) {
-            return true;
+            return i;
         }
     }
-    return false;
+    return -1;
+}
+
+int GameOrbitMathNative::tower_index_at_world_position(const Array& towers, const Vector2& pos, const Vector2& sun_pos, double hit_radius) const {
+    int best_index = -1;
+    double best_dist_squared = 1.0e20;
+    const double hit_radius_squared = hit_radius * hit_radius;
+    for (int i = 0; i < towers.size(); ++i) {
+        if (towers[i].get_type() != Variant::DICTIONARY) {
+            continue;
+        }
+        const Dictionary tower = towers[i];
+        const double dist_squared = static_cast<double>(pos.distance_squared_to(tower_position(sun_pos, tower)));
+        if (dist_squared <= hit_radius_squared && dist_squared < best_dist_squared) {
+            best_index = i;
+            best_dist_squared = dist_squared;
+        }
+    }
+    return best_index;
 }

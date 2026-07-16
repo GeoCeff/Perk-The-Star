@@ -2624,31 +2624,15 @@ func _outer_ring_radius() -> float:
 
 
 func _is_slot_taken(ring_index: int, slot_index: int) -> bool:
-	for tower in towers:
-		if int(tower["ring"]) == ring_index and int(tower["slot"]) == slot_index:
-			return true
-	return false
+	return bool(orbit_math.call("is_slot_taken", towers, ring_index, slot_index))
 
 
 func _tower_index_for_slot(ring_index: int, slot_index: int) -> int:
-	for i in range(towers.size()):
-		var tower: Dictionary = towers[i]
-		if int(tower["ring"]) == ring_index and int(tower["slot"]) == slot_index:
-			return i
-	return -1
+	return int(orbit_math.call("tower_index_for_slot", towers, ring_index, slot_index))
 
 
 func _tower_index_at_world_position(pos: Vector2) -> int:
-	var best_index: int = -1
-	var best_dist_squared: float = INF
-	var hit_radius_squared: float = 34.0 * 34.0
-	for i in range(towers.size()):
-		var tower_pos: Vector2 = _tower_position(towers[i])
-		var dist_squared: float = pos.distance_squared_to(tower_pos)
-		if dist_squared <= hit_radius_squared and dist_squared < best_dist_squared:
-			best_index = i
-			best_dist_squared = dist_squared
-	return best_index
+	return int(orbit_math.call("tower_index_at_world_position", towers, pos, _sun_pos(), 34.0))
 
 
 func _select_managed_tower(ring_index: int, slot_index: int) -> void:
