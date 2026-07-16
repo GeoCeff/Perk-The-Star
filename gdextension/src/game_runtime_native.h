@@ -25,6 +25,7 @@ public:
     Dictionary end_state_view_data(const Dictionary& state) const;
     String wave_clear_message(const String& prefix, int reward, bool perfect_orbit, int perfect_orbit_sol_bonus, int perfect_orbit_score_bonus) const;
     String active_modifier_summary(double cryo_disruption_timer, double bio_lab_boost_timer, double bio_lab_boost_multiplier, const Dictionary& ring_blind_timers) const;
+    Dictionary hud_text_state(const Dictionary& state) const;
     int physics_projectile_hit_index(const Array& enemies, const Vector2& pos, const Vector2& previous_pos, double base_hit_radius) const;
     int enemy_index_by_uid(const Array& enemies, int enemy_uid) const;
     bool projectile_segment_hits_point(const Vector2& previous_pos, const Vector2& pos, const Vector2& target_pos, double hit_radius) const;

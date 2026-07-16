@@ -42,6 +42,7 @@ void GameRuntimeNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("end_state_view_data", "state"), &GameRuntimeNative::end_state_view_data);
     ClassDB::bind_method(D_METHOD("wave_clear_message", "prefix", "reward", "perfect_orbit", "perfect_orbit_sol_bonus", "perfect_orbit_score_bonus"), &GameRuntimeNative::wave_clear_message);
     ClassDB::bind_method(D_METHOD("active_modifier_summary", "cryo_disruption_timer", "bio_lab_boost_timer", "bio_lab_boost_multiplier", "ring_blind_timers"), &GameRuntimeNative::active_modifier_summary);
+    ClassDB::bind_method(D_METHOD("hud_text_state", "state"), &GameRuntimeNative::hud_text_state);
     ClassDB::bind_method(
         D_METHOD("physics_projectile_hit_index", "enemies", "pos", "previous_pos", "base_hit_radius"),
         &GameRuntimeNative::physics_projectile_hit_index);
@@ -263,6 +264,138 @@ String GameRuntimeNative::active_modifier_summary(double cryo_disruption_timer, 
         parts.append(vformat("Dark %s", String(", ").join(ring_parts)));
     }
     return parts.is_empty() ? String("") : vformat("\n%s", String(" / ").join(parts));
+}
+
+Dictionary GameRuntimeNative::hud_text_state(const Dictionary& state) const {
+    const int phase = int_from_dict(state, "phase", 0);
+    const int between_phase = int_from_dict(state, "between_phase", 1);
+    const int wave_active_phase = int_from_dict(state, "wave_active_phase", 2);
+    const int game_over_phase = int_from_dict(state, "game_over_phase", 4);
+    const int victory_phase = int_from_dict(state, "victory_phase", 5);
+    const int wave_index = int_from_dict(state, "wave_index", 1);
+    const int current_wave = int_from_dict(state, "current_wave", 0);
+    const int max_waves = int_from_dict(state, "max_waves", 12);
+    const int playable_wave_limit = int_from_dict(state, "playable_wave_limit", max_waves);
+    const int boss_rush_waves = int_from_dict(state, "boss_rush_waves", 4);
+    const int daily_seed_waves = int_from_dict(state, "daily_seed_waves", 6);
+    const int draft_defense_waves = int_from_dict(state, "draft_defense_waves", 6);
+    const String wave_name = string_from_dict(state, "wave_name", "First Contact");
+    const String wave_upper = wave_name.to_upper();
+    const String rank = string_from_dict(state, "rank", "UNRANKED");
+    const String daily_seed_label = string_from_dict(state, "daily_seed_label", "");
+    const String briefing_title = string_from_dict(state, "briefing_title", "WAVE");
+    const bool endless_mode = bool_from_dict(state, "endless_mode", false);
+    const bool boss_rush_mode = bool_from_dict(state, "boss_rush_mode", false);
+    const bool daily_seed_mode = bool_from_dict(state, "daily_seed_mode", false);
+    const bool draft_defense_mode = bool_from_dict(state, "draft_defense_mode", false);
+    const bool no_flare_mode = bool_from_dict(state, "no_flare_mode", false);
+    const bool draft_needs_pick = bool_from_dict(state, "draft_needs_pick", false);
+
+    String title_text = vformat("WAVE %02d/%02d | %s", wave_index, max_waves, wave_upper);
+    if (endless_mode) {
+        title_text = vformat("ENDLESS WAVE %02d | %s", wave_index, wave_upper);
+        if (phase == game_over_phase) {
+            title_text = vformat("ENDLESS RUN ENDED | WAVE %02d", current_wave);
+        }
+    } else if (boss_rush_mode) {
+        title_text = vformat("BOSS RUSH %02d/%02d | %s", wave_index, boss_rush_waves, wave_upper);
+        if (phase == victory_phase) {
+            title_text = vformat("BOSS RUSH COMPLETE | %s", rank);
+        } else if (phase == game_over_phase) {
+            title_text = vformat("BOSS RUSH FAILED | WAVE %02d/%02d", current_wave, boss_rush_waves);
+        }
+    } else if (daily_seed_mode) {
+        title_text = vformat("DAILY %s  %02d/%02d | %s", daily_seed_label, wave_index, daily_seed_waves, wave_upper);
+        if (phase == victory_phase) {
+            title_text = vformat("DAILY SEED COMPLETE | %s", rank);
+        } else if (phase == game_over_phase) {
+            title_text = vformat("DAILY SEED FAILED | WAVE %02d/%02d", current_wave, daily_seed_waves);
+        }
+    } else if (draft_defense_mode) {
+        title_text = vformat("DRAFT DEFENSE %02d/%02d | %s", wave_index, draft_defense_waves, wave_upper);
+        if (draft_needs_pick) {
+            title_text = "DRAFT DEFENSE | PICK CONTRACT";
+        } else if (phase == victory_phase) {
+            title_text = vformat("DRAFT DEFENSE COMPLETE | %s", rank);
+        } else if (phase == game_over_phase) {
+            title_text = vformat("DRAFT DEFENSE FAILED | WAVE %02d/%02d", current_wave, draft_defense_waves);
+        }
+    } else if (no_flare_mode && phase == victory_phase) {
+        title_text = vformat("NO-FLARE COMPLETE | %s", rank);
+    } else if (no_flare_mode && phase == game_over_phase) {
+        title_text = vformat("NO-FLARE FAILED | WAVE %02d/%02d", current_wave, max_waves);
+    } else if (phase == victory_phase) {
+        title_text = vformat("SOL DEFENSE COMPLETE | %s", rank);
+    } else if (phase == game_over_phase) {
+        title_text = vformat("SUN EXTINGUISHED | WAVE %02d/%02d", current_wave, max_waves);
+    } else if (phase != wave_active_phase) {
+        title_text = vformat("%s %02d/%02d", briefing_title.to_upper(), wave_index, max_waves);
+        if (briefing_title.strip_edges().to_lower() != wave_name.strip_edges().to_lower()) {
+            title_text += vformat(" | %s", wave_upper);
+        }
+    }
+
+    const int next_wave = endless_mode ? current_wave + 1 : std::min(current_wave + 1, max_waves);
+    bool start_disabled = phase != between_phase || next_wave > playable_wave_limit || draft_needs_pick;
+    if (!endless_mode && next_wave > max_waves) {
+        start_disabled = true;
+    }
+    String start_text = vformat("START WAVE %d", next_wave);
+    String intel_status = phase == wave_active_phase ? "LIVE" : "NEXT";
+    if (draft_needs_pick) {
+        start_text = "PICK DRAFT";
+        intel_status = "DRAFT";
+    }
+    if (phase == victory_phase) {
+        start_text = "MISSION COMPLETE";
+        intel_status = "CLEARED";
+    } else if (phase == game_over_phase) {
+        start_text = "RUN ENDED";
+        intel_status = "FAILED";
+    }
+    const bool auto_start_enabled = bool_from_dict(state, "auto_start_enabled", false);
+    const double auto_start_timer = static_cast<double>(state.get("auto_start_timer", 0.0));
+    if (auto_start_enabled && !start_disabled && auto_start_timer > 0.0) {
+        const int auto_seconds = std::max(1, static_cast<int>(std::ceil(auto_start_timer)));
+        start_text = vformat("AUTO IN %d", auto_seconds);
+        intel_status = vformat("AUTO %d", auto_seconds);
+    } else if (auto_start_enabled && !start_disabled) {
+        intel_status = "AUTO START";
+    }
+
+    const int flare_charge = int_from_dict(state, "flare_charge", 0);
+    const int sol_credits = int_from_dict(state, "sol_credits", 0);
+    const int overcharge_cost = int_from_dict(state, "flare_overcharge_cost", 45);
+    const bool flare_overcharged = bool_from_dict(state, "flare_overcharged", false);
+    const bool flare_ready = !no_flare_mode && flare_charge > 0;
+    const bool overcharge_disabled = no_flare_mode || !flare_ready || flare_overcharged || sol_credits < overcharge_cost;
+    String overcharge_text = vformat("OVER\n%d", overcharge_cost);
+    String overcharge_tip = vformat("Spend %d Sol to boost the next manual Solar Flare.", overcharge_cost);
+    if (no_flare_mode) {
+        overcharge_text = "OVER\nOFF";
+        overcharge_tip = "No-Flare Challenge disables Solar Flare.";
+    } else if (flare_overcharged) {
+        overcharge_text = "OVER\nARMED";
+        overcharge_tip = "The next manual Solar Flare is overcharged.";
+    } else if (!flare_ready) {
+        overcharge_text = "OVER\nWAIT";
+        overcharge_tip = "Solar Flare must be charged first.";
+    } else if (sol_credits < overcharge_cost) {
+        overcharge_text = "OVER\nNEED";
+        overcharge_tip = vformat("Need %d Sol Credits to overcharge.", overcharge_cost);
+    }
+
+    Dictionary data;
+    data["wave_title"] = title_text;
+    data["next_wave"] = next_wave;
+    data["start_text"] = start_text;
+    data["start_disabled"] = start_disabled;
+    data["intel_status"] = intel_status;
+    data["flare"] = no_flare_mode ? String("DISABLED") : (flare_charge > 0 ? String("F READY") : String("CHARGING"));
+    data["overcharge_text"] = overcharge_text;
+    data["overcharge_disabled"] = overcharge_disabled;
+    data["overcharge_tip"] = overcharge_tip;
+    return data;
 }
 
 int GameRuntimeNative::physics_projectile_hit_index(const Array& enemies, const Vector2& pos, const Vector2& previous_pos, double base_hit_radius) const {

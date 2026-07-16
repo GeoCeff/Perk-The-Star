@@ -3704,91 +3704,47 @@ func _update_ui() -> void:
 		wave_data = current_wave_data
 	var wave_index: int = int(wave_data.get("index", min(GameState.current_wave + 1, MAX_WAVES)))
 	var wave_name: String = str(wave_data.get("name", "First Contact"))
-	var title_text: String = "WAVE %02d/%02d | %s" % [wave_index, MAX_WAVES, wave_name.to_upper()]
-	if endless_mode:
-		title_text = "ENDLESS WAVE %02d | %s" % [wave_index, wave_name.to_upper()]
-		if GameState.game_phase == GameState.GAME_OVER:
-			title_text = "ENDLESS RUN ENDED | WAVE %02d" % GameState.current_wave
-	elif boss_rush_mode:
-		title_text = "BOSS RUSH %02d/%02d | %s" % [wave_index, BOSS_RUSH_WAVES, wave_name.to_upper()]
-		if GameState.game_phase == GameState.VICTORY:
-			title_text = "BOSS RUSH COMPLETE | %s" % GameState.get_rank()
-		elif GameState.game_phase == GameState.GAME_OVER:
-			title_text = "BOSS RUSH FAILED | WAVE %02d/%02d" % [GameState.current_wave, BOSS_RUSH_WAVES]
-	elif daily_seed_mode:
-		title_text = "DAILY %s  %02d/%02d | %s" % [_daily_seed_label(), wave_index, DAILY_SEED_WAVES, wave_name.to_upper()]
-		if GameState.game_phase == GameState.VICTORY:
-			title_text = "DAILY SEED COMPLETE | %s" % GameState.get_rank()
-		elif GameState.game_phase == GameState.GAME_OVER:
-			title_text = "DAILY SEED FAILED | WAVE %02d/%02d" % [GameState.current_wave, DAILY_SEED_WAVES]
-	elif draft_defense_mode:
-		title_text = "DRAFT DEFENSE %02d/%02d | %s" % [wave_index, DRAFT_DEFENSE_WAVES, wave_name.to_upper()]
-		if _draft_needs_pick():
-			title_text = "DRAFT DEFENSE | PICK CONTRACT"
-		elif GameState.game_phase == GameState.VICTORY:
-			title_text = "DRAFT DEFENSE COMPLETE | %s" % GameState.get_rank()
-		elif GameState.game_phase == GameState.GAME_OVER:
-			title_text = "DRAFT DEFENSE FAILED | WAVE %02d/%02d" % [GameState.current_wave, DRAFT_DEFENSE_WAVES]
-	elif no_flare_mode and GameState.game_phase == GameState.VICTORY:
-		title_text = "NO-FLARE COMPLETE | %s" % GameState.get_rank()
-	elif no_flare_mode and GameState.game_phase == GameState.GAME_OVER:
-		title_text = "NO-FLARE FAILED | WAVE %02d/%02d" % [GameState.current_wave, MAX_WAVES]
-	elif GameState.game_phase == GameState.VICTORY:
-		title_text = "SOL DEFENSE COMPLETE | %s" % GameState.get_rank()
-	elif GameState.game_phase == GameState.GAME_OVER:
-		title_text = "SUN EXTINGUISHED | WAVE %02d/%02d" % [GameState.current_wave, MAX_WAVES]
-	elif GameState.game_phase != GameState.WAVE_ACTIVE:
-		title_text = "%s %02d/%02d" % [briefing_title.to_upper(), wave_index, MAX_WAVES]
-		if briefing_title.strip_edges().to_lower() != wave_name.strip_edges().to_lower():
-			title_text += " | %s" % wave_name.to_upper()
-
+	var hud_text: Dictionary = runtime_native.call("hud_text_state", {
+		"phase": GameState.game_phase,
+		"between_phase": GameState.BETWEEN_WAVE,
+		"wave_active_phase": GameState.WAVE_ACTIVE,
+		"game_over_phase": GameState.GAME_OVER,
+		"victory_phase": GameState.VICTORY,
+		"wave_index": wave_index,
+		"wave_name": wave_name,
+		"current_wave": GameState.current_wave,
+		"max_waves": MAX_WAVES,
+		"playable_wave_limit": playable_wave_limit,
+		"boss_rush_waves": BOSS_RUSH_WAVES,
+		"daily_seed_waves": DAILY_SEED_WAVES,
+		"daily_seed_label": _daily_seed_label(),
+		"draft_defense_waves": DRAFT_DEFENSE_WAVES,
+		"briefing_title": briefing_title,
+		"rank": GameState.get_rank(),
+		"endless_mode": endless_mode,
+		"boss_rush_mode": boss_rush_mode,
+		"daily_seed_mode": daily_seed_mode,
+		"draft_defense_mode": draft_defense_mode,
+		"no_flare_mode": no_flare_mode,
+		"draft_needs_pick": _draft_needs_pick(),
+		"auto_start_enabled": GameState.auto_start_waves_enabled,
+		"auto_start_timer": auto_start_timer,
+		"flare_charge": GameState.flare_charge,
+		"flare_overcharged": flare_overcharged,
+		"sol_credits": GameState.sol_credits,
+		"flare_overcharge_cost": FLARE_OVERCHARGE_COST,
+	}) as Dictionary
 	var reward: int = int(wave_data.get("credit_reward", 0))
-	var next_wave: int = GameState.current_wave + 1 if endless_mode else min(GameState.current_wave + 1, MAX_WAVES)
-	var start_disabled: bool = GameState.game_phase != GameState.BETWEEN_WAVE or next_wave > playable_wave_limit or _draft_needs_pick()
-	if not endless_mode and next_wave > MAX_WAVES:
-		start_disabled = true
-	var start_text: String = "START WAVE %d" % next_wave
-	var intel_status: String = "LIVE" if GameState.game_phase == GameState.WAVE_ACTIVE else "NEXT"
-	if _draft_needs_pick():
-		start_text = "PICK DRAFT"
-		intel_status = "DRAFT"
-	if GameState.game_phase == GameState.VICTORY:
-		start_text = "MISSION COMPLETE"
-		intel_status = "CLEARED"
-	elif GameState.game_phase == GameState.GAME_OVER:
-		start_text = "RUN ENDED"
-		intel_status = "FAILED"
-	if GameState.auto_start_waves_enabled and not start_disabled and auto_start_timer > 0.0:
-		start_text = "AUTO IN %d" % max(1, int(ceil(auto_start_timer)))
-		intel_status = "AUTO %d" % max(1, int(ceil(auto_start_timer)))
-	elif GameState.auto_start_waves_enabled and not start_disabled:
-		intel_status = "AUTO START"
-	var flare_ready: bool = not no_flare_mode and GameState.flare_charge > 0
-	var overcharge_disabled: bool = no_flare_mode or not flare_ready or flare_overcharged or GameState.sol_credits < FLARE_OVERCHARGE_COST
-	var overcharge_text: String = "OVER\n%d" % FLARE_OVERCHARGE_COST
-	var overcharge_tip: String = "Spend %d Sol to boost the next manual Solar Flare." % FLARE_OVERCHARGE_COST
-	if no_flare_mode:
-		overcharge_text = "OVER\nOFF"
-		overcharge_tip = "No-Flare Challenge disables Solar Flare."
-	elif flare_overcharged:
-		overcharge_text = "OVER\nARMED"
-		overcharge_tip = "The next manual Solar Flare is overcharged."
-	elif not flare_ready:
-		overcharge_text = "OVER\nWAIT"
-		overcharge_tip = "Solar Flare must be charged first."
-	elif GameState.sol_credits < FLARE_OVERCHARGE_COST:
-		overcharge_text = "OVER\nNEED"
-		overcharge_tip = "Need %d Sol Credits to overcharge." % FLARE_OVERCHARGE_COST
 	game_hud.call("update_view", {
-		"wave_title": title_text,
+		"wave_title": str(hud_text.get("wave_title", "")),
 		"brief": _wave_clean_hint(str(wave_data.get("tutorial_hint", "Defend the Sun.")), wave_name),
 		"credits": str(GameState.sol_credits),
 		"score": str(GameState.performance_score),
 		"kills": str(GameState.enemies_killed_total),
-		"flare": "DISABLED" if no_flare_mode else ("F READY" if GameState.flare_charge > 0 else "CHARGING"),
+		"flare": str(hud_text.get("flare", "CHARGING")),
 		"luminosity": float(GameState.get_luminosity_percent()),
 		"enemy_texture": _enemy_preview_texture(_wave_primary_variant(wave_data)),
-		"intel_status": intel_status,
+		"intel_status": str(hud_text.get("intel_status", "NEXT")),
 		"enemy_summary": _wave_spawn_summary(wave_data).to_upper(),
 		"threat": _wave_intel_detail(
 			wave_data,
@@ -3799,12 +3755,12 @@ func _update_ui() -> void:
 			_active_modifier_summary()
 		).to_upper(),
 		"rings": _ring_summary(),
-		"start_text": start_text,
-		"start_disabled": start_disabled,
+		"start_text": str(hud_text.get("start_text", "START")),
+		"start_disabled": bool(hud_text.get("start_disabled", true)),
 		"auto_start_enabled": GameState.auto_start_waves_enabled,
-		"overcharge_text": overcharge_text,
-		"overcharge_disabled": overcharge_disabled,
-		"overcharge_tip": overcharge_tip,
+		"overcharge_text": str(hud_text.get("overcharge_text", "")),
+		"overcharge_disabled": bool(hud_text.get("overcharge_disabled", true)),
+		"overcharge_tip": str(hud_text.get("overcharge_tip", "")),
 		"message": message_text,
 		"selected_tower": _selected_tower_readout(),
 		"tower_buttons": _tower_button_view_data(),
