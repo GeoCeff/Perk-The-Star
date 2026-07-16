@@ -1721,36 +1721,10 @@ func _spawn_clash_group(variants: Array, pattern: String, options = {}) -> void:
 func _spawn_position_for_pattern(pattern: String, index: int, count: int, options: Dictionary = {}) -> Vector2:
 	var sun: Vector2 = _sun_pos()
 	var spawn_radius: float = _outer_ring_radius() + ENEMY_SPAWN_PADDING
-	if gameplay_math != null:
-		var cpp_pos = gameplay_math.call("spawn_position_for_pattern", pattern, index, count, sun, spawn_radius, options)
-		if cpp_pos is Vector2:
-			return cpp_pos
-	var safe_count: int = max(1, count)
-	var normalized_pattern: String = pattern.strip_edges().to_lower()
-
-	match normalized_pattern:
-		"ring":
-			var angle: float = (float(index) / float(safe_count)) * TAU
-			return sun + Vector2(cos(angle), sin(angle)) * spawn_radius
-		"v_shape":
-			var half: int = max(1, int(ceil(float(safe_count) * 0.5)))
-			var side: float = 1.0 if index < half else -1.0
-			var local_index: int = index if index < half else index - half
-			var spread: float = deg_to_rad(float(options.get("spread_angle_deg", 60.0)))
-			var angle: float = -PI * 0.5 + side * (float(local_index + 1) / float(half + 1)) * spread
-			return sun + Vector2(cos(angle), sin(angle)) * spawn_radius
-		"spiral":
-			var arms: int = max(1, int(options.get("spiral_arms", 1)))
-			var arm_offset: float = TAU * float(index % arms) / float(arms)
-			var turns: float = 1.5 + float(arms) * 0.35
-			var angle: float = arm_offset + (float(index) / float(safe_count)) * TAU * turns
-			var radius: float = spawn_radius * (0.72 + 0.28 * float(index + 1) / float(safe_count))
-			return sun + Vector2(cos(angle), sin(angle)) * radius
-		"center_top":
-			return sun + Vector2(0.0, -spawn_radius)
-		_:
-			var angle: float = randf() * TAU
-			return sun + Vector2(cos(angle), sin(angle)) * spawn_radius
+	if gameplay_math == null:
+		push_error("V2GameplayMath is missing. Rebuild the GDExtension before spawning waves.")
+		return sun
+	return gameplay_math.call("spawn_position_for_pattern", pattern, index, count, sun, spawn_radius, options) as Vector2
 
 
 func _process_towers(delta: float) -> void:
