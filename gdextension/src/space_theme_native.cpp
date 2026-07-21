@@ -17,7 +17,7 @@ namespace {
 
 constexpr const char* FONT_BODY_PATH = "res://assets/fonts/Electrolize-Regular.ttf";
 constexpr const char* FONT_DISPLAY_PATH = "res://assets/fonts/Kenney Future.ttf";
-constexpr const char* FONT_BUTTON_PATH = "res://assets/fonts/Kenney Future Narrow.ttf";
+constexpr const char* FONT_BUTTON_PATH = FONT_BODY_PATH;
 constexpr const char* BAR_BLUE_PATH = "res://assets/ui/kenney/bar_blue_gloss_large.png";
 constexpr const char* BAR_YELLOW_PATH = "res://assets/ui/kenney/bar_yellow_gloss_large.png";
 constexpr const char* CURSOR_PATH = "res://assets/ui/kenney/crosshair_blue_a.png";
@@ -283,8 +283,7 @@ Ref<Font> SpaceThemeNative::button_font_resource() const {
 
 void SpaceThemeNative::apply_fonts_to_node(Node* node) {
     if (Label* label = Object::cast_to<Label>(node)) {
-        const String node_name = String(label->get_name()).to_lower();
-        const bool use_display = node_name.contains("title") || node_name.contains("wave") || label->get_theme_font_size("font_size") >= 24;
+        const bool use_display = label->get_theme_font_size("font_size") >= 24;
         label->add_theme_font_override("font", use_display ? display_font_resource() : body_font_resource());
         if (!label->has_theme_color_override("font_color")) {
             label->add_theme_color_override("font_color", text_color());
