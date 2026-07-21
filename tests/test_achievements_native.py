@@ -46,7 +46,13 @@ assert 'frame->set("frame_target_path", NodePath("../AchievementsBoard"))' in ME
 assert 'kicker->set_text("SOL COMMAND  //  COMMANDER\'S MEDAL VAULT")' in MENU
 assert 'title->set_text("CONSTELLATION OF VALOR")' in MENU
 assert 'medal_column->set_name("ServiceMedal")' in MENU
+assert 'ribbon->set_name("CommandRibbon")' in MENU
+assert 'clasp->set_name("SuspensionClasp")' in MENU
+assert 'medal_disc->set_name("MedalOuterRim")' in MENU
+assert 'inner_ring->set_name("MedalInsetRing")' in MENU
+assert 'Polygon2D* ribbon_shape' in MENU
 assert 'glint->set_text(String::chr(0x2726))' in MENU
+assert 'lower_glint->set_text(String::chr(0x2726))' in MENU
 assert 'shine->set_loops()' in MENU
 assert '"BRONZE COMMISSION"' in MENU and '"SILVER COMMISSION"' in MENU and '"GOLD COMMISSION"' in MENU
 assert ElementTree.parse(ICONS).getroot().attrib["viewBox"] == "0 0 768 64"

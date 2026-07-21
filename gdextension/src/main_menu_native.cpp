@@ -11,6 +11,7 @@
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/panel_container.hpp>
+#include <godot_cpp/classes/polygon2d.hpp>
 #include <godot_cpp/classes/progress_bar.hpp>
 #include <godot_cpp/classes/property_tweener.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
@@ -512,40 +513,85 @@ void MainMenuNative::show_achievements() {
 
         VBoxContainer* medal_column = memnew(VBoxContainer);
         medal_column->set_name("ServiceMedal");
-        medal_column->set_custom_minimum_size(Vector2(84, 0));
+        medal_column->set_custom_minimum_size(Vector2(92, 0));
         medal_column->set_alignment(BoxContainer::ALIGNMENT_CENTER);
         medal_column->add_theme_constant_override("separation", 0);
         row->add_child(medal_column);
 
-        PanelContainer* ribbon = memnew(PanelContainer);
-        ribbon->set_custom_minimum_size(Vector2(76, 22));
+        Control* ribbon = memnew(Control);
+        ribbon->set_name("CommandRibbon");
+        ribbon->set_custom_minimum_size(Vector2(82, 34));
         ribbon->set_h_size_flags(Control::SIZE_SHRINK_CENTER);
         medal_column->add_child(ribbon);
+
+        PackedVector2Array ribbon_points;
+        ribbon_points.push_back(Vector2(3, 1));
+        ribbon_points.push_back(Vector2(79, 1));
+        ribbon_points.push_back(Vector2(76, 26));
+        ribbon_points.push_back(Vector2(62, 33));
+        ribbon_points.push_back(Vector2(41, 25));
+        ribbon_points.push_back(Vector2(20, 33));
+        ribbon_points.push_back(Vector2(6, 26));
+        Polygon2D* ribbon_shape = memnew(Polygon2D);
+        ribbon_shape->set_polygon(ribbon_points);
+        ribbon_shape->set_color(earned
+            ? Color(metal.r * 0.72, metal.g * 0.72, metal.b * 0.72, 1.0)
+            : Color(0.07, 0.13, 0.18, 0.96));
+        ribbon->add_child(ribbon_shape);
+
+        const Color ribbon_stripe = earned
+            ? Color(1.0, 0.94, 0.72, tier_level == 2 ? 0.72 : 0.92)
+            : Color(accent.r, accent.g, accent.b, 0.36);
+        for (int stripe_index = 0; stripe_index < 2; ++stripe_index) {
+            const double left = stripe_index == 0 ? 15.0 : 58.0;
+            PackedVector2Array stripe_points;
+            stripe_points.push_back(Vector2(left, 3));
+            stripe_points.push_back(Vector2(left + 8, 3));
+            stripe_points.push_back(Vector2(left + 7, 26));
+            stripe_points.push_back(Vector2(left + 3, 30));
+            stripe_points.push_back(Vector2(left - 1, 27));
+            Polygon2D* stripe = memnew(Polygon2D);
+            stripe->set_polygon(stripe_points);
+            stripe->set_color(ribbon_stripe);
+            ribbon->add_child(stripe);
+        }
+
         Label* ribbon_text = memnew(Label);
         ribbon_text->set_text(item.get("tier", "UNRANKED"));
+        ribbon_text->set_position(Vector2(3, 3));
+        ribbon_text->set_size(Vector2(76, 19));
         ribbon_text->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
-        ribbon_text->add_theme_font_size_override("font_size", 9);
+        ribbon_text->set_vertical_alignment(VERTICAL_ALIGNMENT_CENTER);
+        ribbon_text->add_theme_font_size_override("font_size", 10);
         ribbon_text->add_theme_color_override("font_color", tier_level == 2 ? Color(0.08, 0.12, 0.18) : Color(0.98, 0.99, 1.0));
         ribbon->add_child(ribbon_text);
 
         ColorRect* clasp = memnew(ColorRect);
-        clasp->set_custom_minimum_size(Vector2(30, 6));
+        clasp->set_name("SuspensionClasp");
+        clasp->set_custom_minimum_size(Vector2(52, 5));
         clasp->set_h_size_flags(Control::SIZE_SHRINK_CENTER);
-        clasp->set_color(Color(metal.r, metal.g, metal.b, earned ? 0.88 : 0.42));
+        clasp->set_color(earned ? metal : Color(0.24, 0.36, 0.44, 0.72));
         medal_column->add_child(clasp);
 
         PanelContainer* medal_disc = memnew(PanelContainer);
-        medal_disc->set_custom_minimum_size(Vector2(78, 78));
+        medal_disc->set_name("MedalOuterRim");
+        medal_disc->set_custom_minimum_size(Vector2(82, 82));
         medal_disc->set_h_size_flags(Control::SIZE_SHRINK_CENTER);
         medal_column->add_child(medal_disc);
 
         Control* medal_face = memnew(Control);
-        medal_face->set_custom_minimum_size(Vector2(62, 62));
+        medal_face->set_custom_minimum_size(Vector2(64, 64));
         medal_disc->add_child(medal_face);
 
+        PanelContainer* inner_ring = memnew(PanelContainer);
+        inner_ring->set_name("MedalInsetRing");
+        inner_ring->set_position(Vector2(1, 1));
+        inner_ring->set_size(Vector2(62, 62));
+        medal_face->add_child(inner_ring);
+
         TextureRect* emblem = memnew(TextureRect);
-        emblem->set_position(Vector2(1, 1));
-        emblem->set_size(Vector2(60, 60));
+        emblem->set_position(Vector2(6, 6));
+        emblem->set_size(Vector2(52, 52));
         emblem->set_texture(achievement_icon(int(item.get("icon_index", i))));
         emblem->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
         emblem->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
@@ -554,7 +600,7 @@ void MainMenuNative::show_achievements() {
 
         Label* glint = memnew(Label);
         glint->set_text(String::chr(0x2726));
-        glint->set_position(Vector2(43, -9));
+        glint->set_position(Vector2(44, -8));
         glint->set_size(Vector2(28, 28));
         glint->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
         glint->set_vertical_alignment(VERTICAL_ALIGNMENT_CENTER);
@@ -563,24 +609,39 @@ void MainMenuNative::show_achievements() {
         glint->set_modulate(Color(1, 1, 1, earned ? 0.28 : 0.10));
         medal_face->add_child(glint);
 
+        Label* lower_glint = memnew(Label);
+        lower_glint->set_text(String::chr(0x2726));
+        lower_glint->set_position(Vector2(-4, 43));
+        lower_glint->set_size(Vector2(22, 22));
+        lower_glint->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+        lower_glint->set_vertical_alignment(VERTICAL_ALIGNMENT_CENTER);
+        lower_glint->add_theme_font_size_override("font_size", 13);
+        lower_glint->add_theme_color_override("font_color", Color(0.72, 0.94, 1.0));
+        lower_glint->set_modulate(Color(1, 1, 1, earned ? 0.18 : 0.06));
+        medal_face->add_child(lower_glint);
+
         if (earned) {
             Ref<Tween> shine = glint->create_tween();
             shine->set_loops();
             shine->tween_property(glint, "modulate:a", 1.0, tier_level == 3 ? 0.55 : 0.80)->set_delay(0.10 * (i % 4));
             shine->tween_property(glint, "modulate:a", 0.24, tier_level == 3 ? 0.75 : 1.05);
+            Ref<Tween> lower_shine = lower_glint->create_tween();
+            lower_shine->set_loops();
+            lower_shine->tween_property(lower_glint, "modulate:a", 0.82, 0.70)->set_delay(0.45 + 0.10 * (i % 3));
+            lower_shine->tween_property(lower_glint, "modulate:a", 0.16, 1.10);
         }
 
         if (theme != nullptr) {
-            Ref<StyleBoxFlat> ribbon_style = theme->call("panel_style", Color(metal.r * 0.64, metal.g * 0.64, metal.b * 0.64, earned ? 0.96 : 0.58), metal, 3.0, 6.0, 3.0);
-            ribbon_style->set_border_width_all(earned ? 2 : 1);
-            ribbon->add_theme_stylebox_override("panel", ribbon_style);
-
-            Ref<StyleBoxFlat> medal_style = theme->call("panel_style", Color(metal.r * 0.13, metal.g * 0.13, metal.b * 0.13, 0.98), metal, 40.0, 8.0, 8.0);
+            Ref<StyleBoxFlat> medal_style = theme->call("panel_style", Color(metal.r * 0.22, metal.g * 0.22, metal.b * 0.22, 0.99), Color(1.0, 0.94, 0.72, earned ? 0.92 : 0.30), 42.0, 9.0, 9.0);
             medal_style->set_border_width_all(earned ? 3 : 1);
             medal_style->set_shadow_color(Color(metal.r, metal.g, metal.b, tier_level == 3 ? 0.62 : (earned ? 0.34 : 0.12)));
             medal_style->set_shadow_size(tier_level == 3 ? 11 : 7);
             medal_style->set_shadow_offset(Vector2(0, 2));
             medal_disc->add_theme_stylebox_override("panel", medal_style);
+
+            Ref<StyleBoxFlat> inset_style = theme->call("panel_style", Color(0.004, 0.018, 0.028, 0.99), Color(accent.r, accent.g, accent.b, earned ? 0.88 : 0.42), 32.0, 4.0, 4.0);
+            inset_style->set_border_width_all(2);
+            inner_ring->add_theme_stylebox_override("panel", inset_style);
         }
 
         VBoxContainer* text_box = memnew(VBoxContainer);
