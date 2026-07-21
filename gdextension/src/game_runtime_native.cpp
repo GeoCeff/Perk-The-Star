@@ -227,6 +227,10 @@ Dictionary GameRuntimeNative::end_state_view_data(const Dictionary& state) const
     if (!record_text.is_empty()) {
         stats += vformat("\n%s", record_text);
     }
+    const String achievement_text = string_from_dict(state, "achievement_text", "");
+    if (!achievement_text.is_empty()) {
+        stats += vformat("\n%s", achievement_text);
+    }
 
     Dictionary data;
     data["victory"] = victory;

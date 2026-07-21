@@ -8,6 +8,7 @@ namespace godot {
 class Button;
 class Label;
 class PanelContainer;
+class Texture2D;
 class VBoxContainer;
 
 class MainMenuNative : public Control {
@@ -24,6 +25,7 @@ public:
 private:
     Button* btn_play = nullptr;
     Button* btn_tech_tree = nullptr;
+    Button* btn_achievements = nullptr;
     Button* btn_codex = nullptr;
     Button* btn_settings = nullptr;
     Button* btn_credits = nullptr;
@@ -36,6 +38,7 @@ private:
     Label* version_label = nullptr;
     Label* author_label = nullptr;
     Control* mode_overlay = nullptr;
+    Control* achievements_overlay = nullptr;
     PanelContainer* mode_info_panel = nullptr;
     Label* mode_info_title = nullptr;
     Label* mode_info_kicker = nullptr;
@@ -49,7 +52,10 @@ private:
     void show_mode_info(const String& mode);
     void close_mode_overlay();
     void show_tech_tree();
+    void show_achievements();
+    void close_achievements();
     void start_mode(const String& mode);
+    Ref<Texture2D> achievement_icon(int index) const;
     Object* space_theme() const;
 };
 

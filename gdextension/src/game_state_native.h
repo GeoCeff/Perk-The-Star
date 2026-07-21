@@ -43,8 +43,9 @@ public:
     int add_tech_xp(int amount);
     bool unlock_tech(const String& tech_id, int cost, const Array& requirements = Array());
     bool has_tech(const String& tech_id) const;
-    Dictionary record_run(const String& run_mode, int score, int waves, int luminosity_percent, const String& rank);
+    Dictionary record_run(const String& run_mode, int score, int waves, int luminosity_percent, const String& rank, bool victory, int perfect_orbits, int best_combo);
     Dictionary best_run_summary(const String& run_mode) const;
+    Array achievement_board() const;
     void enable_test_run(int start_wave);
     void clear_test_run();
     int consume_test_start_wave();
@@ -144,6 +145,13 @@ private:
     int best_daily_seed_score = 0;
     int best_draft_defense_waves = 0;
     int best_draft_defense_score = 0;
+    Array unlocked_achievements;
+    int achievement_total_waves = 0;
+    int achievement_total_kills = 0;
+    int achievement_total_score = 0;
+    int achievement_best_combo = 0;
+    int achievement_best_perfect_orbits = 0;
+    int achievement_best_no_flare_waves = 0;
     bool test_unlimited_sol_enabled = false;
     int pending_test_start_wave = 0;
     bool music_changed_by_user_this_session = false;
@@ -155,6 +163,9 @@ private:
     void save_display_settings();
     void save_tech_progress();
     void save_records();
+    void save_achievements();
+    Array update_achievements(const String& mode, int score, int waves, int luminosity_percent, bool victory, int perfect_orbits, int best_combo);
+    bool has_achievement(const String& achievement_id) const;
     void trigger_game_over();
     Dictionary tower_costs() const;
     Dictionary tower_upgrade_costs() const;

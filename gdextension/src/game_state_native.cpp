@@ -24,6 +24,44 @@ bool has_any_apex_tech(const Array& unlocked_tech) {
     return false;
 }
 
+enum AchievementRule {
+    TOTAL_WAVES,
+    TOTAL_KILLS,
+    TOTAL_SCORE,
+    BEST_COMBO,
+    BEST_PERFECT_ORBITS,
+    CAMPAIGN_FULL_SHINE,
+    LAST_LIGHT_VICTORY,
+    MODE_VICTORY,
+    ENDLESS_WAVES,
+};
+
+struct AchievementInfo {
+    const char* id;
+    const char* title;
+    const char* description;
+    AchievementRule rule;
+    int target;
+    const char* mode;
+    int icon_index;
+    Color accent;
+};
+
+const AchievementInfo ACHIEVEMENTS[] = {
+    {"first_light", "First Light", "Clear your first wave. Every orbit starts somewhere.", TOTAL_WAVES, 1, "", 0, Color(1.0, 0.76, 0.24)},
+    {"swarm_warranty", "Void the Swarm Warranty", "Erase 250 Astrophages across all recorded runs.", TOTAL_KILLS, 250, "", 1, Color(0.38, 0.92, 1.0)},
+    {"compound_starlight", "Starlight Has Compound Interest", "Bank 100,000 total score across recorded runs.", TOTAL_SCORE, 100000, "", 2, Color(0.62, 0.88, 1.0)},
+    {"chain_of_command", "Chain of Command", "Reach a 10-kill combo before the orbit cools.", BEST_COMBO, 10, "", 3, Color(0.42, 0.96, 0.82)},
+    {"perfect_attendance", "Perfect Attendance", "Complete 12 Perfect Orbits in a single run.", BEST_PERFECT_ORBITS, 12, "", 4, Color(0.44, 1.0, 0.62)},
+    {"no_dimmers", "No Dimmers Installed", "Win Normal Defense at 100% luminosity.", CAMPAIGN_FULL_SHINE, 100, "campaign", 5, Color(1.0, 0.88, 0.34)},
+    {"last_photon", "The Last Photon", "Win any defense with 20% luminosity or less.", LAST_LIGHT_VICTORY, 1, "", 6, Color(1.0, 0.46, 0.58)},
+    {"flareless_future", "Flares? Where We're Going...", "Clear No-Flare Challenge. Towers only; nerves optional.", MODE_VICTORY, 12, "no_flare", 7, Color(0.94, 0.42, 0.42)},
+    {"prime_time_over", "Prime Time Is Over", "Crush all four Boss Rush waves.", MODE_VICTORY, 4, "boss_rush", 8, Color(1.0, 0.52, 0.26)},
+    {"same_sun", "Same Sun, Same Trouble", "Clear the Daily Seed's fixed six-wave orbit.", MODE_VICTORY, 6, "daily_seed", 9, Color(0.38, 0.86, 1.0)},
+    {"drafted_greatness", "Drafted Into Greatness", "Win Draft Defense with the contract you were dealt.", MODE_VICTORY, 6, "draft_defense", 10, Color(0.72, 0.62, 1.0)},
+    {"one_more_orbit", "One More Orbit", "Survive 20 waves in Endless Defense.", ENDLESS_WAVES, 20, "endless", 11, Color(0.34, 0.94, 0.92)},
+};
+
 }
 
 void GameStateNative::_bind_methods() {
@@ -42,8 +80,9 @@ void GameStateNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("add_tech_xp", "amount"), &GameStateNative::add_tech_xp);
     ClassDB::bind_method(D_METHOD("unlock_tech", "tech_id", "cost", "requirements"), &GameStateNative::unlock_tech, DEFVAL(Array()));
     ClassDB::bind_method(D_METHOD("has_tech", "tech_id"), &GameStateNative::has_tech);
-    ClassDB::bind_method(D_METHOD("record_run", "run_mode", "score", "waves", "luminosity_percent", "rank"), &GameStateNative::record_run);
+    ClassDB::bind_method(D_METHOD("record_run", "run_mode", "score", "waves", "luminosity_percent", "rank", "victory", "perfect_orbits", "best_combo"), &GameStateNative::record_run);
     ClassDB::bind_method(D_METHOD("best_run_summary", "run_mode"), &GameStateNative::best_run_summary);
+    ClassDB::bind_method(D_METHOD("achievement_board"), &GameStateNative::achievement_board);
     ClassDB::bind_method(D_METHOD("enable_test_run", "start_wave"), &GameStateNative::enable_test_run);
     ClassDB::bind_method(D_METHOD("clear_test_run"), &GameStateNative::clear_test_run);
     ClassDB::bind_method(D_METHOD("consume_test_start_wave"), &GameStateNative::consume_test_start_wave);
@@ -147,6 +186,7 @@ void GameStateNative::_bind_methods() {
     ADD_SIGNAL(MethodInfo("game_feel_settings_changed", PropertyInfo(Variant::BOOL, "screen_shake_enabled")));
     ADD_SIGNAL(MethodInfo("auto_start_settings_changed", PropertyInfo(Variant::BOOL, "enabled")));
     ADD_SIGNAL(MethodInfo("tech_progress_changed", PropertyInfo(Variant::INT, "tech_xp"), PropertyInfo(Variant::ARRAY, "unlocked_tech")));
+    ADD_SIGNAL(MethodInfo("achievement_progress_changed", PropertyInfo(Variant::ARRAY, "new_achievements")));
 
     BIND_ENUM_CONSTANT(MENU);
     BIND_ENUM_CONSTANT(BETWEEN_WAVE);
@@ -207,6 +247,35 @@ void GameStateNative::load_audio_settings() {
         best_daily_seed_score = int(config->get_value("records", "daily_seed_score", best_daily_seed_score));
         best_draft_defense_waves = int(config->get_value("records", "draft_defense_waves", best_draft_defense_waves));
         best_draft_defense_score = int(config->get_value("records", "draft_defense_score", best_draft_defense_score));
+        Variant saved_achievements = config->get_value("achievements", "unlocked", unlocked_achievements);
+        if (saved_achievements.get_type() == Variant::ARRAY) {
+            unlocked_achievements = Array(saved_achievements);
+        }
+        achievement_total_waves = MAX(0, int(config->get_value("achievements", "total_waves", achievement_total_waves)));
+        achievement_total_kills = MAX(0, int(config->get_value("achievements", "total_kills", achievement_total_kills)));
+        achievement_total_score = MAX(0, int(config->get_value("achievements", "total_score", achievement_total_score)));
+        achievement_best_combo = MAX(0, int(config->get_value("achievements", "best_combo", achievement_best_combo)));
+        achievement_best_perfect_orbits = MAX(0, int(config->get_value("achievements", "best_perfect_orbits", achievement_best_perfect_orbits)));
+        achievement_best_no_flare_waves = MAX(0, int(config->get_value("achievements", "best_no_flare_waves", achievement_best_no_flare_waves)));
+
+        bool migrated_achievements = false;
+        const int saved_best_score = MAX(best_campaign_score, MAX(best_no_flare_score, MAX(best_endless_score, MAX(best_boss_rush_score, MAX(best_daily_seed_score, best_draft_defense_score)))));
+        if (saved_best_score > achievement_total_score) {
+            achievement_total_score = saved_best_score;
+            migrated_achievements = true;
+        }
+        const auto unlock_saved = [&](const String& id, bool earned) {
+            if (earned && !has_achievement(id)) {
+                unlocked_achievements.append(id);
+                migrated_achievements = true;
+            }
+        };
+        unlock_saved("no_dimmers", best_campaign_luminosity >= 100);
+        unlock_saved("prime_time_over", best_boss_rush_waves >= 4);
+        unlock_saved("same_sun", best_daily_seed_waves >= 6);
+        unlock_saved("drafted_greatness", best_draft_defense_waves >= 6);
+        unlock_saved("one_more_orbit", best_endless_waves >= 20);
+        if (migrated_achievements) save_achievements();
     }
     apply_brightness_overlay();
     emit_signal("music_settings_changed", music_enabled, music_volume);
@@ -359,7 +428,7 @@ bool GameStateNative::has_tech(const String& tech_id) const {
     return false;
 }
 
-Dictionary GameStateNative::record_run(const String& run_mode, int score, int waves, int luminosity_percent, const String& rank) {
+Dictionary GameStateNative::record_run(const String& run_mode, int score, int waves, int luminosity_percent, const String& rank, bool victory, int perfect_orbits, int best_combo) {
     String mode = run_mode;
     if (mode != "endless" && mode != "no_flare" && mode != "boss_rush" && mode != "daily_seed" && mode != "draft_defense") {
         mode = "campaign";
@@ -409,7 +478,86 @@ Dictionary GameStateNative::record_run(const String& run_mode, int score, int wa
     summary["new_luminosity"] = new_luminosity;
     summary["new_waves"] = new_waves;
     summary["new_best"] = new_score || new_luminosity || new_waves;
+    summary["new_achievements"] = update_achievements(mode, score, waves, luminosity_percent, victory, perfect_orbits, best_combo);
     return summary;
+}
+
+Array GameStateNative::achievement_board() const {
+    Array board;
+    for (const AchievementInfo& info : ACHIEVEMENTS) {
+        int current = 0;
+        switch (info.rule) {
+            case TOTAL_WAVES: current = achievement_total_waves; break;
+            case TOTAL_KILLS: current = achievement_total_kills; break;
+            case TOTAL_SCORE: current = achievement_total_score; break;
+            case BEST_COMBO: current = achievement_best_combo; break;
+            case BEST_PERFECT_ORBITS: current = achievement_best_perfect_orbits; break;
+            case CAMPAIGN_FULL_SHINE: current = best_campaign_luminosity; break;
+            case MODE_VICTORY:
+                if (String(info.mode) == "no_flare") current = achievement_best_no_flare_waves;
+                else if (String(info.mode) == "boss_rush") current = best_boss_rush_waves;
+                else if (String(info.mode) == "daily_seed") current = best_daily_seed_waves;
+                else if (String(info.mode) == "draft_defense") current = best_draft_defense_waves;
+                break;
+            case ENDLESS_WAVES: current = best_endless_waves; break;
+            case LAST_LIGHT_VICTORY: current = has_achievement(info.id) ? 1 : 0; break;
+        }
+        const bool unlocked = has_achievement(info.id);
+        Dictionary item;
+        item["id"] = info.id;
+        item["title"] = info.title;
+        item["description"] = info.description;
+        item["unlocked"] = unlocked;
+        item["current"] = unlocked ? info.target : MIN(current, info.target);
+        item["target"] = info.target;
+        item["icon_index"] = info.icon_index;
+        item["accent"] = info.accent;
+        board.append(item);
+    }
+    return board;
+}
+
+Array GameStateNative::update_achievements(const String& mode, int score, int waves, int luminosity_percent, bool victory, int perfect_orbits, int best_combo) {
+    Array newly_unlocked;
+    if (test_unlimited_sol_enabled) {
+        return newly_unlocked;
+    }
+    achievement_total_waves += MAX(0, waves);
+    achievement_total_kills += MAX(0, enemies_killed_total);
+    achievement_total_score += MAX(0, score);
+    achievement_best_combo = MAX(achievement_best_combo, best_combo);
+    achievement_best_perfect_orbits = MAX(achievement_best_perfect_orbits, perfect_orbits);
+    if (mode == "no_flare") achievement_best_no_flare_waves = MAX(achievement_best_no_flare_waves, waves);
+
+    for (const AchievementInfo& info : ACHIEVEMENTS) {
+        if (has_achievement(info.id)) continue;
+        bool achieved = false;
+        switch (info.rule) {
+            case TOTAL_WAVES: achieved = achievement_total_waves >= info.target; break;
+            case TOTAL_KILLS: achieved = achievement_total_kills >= info.target; break;
+            case TOTAL_SCORE: achieved = achievement_total_score >= info.target; break;
+            case BEST_COMBO: achieved = achievement_best_combo >= info.target; break;
+            case BEST_PERFECT_ORBITS: achieved = achievement_best_perfect_orbits >= info.target; break;
+            case CAMPAIGN_FULL_SHINE: achieved = victory && mode == "campaign" && luminosity_percent >= info.target; break;
+            case LAST_LIGHT_VICTORY: achieved = victory && luminosity_percent > 0 && luminosity_percent <= 20; break;
+            case MODE_VICTORY: achieved = victory && mode == info.mode; break;
+            case ENDLESS_WAVES: achieved = mode == "endless" && waves >= info.target; break;
+        }
+        if (achieved) {
+            unlocked_achievements.append(info.id);
+            newly_unlocked.append(info.title);
+        }
+    }
+    save_achievements();
+    if (!newly_unlocked.is_empty()) emit_signal("achievement_progress_changed", newly_unlocked);
+    return newly_unlocked;
+}
+
+bool GameStateNative::has_achievement(const String& achievement_id) const {
+    for (int i = 0; i < unlocked_achievements.size(); ++i) {
+        if (String(unlocked_achievements[i]) == achievement_id) return true;
+    }
+    return false;
 }
 
 Dictionary GameStateNative::best_run_summary(const String& run_mode) const {
@@ -698,6 +846,18 @@ void GameStateNative::save_records() {
     config->set_value("records", "daily_seed_score", best_daily_seed_score);
     config->set_value("records", "draft_defense_waves", best_draft_defense_waves);
     config->set_value("records", "draft_defense_score", best_draft_defense_score);
+    config->save(SETTINGS_PATH);
+}
+
+void GameStateNative::save_achievements() {
+    Ref<ConfigFile> config = settings_config();
+    config->set_value("achievements", "unlocked", unlocked_achievements);
+    config->set_value("achievements", "total_waves", achievement_total_waves);
+    config->set_value("achievements", "total_kills", achievement_total_kills);
+    config->set_value("achievements", "total_score", achievement_total_score);
+    config->set_value("achievements", "best_combo", achievement_best_combo);
+    config->set_value("achievements", "best_perfect_orbits", achievement_best_perfect_orbits);
+    config->set_value("achievements", "best_no_flare_waves", achievement_best_no_flare_waves);
     config->save(SETTINGS_PATH);
 }
 

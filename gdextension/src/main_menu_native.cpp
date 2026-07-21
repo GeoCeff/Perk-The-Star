@@ -1,16 +1,24 @@
 ﻿#include "main_menu_native.h"
 
 #include <godot_cpp/classes/box_container.hpp>
+#include <godot_cpp/classes/atlas_texture.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/color_rect.hpp>
+#include <godot_cpp/classes/grid_container.hpp>
+#include <godot_cpp/classes/h_box_container.hpp>
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/panel_container.hpp>
+#include <godot_cpp/classes/progress_bar.hpp>
 #include <godot_cpp/classes/property_tweener.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/scroll_container.hpp>
+#include <godot_cpp/classes/style_box.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/texture_rect.hpp>
+#include <godot_cpp/classes/texture2d.hpp>
 #include <godot_cpp/classes/tween.hpp>
 #include <godot_cpp/classes/v_box_container.hpp>
 #include <godot_cpp/classes/viewport.hpp>
@@ -25,6 +33,7 @@ namespace {
 constexpr const char* RUN_MODE_META = "run_mode";
 constexpr const char* GAME_SCENE_PATH = "res://scenes/game.tscn";
 constexpr const char* TECH_TREE_OVERLAY_SCENE_PATH = "res://scenes/ui/tech_tree_overlay.tscn";
+constexpr const char* ACHIEVEMENT_EMBLEMS_PATH = "res://assets/ui/icons/achievement_emblems.svg";
 constexpr const char* GAME_TITLE = "PERK THE STAR";
 constexpr const char* SUBTITLE = "DEFEND THE SUN - SAVE THE SYSTEM";
 constexpr const char* TAGLINE = "Defend me, defend me! - Oa ka Perk!";
@@ -76,12 +85,15 @@ void MainMenuNative::_bind_methods() {
     ClassDB::bind_method(D_METHOD("_show_mode_info", "mode"), &MainMenuNative::show_mode_info);
     ClassDB::bind_method(D_METHOD("_close_mode_overlay"), &MainMenuNative::close_mode_overlay);
     ClassDB::bind_method(D_METHOD("_show_tech_tree"), &MainMenuNative::show_tech_tree);
+    ClassDB::bind_method(D_METHOD("_show_achievements"), &MainMenuNative::show_achievements);
+    ClassDB::bind_method(D_METHOD("_close_achievements"), &MainMenuNative::close_achievements);
     ClassDB::bind_method(D_METHOD("_start_mode", "mode"), &MainMenuNative::start_mode);
 }
 
 void MainMenuNative::_ready() {
     btn_play = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_play")));
     btn_tech_tree = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_tech_tree")));
+    btn_achievements = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_achievements")));
     btn_codex = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_codex")));
     btn_settings = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_settings")));
     btn_credits = Object::cast_to<Button>(get_node_or_null(NodePath("CenterContainer/menu_box/button_box/btn_credits")));
@@ -118,6 +130,9 @@ void MainMenuNative::_ready() {
     if (btn_tech_tree != nullptr) {
         btn_tech_tree->connect("pressed", Callable(this, "_show_tech_tree"));
     }
+    if (btn_achievements != nullptr) {
+        btn_achievements->connect("pressed", Callable(this, "_show_achievements"));
+    }
     if (title_label != nullptr) {
         Color modulate = title_label->get_modulate();
         modulate.a = 0.0f;
@@ -140,6 +155,11 @@ void MainMenuNative::_input(const Ref<InputEvent>& event) {
 }
 
 void MainMenuNative::_unhandled_input(const Ref<InputEvent>& event) {
+    if (achievements_overlay != nullptr && event.is_valid() && event->is_action_pressed("ui_cancel")) {
+        close_achievements();
+        if (get_viewport() != nullptr) get_viewport()->set_input_as_handled();
+        return;
+    }
     if (mode_overlay != nullptr && event.is_valid() && event->is_action_pressed("ui_cancel")) {
         close_mode_overlay();
         if (get_viewport() != nullptr) {
@@ -167,6 +187,8 @@ void MainMenuNative::apply_menu_style() {
 
     theme->call("apply_primary_button", btn_play, theme->get("ICON_PLAY_PATH"));
     theme->call("apply_secondary_button", btn_tech_tree, theme->get("ICON_TECH_TREE_PATH"));
+    theme->call("apply_secondary_button", btn_achievements);
+    if (btn_achievements != nullptr) btn_achievements->set_button_icon(achievement_icon(4));
     theme->call("apply_secondary_button", btn_codex, theme->get("ICON_CODEX_PATH"));
     theme->call("apply_secondary_button", btn_settings, theme->get("ICON_SETTINGS_PATH"));
     theme->call("apply_secondary_button", btn_credits, theme->get("ICON_CREDITS_PATH"));
@@ -355,6 +377,170 @@ void MainMenuNative::show_tech_tree() {
         return;
     }
     add_child(packed->instantiate());
+}
+
+void MainMenuNative::show_achievements() {
+    if (achievements_overlay != nullptr) return;
+    Node* state = singleton(this, "GameState");
+    if (state == nullptr || !state->has_method("achievement_board")) return;
+    const Array achievements = state->call("achievement_board");
+
+    achievements_overlay = memnew(Control);
+    achievements_overlay->set_name("AchievementsOverlay");
+    achievements_overlay->set_mouse_filter(Control::MOUSE_FILTER_STOP);
+    achievements_overlay->set_anchors_preset(Control::PRESET_FULL_RECT);
+    add_child(achievements_overlay);
+
+    ColorRect* shade = memnew(ColorRect);
+    shade->set_color(Color(0.0, 0.0, 0.0, 0.76));
+    shade->set_mouse_filter(Control::MOUSE_FILTER_STOP);
+    shade->set_anchors_preset(Control::PRESET_FULL_RECT);
+    achievements_overlay->add_child(shade);
+
+    PanelContainer* panel = memnew(PanelContainer);
+    panel->set_name("AchievementsBoard");
+    panel->set_custom_minimum_size(Vector2(1100, 680));
+    panel->set_anchors_preset(Control::PRESET_CENTER);
+    panel->set_offset(SIDE_LEFT, -550.0);
+    panel->set_offset(SIDE_TOP, -340.0);
+    panel->set_offset(SIDE_RIGHT, 550.0);
+    panel->set_offset(SIDE_BOTTOM, 340.0);
+    achievements_overlay->add_child(panel);
+
+    VBoxContainer* root = memnew(VBoxContainer);
+    root->set_name("BoardContent");
+    root->add_theme_constant_override("separation", 10);
+    panel->add_child(root);
+
+    Label* title = memnew(Label);
+    title->set_text("CONSTELLATION OF DEEDS");
+    title->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+    title->add_theme_font_size_override("font_size", 30);
+    title->add_theme_color_override("font_color", Color(1.0, 0.84, 0.30));
+    root->add_child(title);
+
+    int unlocked_count = 0;
+    for (int i = 0; i < achievements.size(); ++i) {
+        if (bool(Dictionary(achievements[i]).get("unlocked", false))) ++unlocked_count;
+    }
+    Label* summary = memnew(Label);
+    summary->set_text(vformat("%d / %d EMBLEMS LIT  -  Finished runs update progress automatically.", unlocked_count, achievements.size()));
+    summary->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
+    summary->add_theme_font_size_override("font_size", 14);
+    summary->add_theme_color_override("font_color", Color(0.66, 0.86, 0.96, 0.92));
+    root->add_child(summary);
+
+    ScrollContainer* scroll = memnew(ScrollContainer);
+    scroll->set_name("AchievementScroll");
+    scroll->set_custom_minimum_size(Vector2(1040, 520));
+    scroll->set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
+    scroll->set_vertical_scroll_mode(ScrollContainer::SCROLL_MODE_AUTO);
+    scroll->set_focus_mode(Control::FOCUS_ALL);
+    scroll->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+    scroll->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+    root->add_child(scroll);
+
+    GridContainer* grid = memnew(GridContainer);
+    grid->set_name("AchievementGrid");
+    grid->set_columns(3);
+    grid->add_theme_constant_override("h_separation", 10);
+    grid->add_theme_constant_override("v_separation", 10);
+    grid->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+    scroll->add_child(grid);
+
+    Object* theme = space_theme();
+    for (int i = 0; i < achievements.size(); ++i) {
+        const Dictionary item = achievements[i];
+        const bool unlocked = bool(item.get("unlocked", false));
+        const int current = int(item.get("current", 0));
+        const int target = MAX(1, int(item.get("target", 1)));
+        const Color accent = unlocked ? Color(item.get("accent", Color(0.22, 0.84, 0.94))) : Color(0.26, 0.34, 0.42);
+
+        PanelContainer* card = memnew(PanelContainer);
+        card->set_custom_minimum_size(Vector2(335, 154));
+        grid->add_child(card);
+        if (theme != nullptr) theme->call("apply_deep_panel", card, accent);
+
+        HBoxContainer* row = memnew(HBoxContainer);
+        row->add_theme_constant_override("separation", 10);
+        card->add_child(row);
+
+        TextureRect* emblem = memnew(TextureRect);
+        emblem->set_custom_minimum_size(Vector2(68, 68));
+        emblem->set_texture(achievement_icon(int(item.get("icon_index", i))));
+        emblem->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
+        emblem->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
+        emblem->set_modulate(unlocked ? Color(1, 1, 1, 1) : Color(0.38, 0.44, 0.50, 0.78));
+        row->add_child(emblem);
+
+        VBoxContainer* text_box = memnew(VBoxContainer);
+        text_box->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+        text_box->add_theme_constant_override("separation", 3);
+        row->add_child(text_box);
+
+        Label* status = memnew(Label);
+        status->set_text(unlocked ? "EMBLEM LIT" : vformat("CHALLENGE  %d / %d", current, target));
+        status->add_theme_font_size_override("font_size", 10);
+        status->add_theme_color_override("font_color", accent);
+        text_box->add_child(status);
+
+        Label* name = memnew(Label);
+        name->set_text(String(item.get("title", "Unknown deed")).to_upper());
+        name->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+        name->add_theme_font_size_override("font_size", 16);
+        name->add_theme_color_override("font_color", unlocked ? Color(0.96, 0.99, 1.0) : Color(0.68, 0.74, 0.80));
+        text_box->add_child(name);
+
+        Label* description = memnew(Label);
+        description->set_text(item.get("description", ""));
+        description->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+        description->add_theme_font_size_override("font_size", 12);
+        description->add_theme_color_override("font_color", unlocked ? Color(0.78, 0.88, 0.94) : Color(0.50, 0.58, 0.66));
+        text_box->add_child(description);
+
+        ProgressBar* progress = memnew(ProgressBar);
+        progress->set_custom_minimum_size(Vector2(0, 8));
+        progress->set_min(0);
+        progress->set_max(target);
+        progress->set_value(current);
+        progress->set_show_percentage(false);
+        if (theme != nullptr) {
+            progress->add_theme_stylebox_override("background", theme->call("progress_background_style"));
+            progress->add_theme_stylebox_override("fill", theme->call("progress_fill_style"));
+        }
+        text_box->add_child(progress);
+    }
+
+    Button* close = memnew(Button);
+    close->set_text("BACK TO MAIN MENU");
+    close->set_custom_minimum_size(Vector2(300, 44));
+    close->set_h_size_flags(Control::SIZE_SHRINK_CENTER);
+    close->connect("pressed", Callable(this, "_close_achievements"));
+    root->add_child(close);
+
+    if (theme != nullptr) {
+        theme->call("apply_fonts", achievements_overlay);
+        theme->call("apply_deep_panel", panel, theme->get("COLOR_GOLD"));
+        theme->call("apply_scroll_container", scroll);
+        theme->call("apply_secondary_button", close, theme->get("ICON_BACK_PATH"));
+    }
+    scroll->grab_focus();
+}
+
+void MainMenuNative::close_achievements() {
+    if (achievements_overlay != nullptr) achievements_overlay->queue_free();
+    achievements_overlay = nullptr;
+    if (btn_achievements != nullptr) btn_achievements->grab_focus();
+}
+
+Ref<Texture2D> MainMenuNative::achievement_icon(int index) const {
+    static Ref<Texture2D> atlas = ResourceLoader::get_singleton()->load(ACHIEVEMENT_EMBLEMS_PATH);
+    if (atlas.is_null()) return Ref<Texture2D>();
+    Ref<AtlasTexture> icon;
+    icon.instantiate();
+    icon->set_atlas(atlas);
+    icon->set_region(Rect2(Math::clamp(index, 0, 11) * 64, 0, 64, 64));
+    return icon;
 }
 
 void MainMenuNative::start_mode(const String& mode) {

@@ -3457,7 +3457,10 @@ func _award_run_tech_xp_once(victory: bool) -> int:
 			GameState.performance_score,
 			GameState.waves_cleared,
 			GameState.get_luminosity_percent(),
-			GameState.get_rank()
+			GameState.get_rank(),
+			victory,
+			run_perfect_orbits,
+			run_best_combo
 		) as Dictionary
 	return run_tech_xp_awarded
 
@@ -3469,6 +3472,11 @@ func _run_record_text() -> String:
 	if summary.is_empty():
 		return ""
 	return str(runtime_native.call("run_record_text", summary, run_mode, BOSS_RUSH_WAVES, DAILY_SEED_WAVES, DRAFT_DEFENSE_WAVES))
+
+
+func _achievement_unlock_text() -> String:
+	var unlocked: Array = run_record_summary.get("new_achievements", []) as Array
+	return "" if unlocked.is_empty() else "ACHIEVEMENT UNLOCKED: %s" % ", ".join(unlocked)
 
 
 func _tower_upgrade_cost(tower: Dictionary) -> int:
@@ -3519,6 +3527,7 @@ func _end_state_view_data() -> Dictionary:
 		"best_combo": run_best_combo,
 		"combo_min_count": KILL_COMBO_MIN_COUNT,
 		"record_text": _run_record_text(),
+		"achievement_text": _achievement_unlock_text(),
 	}) as Dictionary
 
 
