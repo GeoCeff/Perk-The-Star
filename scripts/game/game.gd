@@ -3476,7 +3476,7 @@ func _run_record_text() -> String:
 
 func _achievement_unlock_text() -> String:
 	var unlocked: Array = run_record_summary.get("new_achievements", []) as Array
-	return "" if unlocked.is_empty() else "ACHIEVEMENT UNLOCKED: %s" % ", ".join(unlocked)
+	return "" if unlocked.is_empty() else "MEDAL COMMISSIONED: %s" % ", ".join(unlocked)
 
 
 func _tower_upgrade_cost(tower: Dictionary) -> int:

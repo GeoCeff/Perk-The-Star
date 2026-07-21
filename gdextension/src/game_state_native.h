@@ -151,7 +151,10 @@ private:
     int achievement_total_score = 0;
     int achievement_best_combo = 0;
     int achievement_best_perfect_orbits = 0;
-    int achievement_best_no_flare_waves = 0;
+    int achievement_best_campaign_victory_luminosity = 0;
+    int achievement_lowest_victory_luminosity = 101;
+    Dictionary achievement_mode_victories;
+    Dictionary achievement_tiers;
     bool test_unlimited_sol_enabled = false;
     int pending_test_start_wave = 0;
     bool music_changed_by_user_this_session = false;
@@ -165,6 +168,8 @@ private:
     void save_records();
     void save_achievements();
     Array update_achievements(const String& mode, int score, int waves, int luminosity_percent, bool victory, int perfect_orbits, int best_combo);
+    int achievement_progress_value(const String& achievement_id) const;
+    int achievement_earned_tier(const String& achievement_id) const;
     bool has_achievement(const String& achievement_id) const;
     void trigger_game_over();
     Dictionary tower_costs() const;

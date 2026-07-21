@@ -41,25 +41,29 @@ struct AchievementInfo {
     const char* title;
     const char* description;
     AchievementRule rule;
-    int target;
+    int bronze_target;
+    int silver_target;
+    int gold_target;
     const char* mode;
+    const char* unit;
     int icon_index;
     Color accent;
+    bool lower_is_better = false;
 };
 
 const AchievementInfo ACHIEVEMENTS[] = {
-    {"first_light", "First Light", "Clear your first wave. Every orbit starts somewhere.", TOTAL_WAVES, 1, "", 0, Color(1.0, 0.76, 0.24)},
-    {"swarm_warranty", "Void the Swarm Warranty", "Erase 250 Astrophages across all recorded runs.", TOTAL_KILLS, 250, "", 1, Color(0.38, 0.92, 1.0)},
-    {"compound_starlight", "Starlight Has Compound Interest", "Bank 100,000 total score across recorded runs.", TOTAL_SCORE, 100000, "", 2, Color(0.62, 0.88, 1.0)},
-    {"chain_of_command", "Chain of Command", "Reach a 10-kill combo before the orbit cools.", BEST_COMBO, 10, "", 3, Color(0.42, 0.96, 0.82)},
-    {"perfect_attendance", "Perfect Attendance", "Complete 12 Perfect Orbits in a single run.", BEST_PERFECT_ORBITS, 12, "", 4, Color(0.44, 1.0, 0.62)},
-    {"no_dimmers", "No Dimmers Installed", "Win Normal Defense at 100% luminosity.", CAMPAIGN_FULL_SHINE, 100, "campaign", 5, Color(1.0, 0.88, 0.34)},
-    {"last_photon", "The Last Photon", "Win any defense with 20% luminosity or less.", LAST_LIGHT_VICTORY, 1, "", 6, Color(1.0, 0.46, 0.58)},
-    {"flareless_future", "Flares? Where We're Going...", "Clear No-Flare Challenge. Towers only; nerves optional.", MODE_VICTORY, 12, "no_flare", 7, Color(0.94, 0.42, 0.42)},
-    {"prime_time_over", "Prime Time Is Over", "Crush all four Boss Rush waves.", MODE_VICTORY, 4, "boss_rush", 8, Color(1.0, 0.52, 0.26)},
-    {"same_sun", "Same Sun, Same Trouble", "Clear the Daily Seed's fixed six-wave orbit.", MODE_VICTORY, 6, "daily_seed", 9, Color(0.38, 0.86, 1.0)},
-    {"drafted_greatness", "Drafted Into Greatness", "Win Draft Defense with the contract you were dealt.", MODE_VICTORY, 6, "draft_defense", 10, Color(0.72, 0.62, 1.0)},
-    {"one_more_orbit", "One More Orbit", "Survive 20 waves in Endless Defense.", ENDLESS_WAVES, 20, "endless", 11, Color(0.34, 0.94, 0.92)},
+    {"first_light", "First Light", "Hold the line across enough waves to earn a command star.", TOTAL_WAVES, 1, 25, 75, "", "WAVES", 0, Color(1.0, 0.76, 0.24)},
+    {"swarm_warranty", "Void the Swarm Warranty", "Erase Astrophages until their warranty department stops answering.", TOTAL_KILLS, 250, 1000, 2500, "", "KILLS", 1, Color(0.38, 0.92, 1.0)},
+    {"compound_starlight", "Starlight Has Compound Interest", "Bank a career fortune in light, heat, and impossible arithmetic.", TOTAL_SCORE, 100000, 350000, 1000000, "", "SCORE", 2, Color(0.62, 0.88, 1.0)},
+    {"chain_of_command", "Chain of Command", "Forge an unbroken combo worthy of the SOL command ledger.", BEST_COMBO, 10, 15, 25, "", "COMBO", 3, Color(0.42, 0.96, 0.82)},
+    {"perfect_attendance", "Perfect Attendance", "String together flawless orbits while the whole system watches.", BEST_PERFECT_ORBITS, 4, 8, 12, "", "PERFECT ORBITS", 4, Color(0.44, 1.0, 0.62)},
+    {"no_dimmers", "No Dimmers Installed", "Win Normal Defense with enough sunlight to embarrass a supernova.", CAMPAIGN_FULL_SHINE, 80, 95, 100, "campaign", "LIGHT", 5, Color(1.0, 0.88, 0.34)},
+    {"last_photon", "The Last Photon", "Win on a dying ember. The dimmer the star, the brighter the legend.", LAST_LIGHT_VICTORY, 30, 20, 10, "", "LIGHT", 6, Color(1.0, 0.46, 0.58), true},
+    {"flareless_future", "Flares? Where We're Going...", "Repeat No-Flare victories until restraint becomes doctrine.", MODE_VICTORY, 1, 3, 5, "no_flare", "VICTORIES", 7, Color(0.94, 0.42, 0.42)},
+    {"prime_time_over", "Prime Time Is Over", "Send the Boss Rush back into permanent reruns.", MODE_VICTORY, 1, 3, 5, "boss_rush", "VICTORIES", 8, Color(1.0, 0.52, 0.26)},
+    {"same_sun", "Same Sun, Same Trouble", "Master the Daily Seed until fate starts feeling predictable.", MODE_VICTORY, 1, 3, 7, "daily_seed", "VICTORIES", 9, Color(0.38, 0.86, 1.0)},
+    {"drafted_greatness", "Drafted Into Greatness", "Keep winning with whatever contract command slides across the desk.", MODE_VICTORY, 1, 3, 5, "draft_defense", "VICTORIES", 10, Color(0.72, 0.62, 1.0)},
+    {"one_more_orbit", "One More Orbit", "Outlast Endless Defense until the clock files for reassignment.", ENDLESS_WAVES, 20, 30, 40, "endless", "WAVES", 11, Color(0.34, 0.94, 0.92)},
 };
 
 }
@@ -256,7 +260,13 @@ void GameStateNative::load_audio_settings() {
         achievement_total_score = MAX(0, int(config->get_value("achievements", "total_score", achievement_total_score)));
         achievement_best_combo = MAX(0, int(config->get_value("achievements", "best_combo", achievement_best_combo)));
         achievement_best_perfect_orbits = MAX(0, int(config->get_value("achievements", "best_perfect_orbits", achievement_best_perfect_orbits)));
-        achievement_best_no_flare_waves = MAX(0, int(config->get_value("achievements", "best_no_flare_waves", achievement_best_no_flare_waves)));
+        achievement_best_campaign_victory_luminosity = Math::clamp(int(config->get_value("achievements", "best_campaign_victory_luminosity", achievement_best_campaign_victory_luminosity)), 0, 100);
+        achievement_lowest_victory_luminosity = Math::clamp(int(config->get_value("achievements", "lowest_victory_luminosity", achievement_lowest_victory_luminosity)), 1, 101);
+        Variant saved_mode_victories = config->get_value("achievements", "mode_victories", achievement_mode_victories);
+        if (saved_mode_victories.get_type() == Variant::DICTIONARY) achievement_mode_victories = Dictionary(saved_mode_victories);
+        Variant saved_tiers = config->get_value("achievements", "tiers", achievement_tiers);
+        if (saved_tiers.get_type() == Variant::DICTIONARY) achievement_tiers = Dictionary(saved_tiers);
+        const int legacy_no_flare_waves = MAX(0, int(config->get_value("achievements", "best_no_flare_waves", 0)));
 
         bool migrated_achievements = false;
         const int saved_best_score = MAX(best_campaign_score, MAX(best_no_flare_score, MAX(best_endless_score, MAX(best_boss_rush_score, MAX(best_daily_seed_score, best_draft_defense_score)))));
@@ -275,6 +285,35 @@ void GameStateNative::load_audio_settings() {
         unlock_saved("same_sun", best_daily_seed_waves >= 6);
         unlock_saved("drafted_greatness", best_draft_defense_waves >= 6);
         unlock_saved("one_more_orbit", best_endless_waves >= 20);
+        unlock_saved("flareless_future", legacy_no_flare_waves >= 12);
+
+        const auto migrate_mode_victory = [&](const String& mode, const String& id) {
+            if (has_achievement(id) && int(achievement_mode_victories.get(mode, 0)) < 1) {
+                achievement_mode_victories[mode] = 1;
+                migrated_achievements = true;
+            }
+        };
+        migrate_mode_victory("no_flare", "flareless_future");
+        migrate_mode_victory("boss_rush", "prime_time_over");
+        migrate_mode_victory("daily_seed", "same_sun");
+        migrate_mode_victory("draft_defense", "drafted_greatness");
+        if (has_achievement("no_dimmers") && achievement_best_campaign_victory_luminosity < 100) {
+            achievement_best_campaign_victory_luminosity = 100;
+            migrated_achievements = true;
+        }
+        if (has_achievement("last_photon") && achievement_lowest_victory_luminosity > 20) {
+            achievement_lowest_victory_luminosity = 20;
+            migrated_achievements = true;
+        }
+        for (const AchievementInfo& info : ACHIEVEMENTS) {
+            const String id = info.id;
+            const int saved_tier = Math::clamp(int(achievement_tiers.get(id, 0)), 0, 3);
+            const int migrated_tier = MAX(has_achievement(id) ? 1 : 0, achievement_earned_tier(id));
+            if (migrated_tier > saved_tier) {
+                achievement_tiers[id] = migrated_tier;
+                migrated_achievements = true;
+            }
+        }
         if (migrated_achievements) save_achievements();
     }
     apply_brightness_overlay();
@@ -482,34 +521,89 @@ Dictionary GameStateNative::record_run(const String& run_mode, int score, int wa
     return summary;
 }
 
+int GameStateNative::achievement_progress_value(const String& achievement_id) const {
+    for (const AchievementInfo& info : ACHIEVEMENTS) {
+        if (achievement_id != info.id) continue;
+        switch (info.rule) {
+            case TOTAL_WAVES: return achievement_total_waves;
+            case TOTAL_KILLS: return achievement_total_kills;
+            case TOTAL_SCORE: return achievement_total_score;
+            case BEST_COMBO: return achievement_best_combo;
+            case BEST_PERFECT_ORBITS: return achievement_best_perfect_orbits;
+            case CAMPAIGN_FULL_SHINE: return achievement_best_campaign_victory_luminosity;
+            case LAST_LIGHT_VICTORY: return achievement_lowest_victory_luminosity;
+            case MODE_VICTORY: return MAX(0, int(achievement_mode_victories.get(String(info.mode), 0)));
+            case ENDLESS_WAVES: return best_endless_waves;
+        }
+    }
+    return 0;
+}
+
+int GameStateNative::achievement_earned_tier(const String& achievement_id) const {
+    for (const AchievementInfo& info : ACHIEVEMENTS) {
+        if (achievement_id != info.id) continue;
+        const int current = achievement_progress_value(achievement_id);
+        if (info.lower_is_better) {
+            if (current <= info.gold_target) return 3;
+            if (current <= info.silver_target) return 2;
+            if (current <= info.bronze_target) return 1;
+        } else {
+            if (current >= info.gold_target) return 3;
+            if (current >= info.silver_target) return 2;
+            if (current >= info.bronze_target) return 1;
+        }
+        return 0;
+    }
+    return 0;
+}
+
 Array GameStateNative::achievement_board() const {
+    static const char* TIER_NAMES[] = {"UNRANKED", "BRONZE", "SILVER", "GOLD"};
+    static const Color TIER_COLORS[] = {
+        Color(0.30, 0.42, 0.52),
+        Color(0.80, 0.45, 0.20),
+        Color(0.76, 0.84, 0.92),
+        Color(1.0, 0.78, 0.22),
+    };
+
     Array board;
     for (const AchievementInfo& info : ACHIEVEMENTS) {
-        int current = 0;
-        switch (info.rule) {
-            case TOTAL_WAVES: current = achievement_total_waves; break;
-            case TOTAL_KILLS: current = achievement_total_kills; break;
-            case TOTAL_SCORE: current = achievement_total_score; break;
-            case BEST_COMBO: current = achievement_best_combo; break;
-            case BEST_PERFECT_ORBITS: current = achievement_best_perfect_orbits; break;
-            case CAMPAIGN_FULL_SHINE: current = best_campaign_luminosity; break;
-            case MODE_VICTORY:
-                if (String(info.mode) == "no_flare") current = achievement_best_no_flare_waves;
-                else if (String(info.mode) == "boss_rush") current = best_boss_rush_waves;
-                else if (String(info.mode) == "daily_seed") current = best_daily_seed_waves;
-                else if (String(info.mode) == "draft_defense") current = best_draft_defense_waves;
-                break;
-            case ENDLESS_WAVES: current = best_endless_waves; break;
-            case LAST_LIGHT_VICTORY: current = has_achievement(info.id) ? 1 : 0; break;
+        const String id = info.id;
+        const int current = achievement_progress_value(id);
+        const int tier = MAX(Math::clamp(int(achievement_tiers.get(id, 0)), 0, 3), achievement_earned_tier(id));
+        const int target = tier == 0 ? info.bronze_target : (tier == 1 ? info.silver_target : info.gold_target);
+        double progress = 1.0;
+        if (tier < 3) {
+            progress = info.lower_is_better
+                ? (current <= 100 ? Math::clamp(double(target) / MAX(1, current), 0.0, 1.0) : 0.0)
+                : Math::clamp(double(current) / MAX(1, target), 0.0, 1.0);
         }
-        const bool unlocked = has_achievement(info.id);
+
+        String progress_text;
+        if (tier >= 3) {
+            progress_text = "GOLD STANDARD SECURED";
+        } else if (info.lower_is_better) {
+            progress_text = current <= 100
+                ? vformat("BEST WIN  %d%%  //  NEXT %s <= %d%%", current, TIER_NAMES[tier + 1], target)
+                : vformat("NEXT %s  WIN AT <= %d%% LIGHT", TIER_NAMES[tier + 1], target);
+        } else if (info.rule == CAMPAIGN_FULL_SHINE) {
+            progress_text = vformat("NEXT %s  %d%% / %d%% LIGHT", TIER_NAMES[tier + 1], current, target);
+        } else {
+            progress_text = vformat("NEXT %s  %d / %d %s", TIER_NAMES[tier + 1], current, target, info.unit);
+        }
+
         Dictionary item;
-        item["id"] = info.id;
+        item["id"] = id;
         item["title"] = info.title;
         item["description"] = info.description;
-        item["unlocked"] = unlocked;
-        item["current"] = unlocked ? info.target : MIN(current, info.target);
-        item["target"] = info.target;
+        item["unlocked"] = tier > 0;
+        item["tier_level"] = tier;
+        item["tier"] = TIER_NAMES[tier];
+        item["medal_color"] = TIER_COLORS[tier];
+        item["current"] = current;
+        item["target"] = target;
+        item["progress"] = progress;
+        item["progress_text"] = progress_text;
         item["icon_index"] = info.icon_index;
         item["accent"] = info.accent;
         board.append(item);
@@ -527,25 +621,24 @@ Array GameStateNative::update_achievements(const String& mode, int score, int wa
     achievement_total_score += MAX(0, score);
     achievement_best_combo = MAX(achievement_best_combo, best_combo);
     achievement_best_perfect_orbits = MAX(achievement_best_perfect_orbits, perfect_orbits);
-    if (mode == "no_flare") achievement_best_no_flare_waves = MAX(achievement_best_no_flare_waves, waves);
-
-    for (const AchievementInfo& info : ACHIEVEMENTS) {
-        if (has_achievement(info.id)) continue;
-        bool achieved = false;
-        switch (info.rule) {
-            case TOTAL_WAVES: achieved = achievement_total_waves >= info.target; break;
-            case TOTAL_KILLS: achieved = achievement_total_kills >= info.target; break;
-            case TOTAL_SCORE: achieved = achievement_total_score >= info.target; break;
-            case BEST_COMBO: achieved = achievement_best_combo >= info.target; break;
-            case BEST_PERFECT_ORBITS: achieved = achievement_best_perfect_orbits >= info.target; break;
-            case CAMPAIGN_FULL_SHINE: achieved = victory && mode == "campaign" && luminosity_percent >= info.target; break;
-            case LAST_LIGHT_VICTORY: achieved = victory && luminosity_percent > 0 && luminosity_percent <= 20; break;
-            case MODE_VICTORY: achieved = victory && mode == info.mode; break;
-            case ENDLESS_WAVES: achieved = mode == "endless" && waves >= info.target; break;
+    if (victory && luminosity_percent > 0) {
+        achievement_lowest_victory_luminosity = MIN(achievement_lowest_victory_luminosity, luminosity_percent);
+        if (mode == "campaign") achievement_best_campaign_victory_luminosity = MAX(achievement_best_campaign_victory_luminosity, luminosity_percent);
+        if (mode == "no_flare" || mode == "boss_rush" || mode == "daily_seed" || mode == "draft_defense") {
+            achievement_mode_victories[mode] = MAX(0, int(achievement_mode_victories.get(mode, 0))) + 1;
         }
-        if (achieved) {
-            unlocked_achievements.append(info.id);
-            newly_unlocked.append(info.title);
+    }
+
+    static const char* TIER_NAMES[] = {"UNRANKED", "BRONZE", "SILVER", "GOLD"};
+    for (const AchievementInfo& info : ACHIEVEMENTS) {
+        const String id = info.id;
+        const int previous_tier = Math::clamp(int(achievement_tiers.get(id, 0)), 0, 3);
+        const int earned_tier = achievement_earned_tier(id);
+        if (earned_tier > previous_tier) {
+            const bool was_unlocked = has_achievement(id);
+            achievement_tiers[id] = earned_tier;
+            if (!was_unlocked) unlocked_achievements.append(id);
+            newly_unlocked.append(vformat("%s MEDAL  -  %s", TIER_NAMES[earned_tier], info.title));
         }
     }
     save_achievements();
@@ -554,6 +647,7 @@ Array GameStateNative::update_achievements(const String& mode, int score, int wa
 }
 
 bool GameStateNative::has_achievement(const String& achievement_id) const {
+    if (int(achievement_tiers.get(achievement_id, 0)) > 0) return true;
     for (int i = 0; i < unlocked_achievements.size(); ++i) {
         if (String(unlocked_achievements[i]) == achievement_id) return true;
     }
@@ -857,7 +951,10 @@ void GameStateNative::save_achievements() {
     config->set_value("achievements", "total_score", achievement_total_score);
     config->set_value("achievements", "best_combo", achievement_best_combo);
     config->set_value("achievements", "best_perfect_orbits", achievement_best_perfect_orbits);
-    config->set_value("achievements", "best_no_flare_waves", achievement_best_no_flare_waves);
+    config->set_value("achievements", "best_campaign_victory_luminosity", achievement_best_campaign_victory_luminosity);
+    config->set_value("achievements", "lowest_victory_luminosity", achievement_lowest_victory_luminosity);
+    config->set_value("achievements", "mode_victories", achievement_mode_victories);
+    config->set_value("achievements", "tiers", achievement_tiers);
     config->save(SETTINGS_PATH);
 }
 
