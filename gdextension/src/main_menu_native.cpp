@@ -37,11 +37,11 @@ constexpr const char* GAME_SCENE_PATH = "res://scenes/game.tscn";
 constexpr const char* TECH_TREE_OVERLAY_SCENE_PATH = "res://scenes/ui/tech_tree_overlay.tscn";
 constexpr const char* ACHIEVEMENT_EMBLEMS_PATH = "res://assets/ui/icons/achievement_emblems.svg";
 constexpr const char* GAME_TITLE = "PERK THE STAR";
-constexpr const char* SUBTITLE = "DEFEND THE SUN - SAVE THE SYSTEM";
+constexpr const char* SUBTITLE = "DEFEND THE SUN. SAVE THE SYSTEM.";
 constexpr const char* TAGLINE = "Defend me, defend me! - Oa ka Perk!";
-constexpr const char* OVERVIEW = "Command orbiting towers around the Sun, survive the Prime campaign, brave Endless, or clear No-Flare Challenge, then bank Tech XP into six tower paths.";
-constexpr const char* TECH_LABEL = "CMSC 21 | C++ / Godot Engine 4.x / GDExtension";
-constexpr const char* AUTHOR_LABEL = "Geo Ceff Gabaisen & Dexter Juevesano";
+constexpr const char* OVERVIEW = "Choose one of six missions, command an orbital defense, and bank Tech XP for permanent upgrades across six tower paths.";
+constexpr const char* TECH_LABEL = "CMSC 21-A // C++17 // GODOT 4 // GDEXTENSION";
+constexpr const char* AUTHOR_LABEL = "BUILT BY GEO CEFF GABAISEN + DEXTER JUEVESANO";
 
 struct ModeInfo {
     const char* key;

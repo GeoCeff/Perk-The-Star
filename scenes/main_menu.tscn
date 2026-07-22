@@ -524,7 +524,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.94, 1, 1)
 theme_override_fonts/font = ExtResource("2_tbmy8")
 theme_override_font_sizes/font_size = 26
-text = "DEFEND THE SUN - SAVE THE SYSTEM"
+text = "DEFEND THE SUN. SAVE THE SYSTEM."
 horizontal_alignment = 1
 
 [node name="tagline_label" type="Label" parent="CenterContainer/menu_box" unique_id=544735199]
@@ -541,7 +541,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.94, 1, 1)
 theme_override_fonts/font = ExtResource("3_jk1qb")
 theme_override_font_sizes/font_size = 18
-text = "Command orbiting towers around the Sun, choose a defense mode, then bank Tech XP into six tower paths and one white Apex choice."
+text = "Choose one of six missions, command an orbital defense, and bank Tech XP for permanent upgrades across six tower paths."
 horizontal_alignment = 1
 autowrap_mode = 3
 
@@ -734,7 +734,7 @@ theme_override_constants/shadow_offset_y = 2
 theme_override_constants/outline_size = 1
 theme_override_fonts/font = ExtResource("3_jk1qb")
 theme_override_font_sizes/font_size = 16
-text = "CMSC 21 | C++ / Godot Engine 4.x / GDExtension"
+text = "CMSC 21-A // C++17 // GODOT 4 // GDEXTENSION"
 
 [node name="author_label" type="Label" parent="." unique_id=260142711]
 layout_mode = 1
@@ -757,5 +757,5 @@ theme_override_constants/shadow_offset_y = 2
 theme_override_constants/outline_size = 1
 theme_override_fonts/font = ExtResource("3_jk1qb")
 theme_override_font_sizes/font_size = 16
-text = "Geo Ceff Gabaisen & Dexter Juevesano"
+text = "BUILT BY GEO CEFF GABAISEN + DEXTER JUEVESANO"
 horizontal_alignment = 2
