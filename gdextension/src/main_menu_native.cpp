@@ -557,7 +557,7 @@ void MainMenuNative::show_achievements() {
         }
 
         Label* ribbon_text = memnew(Label);
-        ribbon_text->set_text(item.get("tier", "UNRANKED"));
+        ribbon_text->set_text(earned ? String(item.get("tier", "")) : String());
         ribbon_text->set_position(Vector2(3, 3));
         ribbon_text->set_size(Vector2(76, 19));
         ribbon_text->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER);
