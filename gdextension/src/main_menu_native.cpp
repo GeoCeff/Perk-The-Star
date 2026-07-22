@@ -39,7 +39,7 @@ constexpr const char* ACHIEVEMENT_EMBLEMS_PATH = "res://assets/ui/icons/achievem
 constexpr const char* GAME_TITLE = "PERK THE STAR";
 constexpr const char* SUBTITLE = "DEFEND THE SUN. SAVE THE SYSTEM.";
 constexpr const char* TAGLINE = "Defend me, defend me! - Oa ka Perk!";
-constexpr const char* OVERVIEW = "Choose one of six missions, command an orbital defense, and bank Tech XP for permanent upgrades across six tower paths.";
+constexpr const char* OVERVIEW = "The Sun is no longer alone. Astrophage colonies drift toward its core, and only your orbiting Perk defense grid can keep the last light alive.";
 constexpr const char* TECH_LABEL = "CMSC 21-A // C++17 // GODOT 4 // GDEXTENSION";
 constexpr const char* AUTHOR_LABEL = "BUILT BY GEO CEFF GABAISEN + DEXTER JUEVESANO";
 
