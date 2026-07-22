@@ -89,52 +89,64 @@ theme_override_constants/separation = 20
 [node name="nav_box" type="VBoxContainer" parent="panel/margin/root_box/content_box"]
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 
 [node name="btn_briefing" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
-custom_minimum_size = Vector2(250, 46)
+custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Briefing"
 
+[node name="btn_challenges" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
+custom_minimum_size = Vector2(250, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Challenges"
+
+[node name="btn_tech_tree" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
+custom_minimum_size = Vector2(250, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Tech Tree"
+
 [node name="btn_controls" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
-custom_minimum_size = Vector2(250, 46)
+custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Field Controls"
 
 [node name="btn_systems" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
-custom_minimum_size = Vector2(250, 46)
+custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Core Systems"
 
 [node name="btn_towers" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
-custom_minimum_size = Vector2(250, 46)
+custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Towers"
 
 [node name="btn_astrophage" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
-custom_minimum_size = Vector2(250, 46)
+custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Astrophage"
 
 [node name="btn_rings" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
-custom_minimum_size = Vector2(250, 46)
+custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Rings + Waves"
 
 [node name="btn_endings" type="Button" parent="panel/margin/root_box/content_box/nav_box"]
-custom_minimum_size = Vector2(250, 46)
+custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Endings"
 
 [node name="close_button" type="Button" parent="panel/margin/root_box/content_box/nav_box" unique_id=928311131]
-custom_minimum_size = Vector2(250, 46)
+custom_minimum_size = Vector2(250, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Back"

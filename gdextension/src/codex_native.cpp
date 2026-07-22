@@ -77,6 +77,8 @@ void CodexNative::_ready() {
     body_label = node_as<RichTextLabel>(this, "panel/margin/root_box/content_box/article_box/body_scroll/body_label");
 
     nav_buttons["briefing"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_briefing");
+    nav_buttons["challenges"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_challenges");
+    nav_buttons["tech_tree"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_tech_tree");
     nav_buttons["controls"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_controls");
     nav_buttons["systems"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_systems");
     nav_buttons["towers"] = node_as<Button>(this, "panel/margin/root_box/content_box/nav_box/btn_towers");
@@ -261,10 +263,8 @@ Campaign orders
 - Stop Burrowers quickly. Once lodged, they keep draining until Bio-Lab excavates them.
 - Crack Astrophage Prime in wave 12 by opening its shell with Bio-Lab support.
 
-Mode notes
-- Normal Defense is the Prime campaign.
-- Endless keeps scaling enemy count, HP, speed, breach damage, rewards, and special wave shapes.
-- No-Flare Challenge uses the Prime campaign but disables Solar Flare for bonus Tech XP.
+Challenge orders
+Prime adapts whenever the grid settles into a doctrine, so Command changes the terms of war: compressed rushes, fixed daily formations, drafted supply contracts, endless fronts, and flareless operations. Read the Challenge Archives before launch.
 
 Command doctrine
 - Build coverage first, then damage.
@@ -280,6 +280,82 @@ Defend me, defend me! - Oa ka Perk!)",
             sprite("Prime", "res://assets/sprites/clean/enemies_optimized/astrophage-shell_idle_1.png"),
         }),
         "Quick read: your grid, the baseline Astrophage, and the final shell target."
+    );
+
+    sections["challenges"] = section(
+        "Challenge Archives",
+        R"(Why the missions change
+Astrophage colonies learn from every failed assault. The Sol Defense Corps answers by changing the battlefield before the enemy can change it for them. Each challenge is another chapter in the same war, with its own orders and survival doctrine.
+
+Prime Campaign - The first stand
+Twelve authored waves chart the original defense of Perk, from the first Drifters to Astrophage Prime. Build a stable orbit, preserve luminosity, and prepare Bio-Lab support before the shell arrives. This is the best campaign for learning the grid and earning steady Tech XP.
+
+Boss Rush - The broken sector
+A neighboring ring has already collapsed; there is no time for a gentle opening. Four heavy waves arrive around Prime-class threats, forcing immediate crisis control. Fund Bio-Lab early, because shell cracking is no longer a final-wave problem.
+
+Daily Seed - The sealed forecast
+Once per Earth day, Command locks one six-wave formation under a date code. Every commander receives the same enemy mix, so victory comes from reading the pattern, refining the route, and returning for a cleaner score before the forecast resets.
+
+Draft Defense - The quartermaster's contract
+Supply lanes are fractured. Before wave 1, choose one field package with real bonuses and restrictions, then shape the entire defense around what arrived. The contract decides your strengths; the commander decides whether they are enough.
+
+Endless Defense - The long orbit
+Prime can fall without ending the migration. Beyond the campaign limit, enemy count, health, speed, breach damage, rewards, and wave shapes keep escalating. There is no final order here - only one more wave and one more chance to keep the Sun alive.
+
+No-Flare Challenge - The dark capacitor oath
+The flare banks stay cold for the full Prime campaign. Without Solar Flare, every breach must be solved by placement, counters, and timing alone. Command pays bonus Tech XP because a flareless victory proves the grid can survive without its brightest weapon.
+
+Commander note
+Records are kept separately for every operation. A failed challenge still returns intelligence; a victory becomes doctrine.)",
+        gallery({
+            sprite("Prime", "res://assets/ui/icons/icon_mode_campaign.png"),
+            sprite("Boss Rush", "res://assets/ui/icons/icon_mode_boss_rush.png"),
+            sprite("Daily", "res://assets/ui/icons/icon_mode_daily_seed.png"),
+            sprite("Draft", "res://assets/ui/icons/icon_mode_draft_defense.png"),
+            sprite("Endless", "res://assets/ui/icons/icon_mode_endless.png"),
+            sprite("No-Flare", "res://assets/ui/icons/icon_mode_no_flare.png"),
+        }),
+        "Six operations, one war: choose which rule Command changes before the Astrophage change it for you."
+    );
+
+    sections["tech_tree"] = section(
+        "Tech Tree Archive",
+        R"(The memory of the grid
+No defense is wasted. Combat telemetry returns to the Sol Defense Corps as Tech XP, where engineers turn every shot, breach, and hard-won second into permanent research. The next Perk grid launches carrying the lessons of the last.
+
+Research law
+- Tech XP survives between runs and is spent permanently.
+- Each tower path unlocks in order; later projects require the research before them.
+- Unlocked effects can be disabled in Settings without erasing progress.
+- Complete a path to reveal its Apex project. Command may authorize only one Apex across the entire grid.
+
+Photon - Light learns to divide
+Solar Lens extends range by 10%. Split Beam adds 12% damage. Plasma Core raises fire rate by 10%. The Photon path turns the grid's simplest weapon into dependable coverage that wastes less orbit.
+
+Cryo - Time becomes a weapon
+Long Orbit adds 5% range. Far Sight adds another 12% range and 25% slow duration. Brittle Shells makes slowed enemies take 12% more non-control damage. Cryo research does not win by force; it gives every other tower more time to matter.
+
+Bio-Lab - The enemy becomes the lesson
+Bio Splice improves firing and excavation by 12%. Salvage Culture raises kill rewards by 10%. Solar Choir adds 10% damage and range. Bio-Lab research studies the colonies closely enough to clear Burrowers, open Prime, and fund the next answer.
+
+Magnetic - The rings hold their ground
+Rapid Charge speeds pulses by 5%. Magnetic Lattice adds 10% range. Gravitic Payload adds another 10% range and extends slows by 25%. The Magnetic path turns open orbit into controlled territory.
+
+Helios - The Sun answers back
+Stellar Lance adds 14% damage. Slingshot Coils reduces the Slingshot to 30 Sol and makes it hit 20% harder. Flare Battery charges Solar Flare every two cleared waves instead of three. Helios research converts stored sunlight into decisive force.
+
+Tardigrade - Survival becomes ordnance
+Pressure Hull adds 10% range. Spore Nests raise fire rate by 8%. Resilient Bloom adds 14% damage. The Tardigrade path builds a weapon in the image of the organism: patient, durable, and devastating once it reaches the target.
+
+Apex doctrine
+An Apex is not a routine fourth upgrade. It is Command choosing which tower philosophy will define the surviving grid. Finish every branch you need before committing; once one Apex is authorized, the other five remain sealed.)",
+        gallery({
+            sprite("Tier I", "res://assets/ui/tech_tiers/photon_splitter_tier_1.png"),
+            sprite("Tier II", "res://assets/ui/tech_tiers/cryo_probe_tier_2.png"),
+            sprite("Tier III", "res://assets/ui/tech_tiers/helios_cannon_tier_3.png"),
+            sprite("Apex", "res://assets/ui/tech_tiers/apex_tier.png"),
+        }),
+        "Every finished run writes the next line of Perk's research history."
     );
 
     sections["controls"] = section(
@@ -330,8 +406,8 @@ Runtime state
 Solar Flare
 The flare is a manual radial burst charged by cleared waves. It punishes packed lanes and becomes stronger through Helios research. It is not available in No-Flare Challenge.
 
-Tech Tree
-Tech XP is permanent. Each tower has a three-step research path, then one white Apex choice can be claimed. Research upgrades damage, range, fire rate, reward flow, flare cadence, and special tower behavior.
+Mission archive
+Every run returns combat telemetry to Command. The Tech Tree turns that record into permanent research across six tower paths, ending in one irreversible Apex authorization. See the Tech Tree Archive for the complete doctrine.
 
 HUD intelligence
 - Wave Intel previews enemy mix, warning tags, ring pressure, and rewards.
